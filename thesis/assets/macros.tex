@@ -1,0 +1,20 @@
+% Definição dos autores
+\definechangesauthor[name={Edson Borin}, color=purple]{EB}
+\definechangesauthor[name={Daniel Fonseca}, color=red]{DF}
+
+% Borin (EB)
+\newcommand{\EB}[1]{\comment[id=EB]{#1}} % Adiciona como comentário feito por EB
+\newcommand{\EBH}[1]{\highlight[id=EB]{#1}} % Destaca o texto
+\newcommand{\EBC}[2]{\EBH{#1} \comment[id=EB]{#2}} % Destaca e adiciona comentário
+\newcommand{\EBADD}[1]{\added[id=EB]{#1}} % Adiciona texto
+\newcommand{\EBRM}[1]{\deleted[id=EB]{#1}} % Remove texto
+\newcommand{\EBRP}[2]{\replaced[id=EB]{#2}{#1}} % Substitui um texto pelo outro
+
+% Daniel (DF)
+\newcommand{\DF}[1]{\comment[id=DF]{#1}} % Adiciona como coomentário feito por DF
+\newcommand{\DFH}[1]{\highlight[id=DF]{#1}} % Destaca o texto
+\newcommand{\DFC}[2]{\DFH{#1} \comment[id=DF]{#2}} % Destaca e adiciona comentário
+\newcommand{\DFADD}[1]{\added[id=DF]{#1}} % Adiciona texto
+\newcommand{\DFRM}[1]{\deleted[id=DF]{#1}} % Remove texto
+\newcommand{\DFRP}[2]{\replaced[id=DF]{#2}{#1}} % Substitui um texto pelo outro
+\newcommand{\DFTODO}[1]{\DFADD{TODO: #1}} % Adiciona um TODO com comentário

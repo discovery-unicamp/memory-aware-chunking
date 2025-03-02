@@ -1,0 +1,52 @@
+\chapter{Predicting Memory Consumption from Input Shapes}
+\label{ch:predicting-memory-consumption-from-input-shapes}
+
+
+\section{Introduction}
+\label{sec:pmc-introduction}
+
+\DFTODO{Explicar do fluxo comum em supercomputadores, onde você precisa alocar recursos para uma tarefa antes de executá-la.}
+\DFTODO{Explicar sobre a natureza da tentativa e erro de prever o consumo de memória com base nas formas de entrada (do ponto de vista de executar uma única tarefa sem paralelismo no cluster).}
+\DFTODO{Descrever que para algoritmos tensoriais, é razoável assumir que é possível prever o consumo de memória}
+\DFTODO{Destacar que, com base nos resultados da sessão anterior, essa predição não precisa ser muito precisa, pois pode executar com pressão}
+
+
+\section{Predicting Memory Consumption}
+\label{sec:pmc-predicting-memory-consumption}
+
+\DFTODO{Descrever os modelos que foram utilizados e porque}
+\DFTODO{Descrever as features que foram utilizadas para realizar a predição}
+
+
+\section{Materials and Methods}
+\label{sec:pmc-materials-and-methods}
+
+\DFTODO{Explicar sobre o setup do experimento de um ponto de vista de hardware}
+\DFTODO{Explicar sobre o setup do experimento de um ponto de vista de software}
+\DFTODO{Descrever como os dados sintéticos foram gerados. Falar sobre o armazenamento em SEG-Y e o uso de dados reais (F3) pra validação}
+\DFTODO{Descrever os algoritmos que foram utilizados: Envelope, GST3D e Filtro Gaussiano 3D. Explicando o porque e dando detalhes de sua implementação}
+\DFTODO{Listar as métricas coletadas: tempo de execução, uso máximo de memória}
+\DFTODO{Explicar o fluxo de execução do experimento. Falar sobre a execução com vários formatos de entrada}
+\DFTODO{Explicar o método para construir os modelos preditivos}
+\DFTODO{Descrever como foi feito a validação dos modelos usando o F3}
+\DFTODO{Explicar as técnicas para análise de dados e para analisar os resultados}
+\DFTODO{Falar sobre o código fonte dos experimentos e como ele foi organizado}
+
+
+\section{Experimental Results}
+\label{sec:pmc-results}
+
+\DFTODO{Apresentar os resultados dos experimentos, mostrando o consumo de memória e o tempo de execução para cada algoritmo.}
+\DFTODO{Explicar como, trabalhando com dados 3D, foram feitos testes mantendo uma dimensão fixa, duas e sem nenhuma, para avaliar o resultado do comportamento de memória.}
+\DFTODO{Destacar a validação feita para garantir a precisão das medições}
+\DFTODO{Apresentar os resultados da predição de memória e comparar com os resultados reais}
+\DFTODO{Descrever como, por fim, foi montada uma estrutura capaz de prever o consumo de memória apenas com o formato do dado de entrada.}
+\DFTODO{Discutir as vantagens dessa abordagem e suas possíveis aplicações em diferentes cenários.}
+
+
+\section{Conclusion}
+\label{sec:pmc-conclusion}
+
+\DFTODO{Concluir sobre a possibilidade de prever o consumo de memória com base no formato do dado de entrada}
+\DFTODO{Concluir sobre a importância de se ter uma estimativa de memória antes de executar um algoritmo}
+\DFTODO{Concluir sobre a possibilidade de executar com pressão de memória}
