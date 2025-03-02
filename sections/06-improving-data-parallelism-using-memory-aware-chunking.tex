@@ -1,0 +1,56 @@
+\chapter{Improving Data Parallelism using Memory-Aware Chunking}
+\label{ch:improving-data-parallelism-using-memory-aware-chunking}
+
+
+\section{Introduction}
+\label{sec:mac-introduction}
+
+\DFTODO{Explicar sobre o uso do paralelismo de dados}
+\DFTODO{Explicar sobre a importância de se ter um bom balanceamento de carga e como isso pode ser feito.}
+\DFTODO{Explicar sobre o uso de chunking para o balanceamento de carga}
+\DFTODO{Conectar a seção anterior, falando que é feito tentativa e erro pra definir o tamanho do chunk}
+\DFTODO{Explicar sobre a natureza de algoritmos tensoriais e linkar com a sessão anterior que é possível prever o consumo de memória}
+
+
+\section{Dask Auto-Chunking}
+\label{sec:mac-dask-auto-chunking}
+
+\DFTODO{Explicar como o auto-chunking do dask funciona e suas limitações}
+
+
+\section{Memory-Aware Chunking}
+\label{sec:mac-memory-aware-chunking}
+
+\DFTODO{Explicar sobre a proposta de chunking baseado no consumo de memória}
+
+
+\section{Materials and Methods}
+\label{sec:mac-materials-methods}
+
+\DFTODO{Explicar sobre o setup do experimento de um ponto de vista de hardware}
+\DFTODO{Explicar sobre o setup do experimento de um ponto de vista de software}
+\DFTODO{Descrever o fluxo de execução do experimento}
+\DFTODO{Explicar como foi feita a configuração do cluster Dask}
+\DFTODO{Descrever os experimentos com chunks diferentes para demonstrar as limitações do Dask auto-chunking}
+\DFTODO{Descrever a geração de dados, linkando com a sessão anterior}
+\DFTODO{Descrever os algoritmos, linkando com a sessão anterior}
+\DFTODO{Descrever as métricas coletadas: tempo de execução, uso máximo de memória, overhead de escalonamento, número de chunks, relação chunk-to-worker, temanho relativo do chunk}
+\DFTODO{Descrever as técnicas utilizadas para analisar os dados}
+\DFTODO{Linkar com o código fonte}
+
+
+\section{Experimental Results}
+\label{sec:mac-experimental-results}
+
+\DFTODO{Descrever como diferentes formatos de chunk afetam o desempenho}
+\DFTODO{Demonstrar e comparar o Memory-Aware Chunking com o Auto-Chunking do Dask}
+\DFTODO{Demonstrar e descrever o previsor de melhor tamanho de chunk que foi desenvolvido com base nos resultados}
+
+
+\section{Conclusion}
+\label{sec:mac-conclusion}
+
+\DFTODO{Concluir sobre a importância de se ter um bom balanceamento de carga}
+\DFTODO{Explicar e concluir sobre a possibilidade de encontrar o melhor tamanho de chunk baseado no consnumo estimado de memória}
+\DFTODO{Discutir as complexidades e próximos passos para integrar facilmente com o Dask}
+

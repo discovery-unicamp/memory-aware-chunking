@@ -1,0 +1,86 @@
+\documentclass[Ingles]{assets/template/ic-tese-v3}
+%\documentclass[Ingles,Final]{assets/template/ic-tese-v3}
+
+\usepackage[latin1,utf8]{inputenc}
+
+\usepackage[
+    pdfauthor={Daniel De Lucca Fonseca},
+    pdftitle={titulo},
+    pdfkeywords={palavra-chave, palavra-chave},
+    pdfproducer={Latex with hyperref},
+    pdfcreator={pdflatex},
+]{hyperref}
+
+% Remover antes da versão final
+\usepackage[
+    draft,
+%final,
+]{changes}
+\restoregeometry
+\geometry{
+    a4paper,
+    top=30mm,
+    bottom=20mm,
+    left=30mm,
+    right=50mm,
+    marginparwidth=40mm,
+}
+
+\usepackage[printonlyused]{acronym}
+
+\usepackage{amsmath}
+
+\begin{document}
+    \autor{Daniel De Lucca Fonseca}
+    \titulo{Título da Dissertação ou Tese em Português}
+    \title{The Dissertation or Thesis Title in English or Spanish}
+    \orientador{Prof. Dr. Edson Borin}
+    \mestrado
+    \datadadefesa{22}{04}{2025}
+
+% Para a versão final defina:
+%\avaliadorA{Prof. Dr. Primeiro Avaliador}{Instituição do primeiro avaliador}
+%\avaliadorB{Profa. Dra. Segunda Avaliadora}{Instituição da segunda avaliadora}
+%\avaliadorC{Dr. Terceiro Avaliador}{Instituição do terceiro avaliador}
+%\avaliadorD{Prof. Dr. Quarto Avaliador}{Instituição do quarto avaliador}
+%\avaliadorE{Prof. Dr. Quinto Avaliador}{Instituição do quinto avaliador}
+%\avaliadorF{Prof. Dr. Sexto Avaliador}{Instituição do sexto avaliador}
+%\avaliadorG{Prof. Dr. Sétimo Avaliador}{Instituição do sétimo avaliador}
+%\avaliadorH{Prof. Dr. Oitavo Avaliador}{Instituição do oitavo avaliador}
+
+% Para incluir a ficha catalográfica em PDF na versão final, descomente e ajuste:
+%\fichacatalografica{arquivo.pdf}
+
+    \paginasiniciais
+
+    \input{assets/macros}
+    \input{sections/00-dedicatoria}
+    \input{sections/00-epigrafe}
+    \input{sections/00-agradecimentos}
+    \input{sections/00-abstract}
+    \input{sections/00-acronyms}
+    \input{sections/00-symbols}
+
+    \listoffigures
+    \listoftables
+
+    \tableofcontents
+
+    \fimdaspaginasiniciais
+
+    \input{sections/01-introduction}
+    \input{sections/02-fundamental-concepts}
+    \input{sections/03-related-work}
+    \input{sections/04-measuring-memory-consumption-of-python-programs}
+    \input{sections/05-predicting-memory-consumption-from-input-shapes}
+    \input{sections/06-improving-data-parallelism-using-memory-aware-chunking}
+    \input{sections/07-conclusion}
+
+    \bibliographystyle{plain}
+    \bibliography{bibliography}
+
+% \appendix
+% \chapter{Anexo 1}
+% \chapter{Anexo 2}
+
+\end{document}
