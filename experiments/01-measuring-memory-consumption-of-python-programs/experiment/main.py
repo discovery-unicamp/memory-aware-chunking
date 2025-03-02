@@ -40,7 +40,7 @@ def __setup_data_generator(subparsers: argparse._SubParsersAction):
         "--samples", type=int, default=100, help="Number of samples"
     )
     data_generator_parser.add_argument(
-        "--output-dir", type=str, required=True, help="Output directory for SEGY file"
+        "--output-dir", type=str, default="./", help="Output directory for SEGY file"
     )
     data_generator_parser.add_argument(
         "--prefix", type=str, default="", help="Filename prefix"
@@ -60,7 +60,32 @@ def __setup_operator(subparsers: argparse._SubParsersAction):
     )
 
     operator_parser.add_argument(
-        "--segy-path", type=str, required=True, help="Path to SEGY file"
+        "--segy-path",
+        type=str,
+        required=True,
+        help="Path to SEGY file",
+    )
+
+    operator_parser.add_argument(
+        "--memory-profiler",
+        type=lambda x: None if x.lower() == "none" else x,
+        choices=["none", "psutil"],
+        default=None,
+        help="Memory profiling method (none, psutil - default: none)",
+    )
+
+    operator_parser.add_argument(
+        "--memory-profile-output-dir",
+        type=str,
+        default="./",
+        help="Memory profiler output directory",
+    )
+
+    operator_parser.add_argument(
+        "--memory-profile-session-id",
+        type=str,
+        default="memory-profile",
+        help="Memory profiler session ID",
     )
 
 

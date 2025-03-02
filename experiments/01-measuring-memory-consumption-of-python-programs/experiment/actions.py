@@ -1,5 +1,5 @@
 from interfaces import ArgsNamespace
-
+from profilers import profile_memory_usage
 
 __all__ = ["generate_data", "operate"]
 
@@ -17,11 +17,20 @@ def generate_data(args: ArgsNamespace):
 
 
 def operate(args: ArgsNamespace):
-    from data import load_segy
-
     match args.operator:
         case "envelope":
-            from operators import envelope
+            __run_envelope(args)
+        case _:
+            raise ValueError(f"Operator '{args.operator}' is not supported.")
 
-            data = load_segy(args.segy_path)
-            envelope.envelope_from_ndarray(data)
+
+def __run_envelope(args: ArgsNamespace):
+    from data import load_segy
+    from operators import envelope
+
+    data = load_segy(args.segy_path)
+    (
+        profile_memory_usage(envelope.envelope_from_ndarray, args, data)
+        if args.memory_profiler
+        else envelope.envelope_from_ndarray(data)
+    )

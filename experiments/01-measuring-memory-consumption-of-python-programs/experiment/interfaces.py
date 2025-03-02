@@ -11,9 +11,12 @@ class ArgsNamespace(argparse.Namespace):
     inlines: int
     xlines: int
     samples: int
-    output_dir: str
     prefix: str
+    output_dir: str
 
     # operate
     operator: Literal["envelope"]
     segy_path: str
+    memory_profiler: Literal[None, "psutil"]
+    memory_profile_output_dir: str
+    memory_profile_session_id: str

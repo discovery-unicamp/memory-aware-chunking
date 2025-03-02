@@ -1,7 +1,12 @@
 loguru==0.7.3
 matplotlib==3.10.0
+msgpack==1.1.0
 numpy==2.2.3
 pandas==2.2.3
+psutil==7.0.0
+pydantic==2.10.6
 scipy==1.15.2
 seaborn==0.13.2
 segyio==1.9.13
+toml==0.10.2
+toolz==1.0.0
