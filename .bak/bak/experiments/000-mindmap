@@ -1,0 +1,120 @@
+digraph {
+	1 [label="Dask Memory-Aware
+Chunking" fillcolor=white fontsize=12 shape=box style="filled,rounded" width=.5]
+	"1a" [label="Motivação" fillcolor=white fontsize=12 shape=box style="filled,rounded" width=.5]
+	1 -> "1a"
+	"1a1" [label="O tamanho do chunk afeta
+o tempo de computação" fillcolor=lightgreen fontsize=12 shape=box style="filled,rounded" width=.5]
+	"1a1a" [label="Explorado no experimento
+007 e 008" fillcolor=white fontsize=10 shape=plaintext style="filled,rounded" width=.5]
+	"1a1b" [label=Descobertas fillcolor=white fontsize=12 shape=box style="filled,rounded" width=.5]
+	"1a1b1" [label="Ter muitos chunks piora o
+desempenho" fillcolor=white fontsize=10 shape=plaintext style="filled,rounded" width=.5]
+	"1a" -> "1a1"
+	"1a1" -> "1a1a"
+	"1a1" -> "1a1b"
+	"1a1b" -> "1a1b1"
+	"1a2" [label="O auto-chunking do Dask
+ignora o consumo de
+memória" fillcolor=lightgreen fontsize=12 shape=box style="filled,rounded" width=.5]
+	"1a2a" [label="Explorado no experimento
+007 e 008" fillcolor=white fontsize=10 shape=plaintext style="filled,rounded" width=.5]
+	"1a2b" [label=Descobertas fillcolor=white fontsize=12 shape=box style="filled,rounded" width=.5]
+	"1a2b1" [label="Ele considera apenas o
+tamanho (não o formato)
+do dado de entrada" fillcolor=white fontcolor=green fontsize=10 shape=plaintext style="filled,rounded" width=.5]
+	"1a" -> "1a2"
+	"1a2" -> "1a2a"
+	"1a2" -> "1a2b"
+	"1a2b" -> "1a2b1"
+	"1a3" [label="Alguns algoritmos
+consomem muita memória" fillcolor=lightgreen fontsize=12 shape=box style="filled,rounded" width=.5]
+	"1a3a" [label="Explorado no experimento
+005" fillcolor=white fontsize=10 shape=plaintext style="filled,rounded" width=.5]
+	"1a3b" [label=Descobertas fillcolor=white fontsize=12 shape=box style="filled,rounded" width=.5]
+	"1a3b1" [label="Existe uma pequena
+diferença na forma e no
+resultado dependendo da
+ferramenta que você usa
+pra medir o consumo de
+memória" fillcolor=white fontcolor=green fontsize=10 shape=plaintext style="filled,rounded" width=.5]
+	"1a3b1a" [label="Explorado no experimento
+005" fillcolor=white fontsize=10 shape=plaintext style="filled,rounded" width=.5]
+	"1a" -> "1a3"
+	"1a3" -> "1a3a"
+	"1a3" -> "1a3b"
+	"1a3b" -> "1a3b1"
+	"1a3b1" -> "1a3b1a"
+	"1b" [label="Hipóteses" fillcolor=white fontsize=12 shape=box style="filled,rounded" width=.5]
+	1 -> "1b"
+	"1b1" [label="É possível prever o
+consumo de memória de
+algoritmos tensoriais" fillcolor=lightgreen fontsize=12 shape=box style="filled,rounded" width=.5]
+	"1b1a" [label="Explorado no experimento
+002, 003, 004 e 005" fillcolor=white fontsize=10 shape=plaintext style="filled,rounded" width=.5]
+	"1b1b" [label="Explorado em experimentos
+que ainda não organizei" fillcolor=white fontsize=10 shape=plaintext style="filled,rounded" width=.5]
+	"1b1c" [label=Descobertas fillcolor=white fontsize=12 shape=box style="filled,rounded" width=.5]
+	"1b1c1" [label="O garbage collector do
+Python é lazy, e isso
+permite executar com
+pressão de memória" fillcolor=white fontcolor=green fontsize=10 shape=plaintext style="filled,rounded" width=.5]
+	"1b1c2" [label="O consumo de memória
+desses algoritmos é
+praticamente linear" fillcolor=white fontcolor=green fontsize=10 shape=plaintext style="filled,rounded" width=.5]
+	"1b1c1a" [label="Explorado no experimento
+006" fillcolor=white fontsize=10 shape=plaintext style="filled,rounded" width=.5]
+	"1b" -> "1b1"
+	"1b1" -> "1b1a"
+	"1b1" -> "1b1b"
+	"1b1" -> "1b1c"
+	"1b1c" -> "1b1c1"
+	"1b1c" -> "1b1c2"
+	"1b1c1" -> "1b1c1a"
+	"1b2" [label="É possível encontrar o
+melhor tamanho de chunk
+dado o consumo de memória" fillcolor=yellow fontsize=12 shape=box style="filled,rounded" width=.5]
+	"1b2a" [label="Explorado parcialmente no
+experimento 008" fillcolor=white fontsize=10 shape=plaintext style="filled,rounded" width=.5]
+	"1b2b" [label=Descobertas fillcolor=white fontsize=12 shape=box style="filled,rounded" width=.5]
+	"1b2b1" [label="chunk_size > #workers ->
+way slower" fillcolor=white fontcolor=green fontsize=10 shape=plaintext style="filled,rounded" width=.5]
+	"1b2b2" [label="chunk_size =< #workers ->
+slower" fillcolor=white fontcolor=green fontsize=10 shape=plaintext style="filled,rounded" width=.5]
+	"1b2b3" [label="chunk_size = 1 -> slower" fillcolor=white fontcolor=green fontsize=10 shape=plaintext style="filled,rounded" width=.5]
+	"1b2b4" [label="chunk_size ~ 1 -> fastest" fillcolor=white fontcolor=green fontsize=10 shape=plaintext style="filled,rounded" width=.5]
+	"1b" -> "1b2"
+	"1b2" -> "1b2a"
+	"1b2" -> "1b2b"
+	"1b2b" -> "1b2b1"
+	"1b2b" -> "1b2b2"
+	"1b2b" -> "1b2b3"
+	"1b2b" -> "1b2b4"
+	"1c" [label=Resultados fillcolor=white fontsize=12 shape=box style="filled,rounded" width=.5]
+	1 -> "1c"
+	"1c1" [label="Conseguimos prever o
+consumo de memória com
+alta assertividade" fillcolor=yellow fontsize=12 shape=box style="filled,rounded" width=.5]
+	"1c1a" [label="Explorado em experimentos
+que ainda não organizei" fillcolor=white fontsize=10 shape=plaintext style="filled,rounded" width=.5]
+	"1c1b" [label=Resultados fillcolor=white fontsize=12 shape=box style="filled,rounded" width=.5]
+	"1c1b1" [label="Acima de 95% de precisão
+ao prever o consumo de
+memória dado o shape de
+entrada" fillcolor=white fontcolor=green fontsize=10 shape=plaintext style="filled,rounded" width=.5]
+	"1c" -> "1c1"
+	"1c1" -> "1c1a"
+	"1c1" -> "1c1b"
+	"1c1b" -> "1c1b1"
+	"1c2" [label="Conseguimos decidir o
+melhor tamanho de chunk" fillcolor=yellow fontsize=12 shape=box style="filled,rounded" width=.5]
+	"1c2a" [label="Explorado parcialmente no
+experimento 009" fillcolor=white fontsize=10 shape=plaintext style="filled,rounded" width=.5]
+	"1c2b" [label=Resultados fillcolor=white fontsize=12 shape=box style="filled,rounded" width=.5]
+	"1c2b1" [label="Falta organizar pra ter
+clareza dos resultados" fillcolor=white fontcolor=green fontsize=10 shape=plaintext style="filled,rounded" width=.5]
+	"1c" -> "1c2"
+	"1c2" -> "1c2a"
+	"1c2" -> "1c2b"
+	"1c2b" -> "1c2b1"
+}
