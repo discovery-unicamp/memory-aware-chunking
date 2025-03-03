@@ -67,7 +67,7 @@ def build_profile(
 
     profile = {
         "metadata": metadata,
-        "experiment": data,
+        "data": data,
     }
     serialized_profile = msgpack.packb(profile, use_bin_type=True)
 

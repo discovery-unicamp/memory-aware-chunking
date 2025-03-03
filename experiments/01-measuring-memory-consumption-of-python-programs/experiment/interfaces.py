@@ -17,6 +17,6 @@ class ArgsNamespace(argparse.Namespace):
     # operate
     operator: Literal["envelope"]
     segy_path: str
-    memory_profiler: Literal[None, "psutil"]
+    memory_profiler: Literal[None, "psutil", "resource", "tracemalloc", "kernel"]
     memory_profile_output_dir: str
     memory_profile_session_id: str

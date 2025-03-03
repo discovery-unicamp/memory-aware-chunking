@@ -18,8 +18,8 @@ def profile_memory_usage(
     logger.debug(f"Arguments: {args}")
 
     match args.memory_profiler:
-        case "psutil":
-            __profile_with_psutil(
+        case "psutil" | "resource" | "tracemalloc" | "kernel":
+            __profile_with_traceq(
                 function,
                 args,
                 *function_args,
@@ -29,7 +29,7 @@ def profile_memory_usage(
             raise ValueError(f"Memory profiler {args.memory_profiler} not supported.")
 
 
-def __profile_with_psutil(
+def __profile_with_traceq(
     function: Callable,
     args: ArgsNamespace,
     *function_args,
@@ -41,7 +41,7 @@ def __profile_with_psutil(
             "profiler": {
                 "session_id": args.memory_profile_session_id,
                 "memory_usage": {
-                    "enabled_backends": ["psutil"],
+                    "enabled_backends": [args.memory_profiler],
                 },
             },
         }

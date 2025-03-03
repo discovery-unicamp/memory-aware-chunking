@@ -69,9 +69,9 @@ def __setup_operator(subparsers: argparse._SubParsersAction):
     operator_parser.add_argument(
         "--memory-profiler",
         type=lambda x: None if x.lower() == "none" else x,
-        choices=["none", "psutil"],
+        choices=["none", "psutil", "resource", "tracemalloc", "kernel"],
         default=None,
-        help="Memory profiling method (none, psutil - default: none)",
+        help="Memory profiling method (none, psutil, resource, tracemalloc, kernel - default: none)",
     )
 
     operator_parser.add_argument(
