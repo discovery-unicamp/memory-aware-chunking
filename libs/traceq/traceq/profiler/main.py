@@ -1,4 +1,5 @@
 import random
+import sys
 
 from traceq.common.logger import logger
 from traceq.common.synchronization import run_subprocess
@@ -45,7 +46,10 @@ def run_profiler(config: Config) -> None:
 
     logger.info(f'Starting profiler execution for "{config.profiler.filepath}"')
 
-    run_subprocess(execute_file, sync=True, *target_args, **target_kwargs)
+    subprocess = run_subprocess(execute_file, sync=True, *target_args, **target_kwargs)
+    if subprocess.exitcode != 0:
+        logger.error(f"Profiler failed with exit code {subprocess.exitcode}")
+        sys.exit(subprocess.exitcode)
 
     logger.info("Profiler execution finished")
     logger.debug(f"Amount of captured traces: {len(tracer)}")

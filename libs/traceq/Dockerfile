@@ -18,7 +18,7 @@ COPY . .
 
 RUN pip install .
 
-FROM python:3.13.2-slim as final
+FROM python:3.13.2-slim AS final
 
 COPY --from=builder /usr/local/lib/python3.13/site-packages /usr/local/lib/python3.13/site-packages
 COPY --from=builder /usr/local/bin /usr/local/bin
