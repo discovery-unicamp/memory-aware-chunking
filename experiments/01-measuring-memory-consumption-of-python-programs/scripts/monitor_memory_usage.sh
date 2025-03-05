@@ -10,9 +10,9 @@ echo "Timestamp,Memory Usage (kB)"
 
 while true; do
   MEM_USAGE=$(( $(head -n 1 "${MEMORY_USAGE_CURRENT_CGROUP_FILE_PATH}" 2>/dev/null || 0) / 1024 ))
+  TIMESTAMP=$(date '+%Y-%m-%d %H:%M:%S.%3N' 2>/dev/null)
 
-  if [ -n "${MEM_USAGE}" ]; then
-    TIMESTAMP=$(date '+%Y-%m-%d %H:%M:%S.%3N')
+  if [ -n "$MEM_USAGE" ] && [ -n "$TIMESTAMP" ]; then
     stdbuf -oL echo "${TIMESTAMP},${MEM_USAGE}"
   fi
 

@@ -31,13 +31,15 @@ while true; do
     exit 1
   fi
 
-  STATS=$(cat "/proc/${PAGE_FAULTS_MONITORED_PROCESS_PID}/stat")
+  STATS=$(cat "/proc/${PAGE_FAULTS_MONITORED_PROCESS_PID}/stat" 2>/dev/null)
 
-  TIMESTAMP=$(date '+%Y-%m-%d %H:%M:%S.%3N')
-  MIN_FLT=$(echo "${STATS}" | awk '{print $10}')  # Minor Page Faults
-  MAJ_FLT=$(echo "${STATS}" | awk '{print $12}')  # Major Page Faults
+  if [ -n "${STATS}" ]; then
+      TIMESTAMP=$(date '+%Y-%m-%d %H:%M:%S.%3N')
+      MIN_FLT=$(echo "${STATS}" | awk '{print $10}')  # Minor Page Faults
+      MAJ_FLT=$(echo "${STATS}" | awk '{print $12}')  # Major Page Faults
 
-  echo "${TIMESTAMP},${MIN_FLT},${MAJ_FLT}"
+      echo "${TIMESTAMP},${MIN_FLT},${MAJ_FLT}"
+    fi
 
   sleep "${SLEEP_TIME}"
 done

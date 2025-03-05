@@ -1,7 +1,7 @@
 import os
 import subprocess
 import time
-from typing import Tuple
+from typing import Tuple, Any
 
 import docker
 from docker import DockerClient
@@ -9,7 +9,12 @@ from docker.models.containers import Container
 from docker.models.images import Image
 from loguru import logger
 
-__all__ = ["get_vfs_client", "build_image"]
+__all__ = [
+    "get_vfs_client",
+    "build_image",
+    "drop_caches_in_container",
+    "run_isolated_container",
+]
 
 
 def build_image(image_name: str, client: DockerClient) -> Image:
@@ -69,6 +74,61 @@ def get_vfs_client(
     vfs_client = docker.DockerClient(base_url="tcp://localhost:2375")
 
     return (vfs_client, vfs_container)
+
+
+def run_isolated_container(
+    client: DockerClient,
+    image_name: str,
+    command: list[str],
+    environment: dict[str, str] = None,
+    volumes: dict[str, dict[str, str]] = None,
+    detach: Any = True,
+    auto_remove: bool = True,
+    privileged: bool = True,
+    nano_cpus: int = int(
+        1 * 1e9
+    ),  # Strictly allocate 1 CPU (1 * 1,000,000,000 nanoCPUs)
+    cpu_shares: int = 1024,
+    cpuset_cpus: str = "0",
+    container_ancestor: str = "docker:dind",
+) -> Container:
+    drop_caches_in_container(container_ancestor)
+
+    logger.info("Launching in isolated container...")
+    container = client.containers.run(
+        image=image_name,
+        detach=detach,
+        auto_remove=auto_remove,
+        privileged=privileged,
+        nano_cpus=nano_cpus,
+        cpu_shares=cpu_shares,
+        cpuset_cpus=cpuset_cpus,
+        command=command,
+        environment=environment,
+        volumes=volumes,
+    )
+    result = container.wait()
+    logger.info("Finished running in isolated container")
+
+    return result
+
+
+def drop_caches_in_container(container_ancestor: str = "docker:dind"):
+    container_id = subprocess.run(
+        ["docker", "ps", "-q", "--filter", f"ancestor={container_ancestor}"],
+        capture_output=True,
+        text=True,
+    ).stdout.strip()
+
+    if not container_id:
+        logger.error(f"{container_ancestor} container not found")
+        return
+
+    drop_cmd = (
+        f"docker exec {container_id} sh -c 'sync && echo 3 > /proc/sys/vm/drop_caches'"
+    )
+    subprocess.run(drop_cmd, shell=True, check=True)
+    logger.info(f"Dropped caches inside {container_ancestor} container")
 
 
 def __wait_for_dockerd(sleep_time: int, max_retries: int) -> bool:
