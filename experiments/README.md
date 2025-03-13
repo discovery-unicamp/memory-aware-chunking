@@ -9,17 +9,17 @@ TODO
 
 ## Available Experiments
 
-1. [`01-measuring-memory-consumption-of-python-programs`](./01-measuring-memory-consumption-of-python-programs)
+### [`02-predicting-memory-consumption-from-input-shapes`](./02-predicting-memory-consumption-from-input-shapes)
 
 **Objective**:
-This experiment investigates how Python programs consume memory under different conditions, focusing on improving
-memory-aware chunking.
-The goal is to validate individual components used in the Memory Consumption Measurement Experiment before full
-execution.
+This experiment aims to predict the memory consumption of Python programs based on the input shape.
+The goal is to develop a model that can predict the memory consumption of a Python program based on features extracted
+from the input data.
 
 **Key Questions**:
 
-- How does Python’s memory management behave under different execution environments?
-- What measurement techniques provide the most reliable memory usage data?
-- How does peak memory usage vary across different computational workloads?
-- What discrepancies exist between internal (Python-level) and external (system-level) memory profiling methods?
+- What features are most relevant for predicting memory consumption?
+- What models are best suited for predicting memory consumption?
+- How accurate are the predictions made by the model?
+- How does the model perform on unseen data?
+- What are the limitations of the model?

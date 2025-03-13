@@ -62,7 +62,7 @@ def run_profiler(config: Config) -> None:
     )
     logger.debug(f"Using metadata: {metadata}")
 
-    profile_filepath = f"{config.output_dir}/{config.profiler.session_id}.prof"
+    profile_filepath = f"{config.output_dir}/{config.profiler.session_id}-{config.profiler.timestamp}.prof"
     trace_list = tracer.build_trace_list()
     logger.debug(f"Sample captured trace: {random.choice(trace_list)}")
     build_profile(metadata, trace_list, profile_filepath)

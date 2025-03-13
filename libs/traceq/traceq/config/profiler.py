@@ -1,12 +1,12 @@
-import uuid
 import importlib
-import inspect
 import importlib.util
+import inspect
+import time
+import uuid
+from enum import Enum
+from typing import Optional, Literal, List, Any
 
 from pydantic import BaseModel, FilePath, field_validator, model_validator
-from typing import Optional, Literal, List, Any
-from enum import Enum
-
 
 __all__ = [
     "ProfilerConfig",
@@ -50,6 +50,7 @@ class FunctionParameter(BaseModel):
 
 class ProfilerConfig(BaseModel):
     session_id: str = str(uuid.uuid4())
+    timestamp: str = None
     enabled_metrics: List[Metric] = [Metric.MEMORY_USAGE, Metric.TIME]
     memory_usage: MemoryUsageConfig
     filepath: Optional[FilePath] = None
@@ -61,6 +62,10 @@ class ProfilerConfig(BaseModel):
     precision: float = 2
     sign_traces: bool = False
     strategy: Literal["thread", "process"] = "process"
+
+    @field_validator("timestamp", mode="before")
+    def set_timestamp(cls, _: Any) -> str:
+        return str(int(time.time() * 1000))
 
     @field_validator("sign_traces", mode="before")
     def transform_is_trace_enabled(cls, v: Any) -> bool:

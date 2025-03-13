@@ -52,7 +52,7 @@ def build_metadata(
         "psutil_memory_usage_unit": "b",
         "resource_memory_usage_unit": "kb",
         "tracemalloc_memory_usage_unit": "b",
-        "unix_timestamp_unit": "ms",
+        "unix_timestamp_unit": "ns",
     }
 
 

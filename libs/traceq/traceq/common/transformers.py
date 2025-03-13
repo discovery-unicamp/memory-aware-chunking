@@ -1,7 +1,7 @@
-from typing import List, Dict, Optional
-from toolz import curry
 from enum import Enum
+from typing import List, Dict, Optional
 
+from toolz import curry
 
 __all__ = [
     "unique",
@@ -104,6 +104,10 @@ def convert_to_unit(unit_to: str, unit_from: str, value: float) -> float:
         "s_to_ms": 1 / 1000,
         "ms_to_s": 1000,
         "s_to_s": 1,
+        "ns_to_s": 1 / 1_000_000_000,
+        "s_to_ns": 1_000_000_000,
+        "ns_to_ms": 1 / 1_000_000,
+        "ms_to_ns": 1_000_000,
     }
 
     conversion_key = f"{normalized_unit_from}_to_{normalized_unit_to}"
