@@ -3,6 +3,7 @@ from common.loaders import load_segy
 from scipy import ndimage as ndi
 
 __all__ = [
+    "gradient_structure_tensor_from_ndarray",
     "gradient_structure_tensor_from_segy",
 ]
 

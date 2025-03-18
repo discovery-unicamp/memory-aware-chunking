@@ -36,4 +36,4 @@ COPY --from=builder /usr/local/bin /usr/local/bin
 COPY experiment .
 
 ENTRYPOINT ["python"]
-CMD ["launch.py"]
+CMD ["collect_memory_profile.py"]

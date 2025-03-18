@@ -31,6 +31,7 @@ for i in $(seq 1 "${EXPERIMENT_N_RUNS}"); do
       ${EXPERIMENT_VOLUMES} \
       ${EXPERIMENT_ENV} \
       docker.io/library/${EXPERIMENT_IMAGE_TAG} \
+      ${EXPERIMENT_COMMAND} \
   "
   if ! eval "$docker_run_command"; then
     echo "Failed to run the container."

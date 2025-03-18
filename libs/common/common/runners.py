@@ -11,6 +11,7 @@ __all__ = ["run_isolated_container"]
 
 def run_isolated_container(
     client=docker.from_env(),
+    experiment_command: str = "",
     experiment_dockerfile_name: str = "Dockerfile",
     experiment_build_context: str = ".",
     experiment_image_tag: str = "experiment",
@@ -81,7 +82,7 @@ def run_isolated_container(
 
     print(f"Running isolated container...")
     container = client.containers.run(
-        image="docker:dind",
+        image="docker:28.0.1-dind",
         auto_remove=auto_remove,
         privileged=True,
         detach=True,
@@ -99,6 +100,7 @@ def run_isolated_container(
             "EXPERIMENT_CPUSET_CPUS": cpuset_cpus,
             "EXPERIMENT_VOLUMES": experiment_volume_args,
             "EXPERIMENT_ENV": experiment_env_args,
+            "EXPERIMENT_COMMAND": experiment_command,
         },
     )
 
