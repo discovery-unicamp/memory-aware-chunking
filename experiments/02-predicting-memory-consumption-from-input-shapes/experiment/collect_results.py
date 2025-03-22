@@ -6,6 +6,7 @@ import random
 import numpy as np
 import optuna
 import pandas as pd
+from common import transformers
 from sklearn.ensemble import RandomForestRegressor, GradientBoostingRegressor
 from sklearn.gaussian_process import GaussianProcessRegressor
 from sklearn.linear_model import LinearRegression, BayesianRidge
@@ -30,11 +31,11 @@ MODELS_TO_EVALUATE = os.getenv(
     "linear_regression,polynomial_regression,decision_tree,random_forest,gradient_boosting,neural_network,xgboost,gaussian_process,bayesian_ridge",
 ).split(",")
 OPTUNA_TRIALS = int(os.getenv("OPTUNA_TRIALS", "50"))
-RANDOM_STATE = int(os.getenv("RANDOM_STATE", "100"))
+RANDOM_STATE = int(os.getenv("RANDOM_STATE", "42"))
 
 
 def main():
-    print("Collecting model results...")
+    print("Collecting results...")
     print("Using args:")
     print(f"  OUTPUT_DIR: {OUTPUT_DIR}")
     print(f"  PROFILES_DIR: {PROFILES_DIR}")
@@ -54,7 +55,10 @@ def main():
     df = __build_dataframe(dataset)
     df_features = __extract_features(df)
     best_models = __find_best_models(df_features)
-    print(best_models)
+
+    print("Finished collecting results")
+    print("Best models:")
+    print(json.dumps(best_models, indent=4))
 
 
 def __get_profile_filepaths():
@@ -83,15 +87,40 @@ def __get_profiles(profile_filepaths: list[str]):
     return profiles
 
 
-def __build_dataset(profile_filepaths: list[str], profiles: list) -> list:
+def __build_dataset(
+    profile_filepaths: list[str],
+    profiles: list,
+    memory_usage_unit: str = "gb",
+    timestamp_unit: str = "s",
+) -> list:
     print("---------- STEP 3: Building dataset")
     dataset = []
+    unit_transformers = {
+        "kb_gb": transformers.transform_kb_to_gb,
+        "ns_s": transformers.transform_ns_to_s,
+    }
+
     for profile_filepath, profile in zip(profile_filepaths, profiles):
         operator, inlines, xlines, samples, session_id = (
             profile_filepath.split("/")[-1].split(".")[0].split("-")
         )
+
         profiler_data_key = f"{PROFILER}_memory_usage"
         profiler_unit = profile["metadata"][f"{profiler_data_key}_unit"]
+        profiler_unit_transformer = unit_transformers[
+            f"{profiler_unit}_{memory_usage_unit}"
+        ]
+        memory_usage_history = [
+            profiler_unit_transformer(x[profiler_data_key]) for x in profile["data"]
+        ]
+
+        original_timestamp_unit = profile["metadata"][f"unix_timestamp_unit"]
+        timestamp_unit_transformer = unit_transformers[
+            f"{original_timestamp_unit}_{timestamp_unit}"
+        ]
+        timestamp_history = [
+            timestamp_unit_transformer(x["unix_timestamp"]) for x in profile["data"]
+        ]
 
         dataset.append(
             {
@@ -100,10 +129,11 @@ def __build_dataset(profile_filepaths: list[str], profiles: list) -> list:
                 "inlines": int(inlines),
                 "xlines": int(xlines),
                 "samples": int(samples),
-                "peak_memory_usage": max(
-                    profile["data"], key=lambda x: x[profiler_data_key]
-                )[profiler_data_key],
-                "memory_usage_unit": profiler_unit,
+                "peak_memory_usage": max(memory_usage_history),
+                "memory_usage_unit": memory_usage_unit,
+                "memory_usage_history": memory_usage_history,
+                "timestamp_history": timestamp_history,
+                "timestamp_unit": timestamp_unit,
             }
         )
     print("Finished transforming the profiles into a dataset. Sample data:")
@@ -117,12 +147,129 @@ def __build_dataset(profile_filepaths: list[str], profiles: list) -> list:
     print("...")
     print()
 
+    __extract_profiles_dataset_results(dataset)
+
     return dataset
+
+
+def __extract_profiles_dataset_results(dataset: list):
+    print("Extracting results from profiles dataframe...")
+
+    df = pd.DataFrame(dataset)
+    df["timestamped_memory_usage"] = df.apply(
+        lambda row: list(zip(row["memory_usage_history"], row["timestamp_history"])),
+        axis=1,
+    )
+    df = df.explode("timestamped_memory_usage")
+    df[["captured_memory_usage", "timestamp"]] = pd.DataFrame(
+        df["timestamped_memory_usage"].tolist(), index=df.index
+    )
+    df = df.drop(
+        columns=[
+            "timestamped_memory_usage",
+            "memory_usage_history",
+            "timestamp_history",
+        ]
+    )
+    df = df.reset_index(drop=True)
+    df["volume"] = df["inlines"] * df["xlines"] * df["samples"]
+
+    print("Finished building profiles dataframe. Sample data:")
+    print(df.head())
+
+    __extract_profies_dataset_history(df)
+    __extract_profiles_dataset_summary(df)
+
+
+def __extract_profies_dataset_history(df: pd.DataFrame):
+    print("Extracting history from profiles dataframe...")
+
+    df = df.copy()
+    df = df.sort_values(by=["operator", "session_id", "timestamp"])
+    df["relative_time"] = df.groupby("session_id").cumcount()
+
+    for operator in df["operator"].unique():
+        operator_df = df[df["operator"] == operator]
+        operator_df = operator_df.drop(columns=["operator"])
+        sanitized_name = operator.replace(" ", "_").lower()
+        operator_path = (
+            f"{OPERATORS_DIR}/{sanitized_name}/results/data/profile_history.csv"
+        )
+        os.makedirs(os.path.dirname(operator_path), exist_ok=True)
+        operator_df.to_csv(operator_path, index=False)
+        print(f"Saved operator '{operator}' history to {operator_path}")
+
+    print("Finished extracting history from profiles dataframe. Sample data:")
+    print(df.head())
+
+
+def __extract_profiles_dataset_summary(df: pd.DataFrame):
+    print("Extracting summary from profiles dataframe...")
+
+    df = df.copy()
+
+    df_exec = (
+        df.groupby(["volume", "session_id", "operator"])["timestamp"]
+        .agg(["min", "max"])
+        .reset_index()
+    )
+    df_exec["execution_time"] = df_exec["max"] - df_exec["min"]
+    df_exec["execution_time_unit"] = df["timestamp_unit"].iloc[0]
+
+    df_memory = (
+        df.groupby(["volume", "session_id", "operator"])["captured_memory_usage"]
+        .max()
+        .reset_index()
+    )
+    df_memory["captured_memory_usage_unit"] = df["memory_usage_unit"].iloc[0]
+
+    df_grouped = pd.merge(df_memory, df_exec, on=["volume", "session_id", "operator"])
+    df_summary = (
+        df_grouped.groupby(["volume", "operator"])
+        .agg(
+            peak_memory_usage_avg=("captured_memory_usage", "mean"),
+            peak_memory_usage_std_dev=("captured_memory_usage", "std"),
+            peak_memory_usage_min=("captured_memory_usage", "min"),
+            peak_memory_usage_max=("captured_memory_usage", "max"),
+            execution_time_avg=("execution_time", "mean"),
+            execution_time_std_dev=("execution_time", "std"),
+            execution_time_min=("execution_time", "min"),
+            execution_time_max=("execution_time", "max"),
+            n_samples=("captured_memory_usage", "count"),
+        )
+        .reset_index()
+    )
+    df_summary["peak_memory_usage_cv"] = (
+        df_summary["peak_memory_usage_std_dev"] / df_summary["peak_memory_usage_avg"]
+    )
+    df_summary["execution_time_cv"] = (
+        df_summary["execution_time_std_dev"] / df_summary["execution_time_avg"]
+    )
+
+    df_summary["peak_memory_usage_unit"] = df["memory_usage_unit"].iloc[0]
+    df_summary["execution_time_unit"] = df["timestamp_unit"].iloc[0]
+
+    for operator in df_summary["operator"].unique():
+        operator_df = df_summary[df_summary["operator"] == operator]
+        operator_df = operator_df.drop(columns=["operator"])
+        sanitized_name = operator.replace(" ", "_").lower()
+        operator_path = (
+            f"{OPERATORS_DIR}/{sanitized_name}/results/data/profile_summary.csv"
+        )
+        os.makedirs(os.path.dirname(operator_path), exist_ok=True)
+        operator_df.to_csv(operator_path, index=False)
+        print(f"Saved operator '{operator}' summary to {operator_path}")
+
+    print("Finished extracting summary from profiles dataframe. Sample data:")
+    print(df_summary.head())
 
 
 def __build_dataframe(dataset: list) -> pd.DataFrame:
     print("---------- STEP 4: Building dataframe")
     df = pd.DataFrame(dataset)
+    df = df.groupby(["inlines", "xlines", "samples", "operator"], as_index=False).agg(
+        avg_peak_memory_usage=("peak_memory_usage", "mean")
+    )
     print("Finished creating dataframe. Sample data:")
     print(df.head())
     print("Saving dataframe...")
@@ -269,13 +416,11 @@ def __collect_metric_for_model(
 ):
     X = df_operator.drop(
         columns=[
-            "peak_memory_usage",
-            "session_id",
-            "memory_usage_unit",
             "operator",
+            "avg_peak_memory_usage",
         ]
     )
-    y = df_operator["peak_memory_usage"]
+    y = df_operator["avg_peak_memory_usage"]
 
     X_train, X_test, y_train, y_test = train_test_split(
         X,
@@ -312,7 +457,7 @@ def __collect_metric_for_model(
     print(f"  RMSE: {rmse}")
     print(f"  MAE: {mae}")
     print(f"  R2: {r2}")
-    print(f"  Accuracy: {accuracy}%")
+    print(f"  Accuracy: {accuracy * 100}%")
 
     return {
         "rmse": rmse,
@@ -372,11 +517,11 @@ def __find_best_model(
     print("Saving metrics...")
     operator_results_dir = f"{operator_output_dir}/results"
     os.makedirs(operator_results_dir, exist_ok=True)
-    df_metrics.to_csv(f"{operator_results_dir}/metrics.csv")
+    df_metrics.to_csv(f"{operator_results_dir}/data/model_metrics.csv", index=False)
 
     best_model = df_metrics.loc[df_metrics["score"].idxmax()]
     print(f"Best model for {operator_output_dir}: {best_model['model_name']}")
-    print(f"  Accuracy: {best_model['accuracy']}%")
+    print(f"  Accuracy: {best_model['accuracy'] * 100}%")
     print(f"  RMSE: {best_model['rmse']}")
     print(f"  MAE: {best_model['mae']}")
     print(f"  R2: {best_model['r2']}")

@@ -177,7 +177,7 @@ for file in "${OUTPUT_DIR}/inputs"/*.segy; do
     "/workspace/experiment.sh"
 done;
 
-echo "Building the prediction models..."
+echo "Collecting the results..."
 docker run \
   --rm \
   --privileged \
@@ -196,7 +196,7 @@ docker run \
   --env EXPERIMENT_EXTRA_CONTEXTS="--build-context traceq=/mnt${EXPERIMENT_TRACEQ_BUILD_CONTEXT} --build-context common=/mnt${EXPERIMENT_COMMON_BUILD_CONTEXT}" \
   --env EXPERIMENT_N_RUNS="1" \
   --env EXPERIMENT_CPUSET_CPUS="${CPUSET_CPUS}" \
-  --env EXPERIMENT_COMMAND="collect_model_results.py" \
+  --env EXPERIMENT_COMMAND="collect_results.py" \
   --env EXPERIMENT_ENV="
     -e OUTPUT_DIR=/experiment/out
   " \
@@ -204,5 +204,29 @@ docker run \
   docker:28.0.1-dind \
   "/workspace/experiment.sh"
 
-echo "Generating the results..."
-echo "TODO"
+echo "Analysing the results..."
+docker run \
+  --rm \
+  --privileged \
+  --entrypoint /bin/sh \
+  --cpuset-cpus=0 \
+  -v "${DIND_VOLUME_NAME}:/var/lib/docker:rw" \
+  -v "${ROOT_DIR}/libs/common/scripts:/workspace:ro" \
+  -v "${EXPERIMENT_BUILD_CONTEXT}:/mnt${EXPERIMENT_BUILD_CONTEXT}:ro" \
+  -v "${EXPERIMENT_TRACEQ_BUILD_CONTEXT}:/mnt${EXPERIMENT_TRACEQ_BUILD_CONTEXT}:ro" \
+  -v "${EXPERIMENT_COMMON_BUILD_CONTEXT}:/mnt${EXPERIMENT_COMMON_BUILD_CONTEXT}:ro" \
+  -v "${OUTPUT_DIR}:/mnt${OUTPUT_DIR}:rw" \
+  --env DOCKER_TLS_CERTDIR="" \
+  --env EXPERIMENT_IMAGE_TAG="${EXPERIMENT_IMAGE_TAG}" \
+  --env EXPERIMENT_DOCKERFILE_PATH="/mnt${EXPERIMENT_DOCKERFILE_PATH}" \
+  --env EXPERIMENT_BUILD_CONTEXT="/mnt${EXPERIMENT_BUILD_CONTEXT}" \
+  --env EXPERIMENT_EXTRA_CONTEXTS="--build-context traceq=/mnt${EXPERIMENT_TRACEQ_BUILD_CONTEXT} --build-context common=/mnt${EXPERIMENT_COMMON_BUILD_CONTEXT}" \
+  --env EXPERIMENT_N_RUNS="1" \
+  --env EXPERIMENT_CPUSET_CPUS="${CPUSET_CPUS}" \
+  --env EXPERIMENT_COMMAND="analyze_results.py" \
+  --env EXPERIMENT_ENV="
+    -e OUTPUT_DIR=/experiment/out
+  " \
+  --env EXPERIMENT_VOLUMES="-v /mnt${OUTPUT_DIR}/inputs:/experiment/out:rw" \
+  docker:28.0.1-dind \
+  "/workspace/experiment.sh"

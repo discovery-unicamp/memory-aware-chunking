@@ -5,6 +5,7 @@ __all__ = [
     "transform_kb_to_gb",
     "transform_b_to_mb",
     "transform_mb_to_gb",
+    "transform_ns_to_s",
     "transform_to_container_path",
     "transform_to_context_name",
 ]
@@ -24,6 +25,10 @@ def transform_b_to_mb(b_value: int) -> float:
 
 def transform_mb_to_gb(mb_value: int) -> float:
     return mb_value / 1024
+
+
+def transform_ns_to_s(ns_value: int) -> float:
+    return ns_value / 1e9
 
 
 def transform_to_container_path(path: str) -> str:
