@@ -4,6 +4,7 @@ import matplotlib.colors as mcolors
 import matplotlib.patches as mpatches
 import matplotlib.pyplot as plt
 import matplotlib.ticker as ticker
+import numpy as np
 import pandas as pd
 import seaborn as sns
 
@@ -20,7 +21,8 @@ def main():
 
     results = __get_results()
 
-    __analyze_profile(results)
+    # __analyze_profile(results)
+    __analyze_model(results)
 
 
 def __get_results():
@@ -89,6 +91,23 @@ def __analyze_profile(results: dict):
         __analyze_execution_time_distribution_by_volume(
             profile_history, operator, output_dir
         )
+
+    print()
+
+
+def __analyze_model(results: dict):
+    print("---------- STEP 2: Analyzing model")
+
+    for operator, operator_results in results.items():
+        print(f"Analyzing operator {operator}")
+        model_metrics = operator_results["model_metrics"]
+        output_dir = f"{OPERATORS_DIR}/{operator}/results/charts"
+
+        __analyze_model_performance(model_metrics, operator, output_dir)
+        __analyze_model_score(model_metrics, operator, output_dir)
+        __analyze_model_acc_rmse(model_metrics, operator, output_dir)
+        __analyze_residual_distribution(model_metrics, operator, output_dir)
+        __analyze_actual_vs_predicted(model_metrics, operator, output_dir)
 
     print()
 
@@ -543,6 +562,178 @@ def __analyze_execution_time_distribution_by_volume(
 
     os.makedirs(output_dir, exist_ok=True)
     output_path = os.path.join(output_dir, f"execution_time_distribution_by_volume.pdf")
+    plt.tight_layout()
+    plt.savefig(output_path)
+    print(f"Chart saved to {output_path}")
+    plt.close()
+
+
+def __analyze_model_performance(
+    model_metrics: pd.DataFrame,
+    operator: str,
+    output_dir: str,
+):
+    print(f"Analyzing model performance for {operator}")
+    print("Using data:")
+    print(model_metrics.head())
+
+    models = model_metrics["model_name"]
+    x = np.arange(len(models))
+
+    width = 0.2
+    fig, ax = plt.subplots(figsize=(12, 6))
+    ax.bar(x - width * 1.5, model_metrics["rmse"], width, label="RMSE")
+    ax.bar(x - width * 0.5, model_metrics["mae"], width, label="MAE")
+    ax.bar(x + width * 0.5, model_metrics["r2"], width, label="R²")
+    ax.bar(x + width * 1.5, model_metrics["accuracy"], width, label="Accuracy")
+    ax.set_xticks(x)
+    ax.set_xticklabels(models, rotation=45, ha="right")
+    ax.set_title("Comparison of Model Performance Metrics")
+    ax.set_xlabel("Models")
+    ax.set_ylabel("Metric Value")
+    ax.legend()
+
+    os.makedirs(output_dir, exist_ok=True)
+    output_path = os.path.join(output_dir, f"performance_by_model.pdf")
+    plt.tight_layout()
+    plt.savefig(output_path)
+    print(f"Chart saved to {output_path}")
+    plt.close()
+
+
+def __analyze_model_score(
+    model_metrics: pd.DataFrame,
+    operator: str,
+    output_dir: str,
+):
+    print(f"Analyzing model score for {operator}")
+    print("Using data:")
+    print(model_metrics.head())
+
+    models = model_metrics["model_name"]
+    scores = model_metrics["score"]
+    max_score = scores.max()
+
+    plt.figure(figsize=(10, 5))
+    plt.bar(models, scores, color="blue", alpha=0.7)
+
+    plt.axhline(
+        max_score, linestyle="--", color="red", linewidth=1.5, label="Top Score"
+    )
+    plt.text(
+        x=len(models) - 1,
+        y=max_score + 0.01 * max_score,
+        s=f"Top Score: {max_score:.3f}",
+        color="red",
+        ha="right",
+        va="top",
+        fontsize=10,
+    )
+
+    plt.xticks(rotation=45, ha="right")
+    plt.xlabel("Models")
+    plt.ylabel("Model Score")
+    plt.title("Model Ranking Based on Weighted Score")
+    plt.legend()
+
+    os.makedirs(output_dir, exist_ok=True)
+    output_path = os.path.join(output_dir, f"score_by_model.pdf")
+    plt.tight_layout()
+    plt.savefig(output_path)
+    print(f"Chart saved to {output_path}")
+    plt.close()
+
+
+def __analyze_model_acc_rmse(
+    model_metrics: pd.DataFrame,
+    operator: str,
+    output_dir: str,
+):
+    print(f"Analyzing model accuracy by RMSE for {operator}")
+    print("Using data:")
+    print(model_metrics.head())
+
+    plt.figure(figsize=(8, 5))
+
+    for _, row in model_metrics.iterrows():
+        plt.scatter(
+            row["rmse"],
+            row["accuracy"],
+            label=row["model_name"],
+            s=100,  # size of the point
+        )
+
+    plt.xlabel("RMSE (Lower is Better)")
+    plt.ylabel("Accuracy (Higher is Better)")
+    plt.title("Accuracy vs. RMSE for Each Model")
+    plt.legend(loc="lower left", fontsize="small", bbox_to_anchor=(1.0, 0.1))
+    plt.grid(True)
+
+    os.makedirs(output_dir, exist_ok=True)
+    output_path = os.path.join(output_dir, f"accuracy_by_rmse_per_model.pdf")
+    plt.tight_layout()
+    plt.savefig(output_path)
+    print(f"Chart saved to {output_path}")
+    plt.close()
+
+
+def __analyze_residual_distribution(
+    model_metrics: pd.DataFrame,
+    operator: str,
+    output_dir: str,
+):
+    print(f"Analyzing residual distribution for {operator}")
+    print("Using data:")
+    print(model_metrics.head())
+
+    plt.figure(figsize=(10, 6))
+    for _, row in model_metrics.iterrows():
+        sns.kdeplot(
+            eval(row["residuals"]), label=row["model_name"], fill=True, alpha=0.3
+        )
+    plt.axvline(0, color="red", linestyle="dashed")
+    plt.xlabel("Residual Error")
+    plt.ylabel("Density")
+    plt.title("Residual Distribution Across Models")
+    plt.legend()
+
+    os.makedirs(output_dir, exist_ok=True)
+    output_path = os.path.join(output_dir, f"residuals_distribution_by_model.pdf")
+    plt.tight_layout()
+    plt.savefig(output_path)
+    print(f"Chart saved to {output_path}")
+    plt.close()
+
+
+def __analyze_actual_vs_predicted(
+    model_metrics: pd.DataFrame,
+    operator: str,
+    output_dir: str,
+):
+    print(f"Analyzing actual vs. predicted for {operator}")
+    print("Using data:")
+    print(model_metrics.head())
+
+    colors = sns.color_palette("tab10", len(model_metrics["model_name"]))
+
+    fig, axes = plt.subplots(nrows=3, ncols=3, figsize=(15, 12))
+    axes = axes.flatten()
+
+    for i, row in model_metrics.iterrows():
+        sns.regplot(
+            x=eval(row["y_test"]),
+            y=eval(row["y_pred"]),
+            ax=axes[i],
+            scatter_kws={"alpha": 0.5, "color": colors[i]},
+            line_kws={"color": colors[i]},
+        )
+
+        axes[i].set_xlabel("Actual Values")
+        axes[i].set_ylabel("Predicted Values")
+        axes[i].set_title(f"{row["model_name"]}")
+
+    os.makedirs(output_dir, exist_ok=True)
+    output_path = os.path.join(output_dir, f"actual_vs_predicted_by_model.pdf")
     plt.tight_layout()
     plt.savefig(output_path)
     print(f"Chart saved to {output_path}")

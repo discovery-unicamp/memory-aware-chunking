@@ -8,13 +8,13 @@ import optuna
 import pandas as pd
 from common import transformers
 from sklearn.ensemble import RandomForestRegressor, GradientBoostingRegressor
-from sklearn.gaussian_process import GaussianProcessRegressor
-from sklearn.linear_model import LinearRegression, BayesianRidge
+from sklearn.linear_model import LinearRegression, ElasticNet
 from sklearn.metrics import mean_squared_error, mean_absolute_error, r2_score
 from sklearn.model_selection import train_test_split
 from sklearn.neural_network import MLPRegressor
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import PolynomialFeatures, StandardScaler
+from sklearn.svm import SVR
 from sklearn.tree import DecisionTreeRegressor
 from traceq import load_profile
 from xgboost import XGBRegressor
@@ -28,7 +28,7 @@ TEST_SIZE = float(os.getenv("TEST_SIZE", "0.2"))
 ACCURACY_THRESHOLD = float(os.getenv("ACCURACY_THRESHOLD", "0.1"))
 MODELS_TO_EVALUATE = os.getenv(
     "MODELS_TO_EVALUATE",
-    "linear_regression,polynomial_regression,decision_tree,random_forest,gradient_boosting,neural_network,xgboost,gaussian_process,bayesian_ridge",
+    "linear_regression,polynomial_regression,decision_tree,random_forest,gradient_boosting,neural_network,xgboost,support_vector_regression,elastic_net",
 ).split(",")
 OPTUNA_TRIALS = int(os.getenv("OPTUNA_TRIALS", "50"))
 RANDOM_STATE = int(os.getenv("RANDOM_STATE", "42"))
@@ -365,8 +365,8 @@ def __find_best_models(
             [("scaler", StandardScaler()), ("mlp", MLPRegressor())]
         ),
         "xgboost": XGBRegressor(),
-        "gaussian_process": GaussianProcessRegressor(),
-        "bayesian_ridge": BayesianRidge(),
+        "support_vector_regression": SVR(),
+        "elastic_net": ElasticNet(),
     }
 
     invalid_models = [m for m in models_to_evaluate if m not in models_hashmap]
@@ -464,6 +464,9 @@ def __collect_metric_for_model(
         "mae": mae,
         "r2": r2,
         "accuracy": accuracy,
+        "residuals": residuals.to_list(),
+        "y_pred": y_pred.tolist(),
+        "y_test": y_test.to_list(),
     }
 
 
@@ -504,11 +507,14 @@ def __find_best_model(
         metric_results.append(
             {
                 "model_name": model_name,
+                "score": score,
                 "accuracy": model_metrics["accuracy"],
                 "rmse": model_metrics["rmse"],
                 "mae": model_metrics["mae"],
                 "r2": model_metrics["r2"],
-                "score": score,
+                "residuals": model_metrics["residuals"],
+                "y_pred": model_metrics["y_pred"],
+                "y_test": model_metrics["y_test"],
                 **best_weights,
             }
         )
