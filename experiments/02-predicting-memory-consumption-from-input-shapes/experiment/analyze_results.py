@@ -212,7 +212,7 @@ def __analyze_memory_usage_distribution(
     print(f"Analyzing memory usage distribution {operator}")
     print("Using data:")
     print(profile_history.head())
-    fig, ax = plt.subplots(figsize=(8, 4))
+    fig, ax = plt.subplots(figsize=(8, 6))
     sns.violinplot(
         data=profile_history,
         x="volume",
@@ -257,12 +257,16 @@ def __analyze_inline_xline_memory_usage_progression(
         margin_titles=True,
         height=3,
         aspect=2,
+        despine=False,
     )
     g.map_dataframe(
         sns.lineplot, x="relative_time", y="captured_memory_usage", marker="o", zorder=3
     )
     g.set_axis_labels("Relative Time (Index)", "Captured Memory Usage (GB)")
     g.set_titles(col_template="Inlines={col_name}", row_template="Xlines={row_name}")
+    for ax in g.axes.flatten():
+        sns.despine(ax=ax, left=False, bottom=False, right=False, top=False)
+        ax.set_axisbelow(True)
     os.makedirs(output_dir, exist_ok=True)
     out = os.path.join(output_dir, f"inline_xline_memory_usage_progression.pdf")
     plt.tight_layout()
@@ -291,9 +295,12 @@ def __analyze_memory_usage_heatmap_by_time(
     plt.ylabel("Volume Group")
     plt.title("Memory Usage Over Time (Grouped by Volume)")
     ax.grid(True, which="both", zorder=0)
+    for spine in ax.spines.values():
+        spine.set_visible(True)
+    sns.despine(ax=ax, left=False, bottom=False, right=False, top=False)
     ax.set_axisbelow(True)
     os.makedirs(output_dir, exist_ok=True)
-    out = os.path.join(output_dir, f"memory_usage_heatmap_by.pdf")
+    out = os.path.join(output_dir, f"memory_usage_heatmap_by_time.pdf")
     plt.tight_layout()
     plt.savefig(out)
     plt.close()
@@ -363,6 +370,9 @@ def __analyze_memory_usage_inlines_xlines_heatmap(
     plt.xlabel("Xlines")
     plt.ylabel("Inlines")
     plt.title("Peak Memory Usage Heatmap")
+    for spine in ax.spines.values():
+        spine.set_visible(True)
+    sns.despine(ax=ax, left=False, bottom=False, right=False, top=False)
     ax.set_axisbelow(True)
     ax.grid(False)
     os.makedirs(output_dir, exist_ok=True)
