@@ -60,10 +60,10 @@ docker run \
   --env EXPERIMENT_N_RUNS="1" \
   --env EXPERIMENT_CPUSET_CPUS="${CPUSET_CPUS}" \
   --env EXPERIMENT_COMMAND="generate_data.py" \
-  --env EXPERIMENT_ENV="
-    -e OUTPUT_DIR=/experiment/out
-    -e FINAL_SIZE=${DATASET_FINAL_SIZE}
-    -e STEP_SIZE=${DATASET_STEP_SIZE}
+  --env EXPERIMENT_ENV=" \
+    -e OUTPUT_DIR=/experiment/out \
+    -e FINAL_SIZE=${DATASET_FINAL_SIZE} \
+    -e STEP_SIZE=${DATASET_STEP_SIZE} \
   " \
   --env EXPERIMENT_VOLUMES="-v /mnt${OUTPUT_DIR}/inputs:/experiment/out:rw" \
   docker:28.0.1-dind \
@@ -94,11 +94,11 @@ for file in "${OUTPUT_DIR}/inputs"/*.segy; do
     --env EXPERIMENT_N_RUNS="${EXPERIMENT_N_RUNS}" \
     --env EXPERIMENT_CPUSET_CPUS="${CPUSET_CPUS}" \
     --env EXPERIMENT_COMMAND="collect_memory_profile.py" \
-    --env EXPERIMENT_ENV="
-      -e ALGORITHM=envelope
-      -e OUTPUT_DIR=/experiment/out/profiles
-      -e SESSION_ID=${session_id}
-      -e INPUT_PATH=/experiment/out/inputs/${filename}.segy
+    --env EXPERIMENT_ENV=" \
+      -e ALGORITHM=envelope \
+      -e OUTPUT_DIR=/experiment/out/profiles \
+      -e SESSION_ID=${session_id} \
+      -e INPUT_PATH=/experiment/out/inputs/${filename}.segy \
     " \
     --env EXPERIMENT_VOLUMES="-v /mnt${OUTPUT_DIR}:/experiment/out:rw" \
     docker:28.0.1-dind \
@@ -130,11 +130,11 @@ for file in "${OUTPUT_DIR}/inputs"/*.segy; do
     --env EXPERIMENT_N_RUNS="${EXPERIMENT_N_RUNS}" \
     --env EXPERIMENT_CPUSET_CPUS="${CPUSET_CPUS}" \
     --env EXPERIMENT_COMMAND="collect_memory_profile.py" \
-    --env EXPERIMENT_ENV="
-      -e ALGORITHM=gst3d
-      -e OUTPUT_DIR=/experiment/out/profiles
-      -e SESSION_ID=${session_id}
-      -e INPUT_PATH=/experiment/out/inputs/${filename}.segy
+    --env EXPERIMENT_ENV=" \
+      -e ALGORITHM=gst3d \
+      -e OUTPUT_DIR=/experiment/out/profiles \
+      -e SESSION_ID=${session_id} \
+      -e INPUT_PATH=/experiment/out/inputs/${filename}.segy \
     " \
     --env EXPERIMENT_VOLUMES="-v /mnt${OUTPUT_DIR}:/experiment/out:rw" \
     docker:28.0.1-dind \
@@ -166,11 +166,11 @@ for file in "${OUTPUT_DIR}/inputs"/*.segy; do
     --env EXPERIMENT_N_RUNS="${EXPERIMENT_N_RUNS}" \
     --env EXPERIMENT_CPUSET_CPUS="${CPUSET_CPUS}" \
     --env EXPERIMENT_COMMAND="collect_memory_profile.py" \
-    --env EXPERIMENT_ENV="
-      -e ALGORITHM=gaussian-filter
-      -e OUTPUT_DIR=/experiment/out/profiles
-      -e SESSION_ID=${session_id}
-      -e INPUT_PATH=/experiment/out/inputs/${filename}.segy
+    --env EXPERIMENT_ENV=" \
+      -e ALGORITHM=gaussian_filter \
+      -e OUTPUT_DIR=/experiment/out/profiles \
+      -e SESSION_ID=${session_id} \
+      -e INPUT_PATH=/experiment/out/inputs/${filename}.segy \
     " \
     --env EXPERIMENT_VOLUMES="-v /mnt${OUTPUT_DIR}:/experiment/out:rw" \
     docker:28.0.1-dind \
@@ -197,8 +197,8 @@ docker run \
   --env EXPERIMENT_N_RUNS="1" \
   --env EXPERIMENT_CPUSET_CPUS="${CPUSET_CPUS}" \
   --env EXPERIMENT_COMMAND="collect_results.py" \
-  --env EXPERIMENT_ENV="
-    -e OUTPUT_DIR=/experiment/out
+  --env EXPERIMENT_ENV=" \
+    -e OUTPUT_DIR=/experiment/out \
   " \
   --env EXPERIMENT_VOLUMES="-v /mnt${OUTPUT_DIR}/inputs:/experiment/out:rw" \
   docker:28.0.1-dind \
@@ -224,8 +224,8 @@ docker run \
   --env EXPERIMENT_N_RUNS="1" \
   --env EXPERIMENT_CPUSET_CPUS="${CPUSET_CPUS}" \
   --env EXPERIMENT_COMMAND="analyze_results.py" \
-  --env EXPERIMENT_ENV="
-    -e OUTPUT_DIR=/experiment/out
+  --env EXPERIMENT_ENV=" \
+    -e OUTPUT_DIR=/experiment/out \
   " \
   --env EXPERIMENT_VOLUMES="-v /mnt${OUTPUT_DIR}/inputs:/experiment/out:rw" \
   docker:28.0.1-dind \

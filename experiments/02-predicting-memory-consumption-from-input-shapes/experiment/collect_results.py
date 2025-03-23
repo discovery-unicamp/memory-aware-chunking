@@ -8,6 +8,7 @@ import optuna
 import pandas as pd
 from common import transformers
 from sklearn.ensemble import RandomForestRegressor, GradientBoostingRegressor
+from sklearn.feature_selection import SelectKBest, f_regression
 from sklearn.linear_model import LinearRegression, ElasticNet
 from sklearn.metrics import mean_squared_error, mean_absolute_error, r2_score
 from sklearn.model_selection import train_test_split
@@ -32,6 +33,22 @@ MODELS_TO_EVALUATE = os.getenv(
 ).split(",")
 OPTUNA_TRIALS = int(os.getenv("OPTUNA_TRIALS", "50"))
 RANDOM_STATE = int(os.getenv("RANDOM_STATE", "42"))
+MODELS_HASHMAP = {
+    "linear_regression": LinearRegression(),
+    "polynomial_regression": Pipeline(
+        [
+            ("poly_features", PolynomialFeatures(degree=2, include_bias=False)),
+            ("lin_reg", LinearRegression()),
+        ]
+    ),
+    "decision_tree": DecisionTreeRegressor(),
+    "random_forest": RandomForestRegressor(),
+    "gradient_boosting": GradientBoostingRegressor(),
+    "neural_network": Pipeline([("scaler", StandardScaler()), ("mlp", MLPRegressor())]),
+    "xgboost": XGBRegressor(),
+    "support_vector_regression": SVR(),
+    "elastic_net": ElasticNet(),
+}
 
 
 def main():
@@ -54,11 +71,10 @@ def main():
     dataset = __build_dataset(profile_filepaths, profiles)
     df = __build_dataframe(dataset)
     df_features = __extract_features(df)
-    best_models = __find_best_models(df_features)
+    best_models, best_weights = __find_best_models(df_features)
 
-    print("Finished collecting results")
-    print("Best models:")
-    print(json.dumps(best_models, indent=4))
+    __evaluate_data_reduction(df_features, best_models, best_weights)
+    __evaluate_feature_selection(df_features, best_models, best_weights)
 
 
 def __get_profile_filepaths():
@@ -101,9 +117,9 @@ def __build_dataset(
     }
 
     for profile_filepath, profile in zip(profile_filepaths, profiles):
-        operator, inlines, xlines, samples, session_id = (
-            profile_filepath.split("/")[-1].split(".")[0].split("-")
-        )
+        profile_parts = profile_filepath.split("/")[-1].split(".")[0].split("-")
+        inlines, xlines, samples, session_id = profile_parts[-4:]
+        operator = "-".join(profile_parts[0:-4])
 
         profiler_data_key = f"{PROFILER}_memory_usage"
         profiler_unit = profile["metadata"][f"{profiler_data_key}_unit"]
@@ -192,9 +208,7 @@ def __extract_profies_dataset_history(df: pd.DataFrame):
         operator_df = df[df["operator"] == operator]
         operator_df = operator_df.drop(columns=["operator"])
         sanitized_name = operator.replace(" ", "_").lower()
-        operator_path = (
-            f"{OPERATORS_DIR}/{sanitized_name}/results/data/profile_history.csv"
-        )
+        operator_path = f"{OPERATORS_DIR}/{sanitized_name}/results/profile_history.csv"
         os.makedirs(os.path.dirname(operator_path), exist_ok=True)
         operator_df.to_csv(operator_path, index=False)
         print(f"Saved operator '{operator}' history to {operator_path}")
@@ -253,9 +267,7 @@ def __extract_profiles_dataset_summary(df: pd.DataFrame):
         operator_df = df_summary[df_summary["operator"] == operator]
         operator_df = operator_df.drop(columns=["operator"])
         sanitized_name = operator.replace(" ", "_").lower()
-        operator_path = (
-            f"{OPERATORS_DIR}/{sanitized_name}/results/data/profile_summary.csv"
-        )
+        operator_path = f"{OPERATORS_DIR}/{sanitized_name}/results/profile_summary.csv"
         os.makedirs(os.path.dirname(operator_path), exist_ok=True)
         operator_df.to_csv(operator_path, index=False)
         print(f"Saved operator '{operator}' summary to {operator_path}")
@@ -347,70 +359,56 @@ def __extract_features(df: pd.DataFrame) -> pd.DataFrame:
 
 
 def __find_best_models(
-    df_features: pd.DataFrame, models_to_evaluate=MODELS_TO_EVALUATE
+    df_features: pd.DataFrame,
+    models_to_evaluate=MODELS_TO_EVALUATE,
 ):
     print("---------- STEP 6: Evaluating models")
-    models_hashmap = {
-        "linear_regression": LinearRegression(),
-        "polynomial_regression": Pipeline(
-            [
-                ("poly_features", PolynomialFeatures(degree=2, include_bias=False)),
-                ("lin_reg", LinearRegression()),
-            ]
-        ),
-        "decision_tree": DecisionTreeRegressor(),
-        "random_forest": RandomForestRegressor(),
-        "gradient_boosting": GradientBoostingRegressor(),
-        "neural_network": Pipeline(
-            [("scaler", StandardScaler()), ("mlp", MLPRegressor())]
-        ),
-        "xgboost": XGBRegressor(),
-        "support_vector_regression": SVR(),
-        "elastic_net": ElasticNet(),
-    }
-
-    invalid_models = [m for m in models_to_evaluate if m not in models_hashmap]
+    invalid_models = [m for m in models_to_evaluate if m not in MODELS_HASHMAP]
     if invalid_models:
         raise ValueError(f"Invalid models: {invalid_models}")
 
     operators = df_features["operator"].unique()
     enabled_models = [
-        (model_name, models_hashmap[model_name]) for model_name in models_to_evaluate
+        (model_name, MODELS_HASHMAP[model_name]) for model_name in models_to_evaluate
     ]
     best_models = {operator: None for operator in operators}
+    best_weights = {operator: None for operator in operators}
 
     for operator in operators:
         df_operator = df_features[df_features["operator"] == operator]
         operator_output_dir = f"{OPERATORS_DIR}/{operator}"
-        os.makedirs(operator_output_dir, exist_ok=True)
 
-        operator_model_metrics = {}
+        operator_train_results = {}
         for model_name, model in enabled_models:
             print(f"Evaluating model for {operator}: {model_name}")
-            model_metrics = __collect_metric_for_model(
+            model_output_dir = f"{operator_output_dir}/models/{model_name}"
+            os.makedirs(model_output_dir, exist_ok=True)
+
+            train_result = __train_model(
                 model_name,
                 model,
                 df_operator,
-                operator_output_dir,
             )
-            operator_model_metrics[model_name] = model_metrics
+            operator_train_results[model_name] = train_result
+            __save_train_result(train_result, model_output_dir)
 
-        best_models[operator] = __find_best_model(
-            operator_model_metrics,
+        best_models[operator], best_weights[operator] = __find_best_model(
+            operator_train_results,
             operator_output_dir,
         )
 
     print("Finished evaluating models")
+    print("Best models:")
+    print(json.dumps(best_models, indent=4))
     print()
 
-    return best_models
+    return best_models, best_weights
 
 
-def __collect_metric_for_model(
+def __train_model(
     model_name,
     model,
     df_operator: pd.DataFrame,
-    operator_output_dir: str,
     random_state=RANDOM_STATE,
     test_size=TEST_SIZE,
 ):
@@ -429,29 +427,14 @@ def __collect_metric_for_model(
         random_state=random_state,
     )
 
-    print(f"Saving data for {model_name} model...")
-    operator_model_output_dir = f"{operator_output_dir}/models/{model_name}"
-    os.makedirs(operator_model_output_dir, exist_ok=True)
-    X.to_csv(f"{operator_model_output_dir}/X.csv")
-    X_train.to_csv(f"{operator_model_output_dir}/X_train.csv")
-    X_test.to_csv(f"{operator_model_output_dir}/X_test.csv")
-    y.to_csv(f"{operator_model_output_dir}/y.csv")
-    y_train.to_csv(f"{operator_model_output_dir}/y_train.csv")
-    y_test.to_csv(f"{operator_model_output_dir}/y_test.csv")
-
     print(f"Training {model_name}")
     model.fit(X_train, y_train)
-    with open(f"{operator_model_output_dir}/model.pkl", "wb") as f:
-        pickle.dump(model, f)
+
     rmse, mae, r2, accuracy, residuals, y_pred = __get_model_metrics(
         model,
         X_test,
         y_test,
     )
-
-    print(f"Saving residuals and y_pred for {model_name} model...")
-    pd.DataFrame(residuals).to_csv(f"{operator_model_output_dir}/residuals.csv")
-    pd.DataFrame(y_pred).to_csv(f"{operator_model_output_dir}/y_pred.csv")
 
     print(f"Results for {model_name} model:")
     print(f"  RMSE: {rmse}")
@@ -460,13 +443,23 @@ def __collect_metric_for_model(
     print(f"  Accuracy: {accuracy * 100}%")
 
     return {
-        "rmse": rmse,
-        "mae": mae,
-        "r2": r2,
-        "accuracy": accuracy,
-        "residuals": residuals.to_list(),
-        "y_pred": y_pred.tolist(),
-        "y_test": y_test.to_list(),
+        "model": model,
+        "data": {
+            "X": X,
+            "X_train": X_train,
+            "X_test": X_test,
+            "y": y,
+            "y_train": y_train,
+            "y_test": y_test.to_list(),
+            "y_pred": y_pred.tolist(),
+            "residuals": residuals.to_list(),
+        },
+        "metrics": {
+            "rmse": rmse,
+            "mae": mae,
+            "r2": r2,
+            "accuracy": accuracy,
+        },
     }
 
 
@@ -483,10 +476,13 @@ def __get_model_metrics(model, X_test, y_test, acc_threshold=ACCURACY_THRESHOLD)
 
 
 def __find_best_model(
-    metrics,
+    train_results: dict,
     operator_output_dir: str,
     n_trials=OPTUNA_TRIALS,
 ):
+    metrics = {
+        model_name: result["metrics"] for model_name, result in train_results.items()
+    }
     study = optuna.create_study(direction="maximize")
     study.optimize(
         lambda trial: __objective(trial, metrics),
@@ -503,6 +499,7 @@ def __find_best_model(
             model_metrics["r2"],
             best_weights,
         )
+        train_result_data = train_results[model_name]["data"]
 
         metric_results.append(
             {
@@ -512,9 +509,9 @@ def __find_best_model(
                 "rmse": model_metrics["rmse"],
                 "mae": model_metrics["mae"],
                 "r2": model_metrics["r2"],
-                "residuals": model_metrics["residuals"],
-                "y_pred": model_metrics["y_pred"],
-                "y_test": model_metrics["y_test"],
+                "residuals": train_result_data["residuals"],
+                "y_pred": train_result_data["y_pred"],
+                "y_test": train_result_data["y_test"],
                 **best_weights,
             }
         )
@@ -523,7 +520,7 @@ def __find_best_model(
     print("Saving metrics...")
     operator_results_dir = f"{operator_output_dir}/results"
     os.makedirs(operator_results_dir, exist_ok=True)
-    df_metrics.to_csv(f"{operator_results_dir}/data/model_metrics.csv", index=False)
+    df_metrics.to_csv(f"{operator_results_dir}/model_metrics.csv", index=False)
 
     best_model = df_metrics.loc[df_metrics["score"].idxmax()]
     print(f"Best model for {operator_output_dir}: {best_model['model_name']}")
@@ -532,7 +529,7 @@ def __find_best_model(
     print(f"  MAE: {best_model['mae']}")
     print(f"  R2: {best_model['r2']}")
 
-    return best_model["model_name"]
+    return best_model["model_name"], best_weights
 
 
 def __objective(trial, metrics):
@@ -562,6 +559,229 @@ def __calculate_model_score(acc, rmse, mae, r2, weights):
         - weights["mae_weight"] * mae
         + weights["r2_weight"] * r2
     )
+
+
+def __evaluate_data_reduction(
+    df_features: pd.DataFrame,
+    best_models: dict,
+    best_weights: dict,
+    min_size: int = 10,
+):
+    print("---------- STEP 7: Evaluating data reduction")
+    operators = df_features["operator"].unique()
+
+    for operator in operators:
+        print(f"Evaluating {operator}...")
+
+        df_operator = df_features[df_features["operator"] == operator]
+        operator_output_dir = f"{OPERATORS_DIR}/{operator}"
+        os.makedirs(operator_output_dir, exist_ok=True)
+        operator_data_reduction_results = pd.DataFrame(
+            {
+                "num_samples": pd.Series(dtype="int32"),
+                "model_name": pd.Series(dtype="string"),
+                "rmse": pd.Series(dtype="float64"),
+                "mae": pd.Series(dtype="float64"),
+                "r2": pd.Series(dtype="float64"),
+                "accuracy": pd.Series(dtype="float64"),
+                "score": pd.Series(dtype="float64"),
+            }
+        )
+
+        operator_model = best_models[operator]
+        print(f"Using model {operator_model} for operator {operator}...")
+        model = MODELS_HASHMAP[operator_model]
+        model_weights = best_weights[operator]
+
+        while len(df_operator) >= min_size:
+            train_result = __train_model(
+                operator_model,
+                model,
+                df_operator,
+            )
+            train_result_metrics = train_result["metrics"]
+            train_result_data = train_result["data"]
+            score = __calculate_model_score(
+                train_result_metrics["accuracy"],
+                train_result_metrics["rmse"],
+                train_result_metrics["mae"],
+                train_result_metrics["r2"],
+                model_weights,
+            )
+
+            operator_data_reduction_results = pd.concat(
+                [
+                    operator_data_reduction_results,
+                    pd.DataFrame(
+                        {
+                            "num_samples": [len(df_operator)],
+                            "model_name": [operator_model],
+                            "rmse": [train_result_metrics["rmse"]],
+                            "mae": [train_result_metrics["mae"]],
+                            "r2": [train_result_metrics["r2"]],
+                            "accuracy": [train_result_metrics["accuracy"]],
+                            "residuals": [train_result_data["residuals"]],
+                            "y_pred": [train_result_data["y_pred"]],
+                            "y_test": [train_result_data["y_test"]],
+                            "score": [score],
+                        }
+                    ),
+                ],
+                ignore_index=True,
+            )
+
+            df_operator = df_operator.sort_values(
+                "volume", ascending=False
+            ).reset_index(drop=True)
+            indices_to_remove = __get_linear_indices(df_operator)
+            df_operator = df_operator.drop(index=indices_to_remove).reset_index(
+                drop=True
+            )
+
+        print(
+            f"Finished evaluating data reduction for operator {operator}. Sample data:"
+        )
+        print(operator_data_reduction_results.head())
+
+        data_reduction_path = f"{operator_output_dir}/results/data_reduction.csv"
+        os.makedirs(os.path.dirname(data_reduction_path), exist_ok=True)
+        operator_data_reduction_results.to_csv(data_reduction_path, index=False)
+
+    print("Finished evaluating data reduction")
+    print()
+
+
+def __evaluate_feature_selection(
+    df_features: pd.DataFrame,
+    best_models: dict,
+    best_weights: dict,
+    min_size: int = 1,
+):
+    print("---------- STEP 8: Evaluating feature selection")
+    operators = df_features["operator"].unique()
+
+    for operator in operators:
+        print(f"Evaluating {operator}...")
+
+        df_operator = df_features[df_features["operator"] == operator]
+        operator_output_dir = f"{OPERATORS_DIR}/{operator}"
+        os.makedirs(operator_output_dir, exist_ok=True)
+        operator_feature_selection_results = pd.DataFrame(
+            {
+                "num_features": pd.Series(dtype="int32"),
+                "selected_features": pd.Series(dtype="string"),
+                "model_name": pd.Series(dtype="string"),
+                "rmse": pd.Series(dtype="float64"),
+                "mae": pd.Series(dtype="float64"),
+                "r2": pd.Series(dtype="float64"),
+                "accuracy": pd.Series(dtype="float64"),
+                "score": pd.Series(dtype="float64"),
+            }
+        )
+
+        operator_model = best_models[operator]
+        print(f"Using model {operator_model} for operator {operator}...")
+        model = MODELS_HASHMAP[operator_model]
+        model_weights = best_weights[operator]
+        num_features = len(df_operator.columns)
+
+        while num_features >= min_size:
+            train_result = __train_model(
+                operator_model,
+                model,
+                df_operator,
+            )
+            train_result_metrics = train_result["metrics"]
+            train_result_data = train_result["data"]
+            score = __calculate_model_score(
+                train_result_metrics["accuracy"],
+                train_result_metrics["rmse"],
+                train_result_metrics["mae"],
+                train_result_metrics["r2"],
+                model_weights,
+            )
+
+            operator_feature_selection_results = pd.concat(
+                [
+                    operator_feature_selection_results,
+                    pd.DataFrame(
+                        {
+                            "num_features": [len(df_operator.columns)],
+                            "selected_features": [
+                                list(
+                                    set(df_operator.columns.tolist())
+                                    - {"operator", "avg_peak_memory_usage"}
+                                )
+                            ],
+                            "model_name": [operator_model],
+                            "rmse": [train_result_metrics["rmse"]],
+                            "mae": [train_result_metrics["mae"]],
+                            "r2": [train_result_metrics["r2"]],
+                            "accuracy": [train_result_metrics["accuracy"]],
+                            "residuals": [train_result_data["residuals"]],
+                            "y_pred": [train_result_data["y_pred"]],
+                            "y_test": [train_result_data["y_test"]],
+                            "score": [score],
+                        }
+                    ),
+                ],
+                ignore_index=True,
+            )
+
+            selector = SelectKBest(score_func=f_regression, k=num_features - 1)
+            selector.fit_transform(train_result_data["X"], train_result_data["y"])
+            selected_columns = [
+                "operator",
+                "avg_peak_memory_usage",
+                *train_result_data["X"].columns[selector.get_support()],
+            ]
+            df_operator = df_operator[selected_columns]
+            num_features = num_features - 1
+
+        print(
+            f"Finished evaluating feature selection for operator {operator}. Sample data:"
+        )
+        print(operator_feature_selection_results.head())
+
+        feature_selection_path = f"{operator_output_dir}/results/feature_selection.csv"
+        os.makedirs(os.path.dirname(feature_selection_path), exist_ok=True)
+        operator_feature_selection_results.to_csv(feature_selection_path, index=False)
+
+    print("Finished evaluating feature selection")
+    print()
+
+
+def __get_linear_indices(df: pd.DataFrame):
+    num_to_remove = int(0.2 * len(df))
+    return np.linspace(len(df) // 4, 3 * len(df) // 4, num_to_remove, dtype=int)
+
+
+def __save_train_result(train_result: dict, output_dir: str):
+    print(f"Saving data for model on {output_dir}...")
+    os.makedirs(output_dir, exist_ok=True)
+
+    __save_model_train_data(train_result, output_dir)
+    __save_model(train_result, output_dir)
+
+
+def __save_model_train_data(train_result: dict, output_dir: str):
+    print(f"Saving model train data...")
+
+    data = train_result["data"]
+    data["X"].to_csv(f"{output_dir}/X.csv")
+    data["X_train"].to_csv(f"{output_dir}/X_train.csv")
+    data["X_test"].to_csv(f"{output_dir}/X_test.csv")
+    data["y"].to_csv(f"{output_dir}/y.csv")
+    data["y_train"].to_csv(f"{output_dir}/y_train.csv")
+    pd.DataFrame(data["y_test"]).to_csv(f"{output_dir}/y_test.csv")
+    pd.DataFrame(data["residuals"]).to_csv(f"{output_dir}/residuals.csv")
+    pd.DataFrame(data["y_pred"]).to_csv(f"{output_dir}/y_pred.csv")
+
+
+def __save_model(train_result: dict, output_dir: str):
+    print(f"Saving model for {output_dir}...")
+    with open(f"{output_dir}/model.pkl", "wb") as f:
+        pickle.dump(train_result["model"], f)
 
 
 if __name__ == "__main__":

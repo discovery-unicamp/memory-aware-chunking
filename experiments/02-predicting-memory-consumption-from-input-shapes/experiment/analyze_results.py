@@ -1,3 +1,4 @@
+import ast
 import os
 
 import matplotlib.colors as mcolors
@@ -21,13 +22,15 @@ def main():
 
     results = __get_results()
 
-    # __analyze_profile(results)
+    __analyze_profile(results)
     __analyze_model(results)
+    __analyze_data_reduction(results)
+    __analyze_feature_selection(results)
 
 
 def __get_results():
     print("---------- STEP 1: Getting results")
-    operators = os.listdir(OPERATORS_DIR)
+    operators = list(set(os.listdir(OPERATORS_DIR)) - {".DS_Store"})
     print(f"Found {len(operators)} operators in {OPERATORS_DIR}")
     print(f"Operators: {operators}")
 
@@ -43,7 +46,7 @@ def __get_results():
 
 def __get_operator_results(operator: str):
     print(f"Getting results for operator {operator}")
-    operator_results_dir = f"{OPERATORS_DIR}/{operator}/results/data"
+    operator_results_dir = f"{OPERATORS_DIR}/{operator}/results"
     operator_result_paths = os.listdir(operator_results_dir)
     print(
         f"Found {len(operator_result_paths)} results for operator {operator} in {operator_results_dir}"
@@ -65,7 +68,7 @@ def __analyze_profile(results: dict):
         print(f"Analyzing operator {operator}")
         profile_summary = operator_results["profile_summary"]
         profile_history = operator_results["profile_history"]
-        output_dir = f"{OPERATORS_DIR}/{operator}/results/charts"
+        output_dir = f"{OPERATORS_DIR}/{operator}/charts"
 
         __analyze_peak_memory_usage_per_volume(profile_summary, operator, output_dir)
         __analyze_memory_usage_distribution(profile_history, operator, output_dir)
@@ -101,7 +104,7 @@ def __analyze_model(results: dict):
     for operator, operator_results in results.items():
         print(f"Analyzing operator {operator}")
         model_metrics = operator_results["model_metrics"]
-        output_dir = f"{OPERATORS_DIR}/{operator}/results/charts"
+        output_dir = f"{OPERATORS_DIR}/{operator}/charts"
 
         __analyze_model_performance(model_metrics, operator, output_dir)
         __analyze_model_score(model_metrics, operator, output_dir)
@@ -110,6 +113,50 @@ def __analyze_model(results: dict):
         __analyze_actual_vs_predicted(model_metrics, operator, output_dir)
 
     print()
+
+
+def __analyze_data_reduction(results: dict):
+    print("---------- STEP 3: Analyzing data reduction")
+
+    for operator, operator_results in results.items():
+        print(f"Analyzing operator {operator}")
+        data_reduction = operator_results["data_reduction"]
+        output_dir = f"{OPERATORS_DIR}/{operator}/charts"
+
+        __analyze_metrics_by_sample_size(data_reduction, operator, output_dir)
+        __analyze_score_by_sample_size(data_reduction, operator, output_dir)
+        __analyze_rmse_mae_ratio_by_sample_size(data_reduction, operator, output_dir)
+        __analyze_residual_distribution_by_sample_size(
+            data_reduction,
+            operator,
+            output_dir,
+        )
+
+
+def __analyze_feature_selection(results: dict):
+    print("---------- STEP 4: Analyzing feature selection")
+
+    for operator, operator_results in results.items():
+        print(f"Analyzing operator {operator}")
+        feature_selection = operator_results["feature_selection"]
+        output_dir = f"{OPERATORS_DIR}/{operator}/charts"
+
+        __analyze_metrics_by_number_of_features(feature_selection, operator, output_dir)
+        __analyze_score_by_number_of_features(feature_selection, operator, output_dir)
+        __analyze_rmse_mae_ratio_by_number_of_features(
+            feature_selection, operator, output_dir
+        )
+        __analyze_residual_distribution_by_number_of_features(
+            feature_selection,
+            operator,
+            output_dir,
+        )
+        __analyze_feature_performance(feature_selection, operator, output_dir)
+
+
+################
+# CHARTS
+################
 
 
 def __analyze_peak_memory_usage_per_volume(
@@ -734,6 +781,383 @@ def __analyze_actual_vs_predicted(
 
     os.makedirs(output_dir, exist_ok=True)
     output_path = os.path.join(output_dir, f"actual_vs_predicted_by_model.pdf")
+    plt.tight_layout()
+    plt.savefig(output_path)
+    print(f"Chart saved to {output_path}")
+    plt.close()
+
+
+def __analyze_metrics_by_sample_size(
+    data_reduction: pd.DataFrame,
+    operator: str,
+    output_dir: str,
+):
+    print(f"Analyzing metrics by sample size for {operator}")
+    print("Using data:")
+    print(data_reduction.head())
+
+    fig, axes = plt.subplots(2, 2, figsize=(12, 8))
+    metric_ranges = {
+        "RMSE": (0, max(data_reduction["rmse"]) * 1.1),
+        "MAE": (0, max(data_reduction["mae"]) * 1.1),
+        "R²": (0, 1.2),
+        "Accuracy": (0, 1.2),
+    }
+    metrics = {
+        "RMSE": "rmse",
+        "MAE": "mae",
+        "R²": "r2",
+        "Accuracy": "accuracy",
+    }
+
+    for ax, (metric, col) in zip(axes.flatten(), metrics.items()):
+        ax.plot(
+            data_reduction["num_samples"],
+            data_reduction[col],
+            marker="o",
+            linestyle="-",
+        )
+        ax.set_title(f"{metric} Evolution")
+        ax.set_xlabel("Number of Samples")
+        ax.set_ylabel(metric)
+        ax.set_ylim(metric_ranges[metric])
+
+    plt.tight_layout()
+
+    os.makedirs(output_dir, exist_ok=True)
+    output_path = os.path.join(output_dir, f"metrics_evolution_by_sample_size.pdf")
+    plt.tight_layout()
+    plt.savefig(output_path)
+    print(f"Chart saved to {output_path}")
+    plt.close()
+
+
+def __analyze_score_by_sample_size(
+    data_reduction: pd.DataFrame,
+    operator: str,
+    output_dir: str,
+):
+    print(f"Analyzing score by sample size for {operator}")
+    print("Using data:")
+    print(data_reduction.head())
+
+    plt.figure(figsize=(8, 5))
+    plt.plot(
+        data_reduction["num_samples"],
+        data_reduction["score"],
+        marker="o",
+        linestyle="-",
+    )
+    plt.title("Model Score vs. Number of Samples")
+    plt.xlabel("Number of Samples")
+    plt.ylabel("Model Score")
+
+    os.makedirs(output_dir, exist_ok=True)
+    output_path = os.path.join(output_dir, f"score_by_sample_size.pdf")
+    plt.tight_layout()
+    plt.savefig(output_path)
+    print(f"Chart saved to {output_path}")
+    plt.close()
+
+
+def __analyze_rmse_mae_ratio_by_sample_size(
+    data_reduction: pd.DataFrame,
+    operator: str,
+    output_dir: str,
+):
+    print(f"Analyzing RMSE/MAE ratio by sample size for {operator}")
+    print("Using data:")
+    print(data_reduction.head())
+
+    plt.figure(figsize=(8, 5))
+    plt.plot(
+        data_reduction["num_samples"],
+        data_reduction["rmse"] / data_reduction["mae"],
+        marker="o",
+        linestyle="-",
+    )
+    plt.title("RMSE/MAE Ratio Over Data Reduction")
+    plt.xlabel("Number of Samples")
+    plt.ylabel("RMSE / MAE Ratio")
+
+    os.makedirs(output_dir, exist_ok=True)
+    output_path = os.path.join(output_dir, f"rmse_mae_ratio_by_sample_size.pdf")
+    plt.tight_layout()
+    plt.savefig(output_path)
+    print(f"Chart saved to {output_path}")
+    plt.close()
+
+
+def __analyze_residual_distribution_by_sample_size(
+    data_reduction: pd.DataFrame,
+    operator: str,
+    output_dir: str,
+):
+    print(f"Analyzing residual distribution by sample size for {operator}")
+    print("Using data:")
+    print(data_reduction.head())
+
+    df = data_reduction.copy()
+    df["residuals"] = df["residuals"].apply(lambda x: eval(x))
+    df["mean"] = df["residuals"].apply(np.mean)
+    df["std"] = df["residuals"].apply(np.std)
+    df["max"] = df["residuals"].apply(np.max)
+    df["min"] = df["residuals"].apply(np.min)
+    df["median"] = df["residuals"].apply(np.median)
+    df["mae"] = df["residuals"].apply(lambda x: np.mean(np.abs(x)))
+    df["rmse"] = df["residuals"].apply(lambda x: np.sqrt(np.mean(np.square(x))))
+
+    sns.set(style="whitegrid", context="talk")
+
+    plt.figure(figsize=(10, 6))
+    plt.plot(df["num_samples"], df["mae"], marker="o", label="MAE")
+    plt.plot(df["num_samples"], df["rmse"], marker="s", label="RMSE")
+
+    plt.fill_between(
+        df["num_samples"],
+        df["mae"] - df["std"],
+        df["mae"] + df["std"],
+        color="blue",
+        alpha=0.1,
+        label="MAE ± STD",
+    )
+
+    plt.title(f"Error Metrics vs Dataset Size\nOperator: {operator}", fontsize=16)
+    plt.xlabel("Number of Samples", fontsize=14)
+    plt.ylabel("Error", fontsize=14)
+    plt.xticks(rotation=45)
+    plt.legend()
+    plt.tight_layout()
+
+    os.makedirs(output_dir, exist_ok=True)
+    output_path = os.path.join(
+        output_dir,
+        f"residual_metrics_by_sample_size.pdf",
+    )
+    plt.tight_layout()
+    plt.savefig(output_path)
+    print(f"Chart saved to {output_path}")
+    plt.close()
+
+
+def __analyze_metrics_by_number_of_features(
+    feature_selection: pd.DataFrame,
+    operator: str,
+    output_dir: str,
+):
+    print(f"Analyzing metrics by number of features for {operator}")
+    print("Using data:")
+    print(feature_selection.head())
+
+    fig, axes = plt.subplots(2, 2, figsize=(12, 8))
+    metric_ranges = {
+        "RMSE": (0, max(feature_selection["rmse"]) * 1.1),
+        "MAE": (0, max(feature_selection["mae"]) * 1.1),
+        "R²": (0, 1.2),
+        "Accuracy": (0, 1.2),
+    }
+    metrics = {
+        "RMSE": "rmse",
+        "MAE": "mae",
+        "R²": "r2",
+        "Accuracy": "accuracy",
+    }
+
+    for ax, (metric, col) in zip(axes.flatten(), metrics.items()):
+        ax.plot(
+            feature_selection["num_features"],
+            feature_selection[col],
+            marker="o",
+            linestyle="-",
+        )
+        ax.set_title(f"{metric} Evolution")
+        ax.set_xlabel("Number of Features")
+        ax.set_ylabel(metric)
+        ax.set_ylim(metric_ranges[metric])
+
+    plt.tight_layout()
+
+    os.makedirs(output_dir, exist_ok=True)
+    output_path = os.path.join(
+        output_dir, f"metrics_evolution_by_number_of_features.pdf"
+    )
+    plt.tight_layout()
+    plt.savefig(output_path)
+    print(f"Chart saved to {output_path}")
+    plt.close()
+
+
+def __analyze_score_by_number_of_features(
+    feature_selection: pd.DataFrame,
+    operator: str,
+    output_dir: str,
+):
+    print(f"Analyzing score by number of features for {operator}")
+    print("Using data:")
+    print(feature_selection.head())
+
+    plt.figure(figsize=(8, 5))
+    plt.plot(
+        feature_selection["num_features"],
+        feature_selection["score"],
+        marker="o",
+        linestyle="-",
+    )
+    plt.title("Model Score vs. Number of Features")
+    plt.xlabel("Number of Features")
+    plt.ylabel("Model Score")
+
+    os.makedirs(output_dir, exist_ok=True)
+    output_path = os.path.join(output_dir, f"score_by_number_of_features.pdf")
+    plt.tight_layout()
+    plt.savefig(output_path)
+    print(f"Chart saved to {output_path}")
+    plt.close()
+
+
+def __analyze_rmse_mae_ratio_by_number_of_features(
+    feature_selection: pd.DataFrame,
+    operator: str,
+    output_dir: str,
+):
+    print(f"Analyzing RMSE/MAE ratio by number of features for {operator}")
+    print("Using data:")
+    print(feature_selection.head())
+
+    plt.figure(figsize=(8, 5))
+    plt.plot(
+        feature_selection["num_features"],
+        feature_selection["rmse"] / feature_selection["mae"],
+        marker="o",
+        linestyle="-",
+    )
+    plt.title("RMSE/MAE Ratio Over Data Reduction")
+    plt.xlabel("Number of Features")
+    plt.ylabel("RMSE / MAE Ratio")
+
+    os.makedirs(output_dir, exist_ok=True)
+    output_path = os.path.join(output_dir, f"rmse_mae_ratio_by_number_of_features.pdf")
+    plt.tight_layout()
+    plt.savefig(output_path)
+    print(f"Chart saved to {output_path}")
+    plt.close()
+
+
+def __analyze_residual_distribution_by_number_of_features(
+    feature_selection: pd.DataFrame,
+    operator: str,
+    output_dir: str,
+):
+    print(f"Analyzing residual distribution by number of features for {operator}")
+    print("Using data:")
+    print(feature_selection.head())
+
+    df = feature_selection.copy()
+    df["residuals"] = df["residuals"].apply(lambda x: eval(x))
+    df["mean"] = df["residuals"].apply(np.mean)
+    df["std"] = df["residuals"].apply(np.std)
+    df["max"] = df["residuals"].apply(np.max)
+    df["min"] = df["residuals"].apply(np.min)
+    df["median"] = df["residuals"].apply(np.median)
+    df["mae"] = df["residuals"].apply(lambda x: np.mean(np.abs(x)))
+    df["rmse"] = df["residuals"].apply(lambda x: np.sqrt(np.mean(np.square(x))))
+
+    sns.set(style="whitegrid", context="talk")
+
+    plt.figure(figsize=(10, 6))
+    plt.plot(df["num_features"], df["mae"], marker="o", label="MAE")
+    plt.plot(df["num_features"], df["rmse"], marker="s", label="RMSE")
+
+    plt.fill_between(
+        df["num_features"],
+        df["mae"] - df["std"],
+        df["mae"] + df["std"],
+        color="blue",
+        alpha=0.1,
+        label="MAE ± STD",
+    )
+
+    plt.title(f"Error Metrics vs Dataset Size\nOperator: {operator}", fontsize=16)
+    plt.xlabel("Number of Features", fontsize=14)
+    plt.ylabel("Error", fontsize=14)
+    plt.xticks(rotation=45)
+    plt.legend()
+    plt.tight_layout()
+
+    os.makedirs(output_dir, exist_ok=True)
+    output_path = os.path.join(
+        output_dir,
+        f"residual_metrics_by_number_of_features.pdf",
+    )
+    plt.tight_layout()
+    plt.savefig(output_path)
+    print(f"Chart saved to {output_path}")
+    plt.close()
+
+
+def __analyze_feature_performance(
+    feature_selection: pd.DataFrame,
+    operator: str,
+    output_dir: str,
+):
+    print(f"Analyzing feature performance for {operator}")
+    print("Using data:")
+    print(feature_selection.head())
+
+    df = feature_selection.copy()
+    df["selected_features"] = df["selected_features"].apply(ast.literal_eval)
+    df_sorted = df.sort_values(by="num_features", ascending=False).reset_index(
+        drop=True
+    )
+
+    impact_records = []
+
+    for i in range(len(df_sorted) - 1):
+        current_features = set(df_sorted.loc[i, "selected_features"])
+        next_features = set(df_sorted.loc[i + 1, "selected_features"])
+
+        removed = current_features - next_features
+        if len(removed) != 1:
+            continue
+        removed_feature = list(removed)[0]
+
+        delta_rmse = df_sorted.loc[i + 1, "rmse"] - df_sorted.loc[i, "rmse"]
+        delta_mae = df_sorted.loc[i + 1, "mae"] - df_sorted.loc[i, "mae"]
+        delta_r2 = df_sorted.loc[i + 1, "r2"] - df_sorted.loc[i, "r2"]
+
+        impact_records.append(
+            {
+                "removed_feature": removed_feature,
+                "delta_rmse": delta_rmse,
+                "delta_mae": delta_mae,
+                "delta_r2": delta_r2,
+                "from_features": len(current_features),
+                "to_features": len(next_features),
+            }
+        )
+
+    impact_df = pd.DataFrame(impact_records)
+
+    avg_impact = (
+        impact_df.groupby("removed_feature")[["delta_rmse"]]
+        .mean()
+        .sort_values("delta_rmse", ascending=False)
+    )
+
+    plt.figure(figsize=(10, 6))
+    sns.barplot(x=avg_impact.index, y="delta_rmse", data=avg_impact)
+    plt.xticks(rotation=90)
+    plt.ylabel("Average ΔRMSE")
+    plt.xlabel("Removed Feature")
+    plt.title("Impact of Removing Each Feature on RMSE")
+    plt.grid(True)
+    plt.tight_layout()
+
+    os.makedirs(output_dir, exist_ok=True)
+    output_path = os.path.join(
+        output_dir,
+        f"feature_impact.pdf",
+    )
     plt.tight_layout()
     plt.savefig(output_path)
     print(f"Chart saved to {output_path}")
