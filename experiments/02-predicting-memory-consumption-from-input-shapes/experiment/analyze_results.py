@@ -233,11 +233,8 @@ def __analyze_peak_memory_usage_per_volume(
 
     plt.title("Peak Memory Usage and Variability Per Volume")
 
-    os.makedirs(output_dir, exist_ok=True)
     out = os.path.join(output_dir, f"peak_memory_by_volume.pdf")
-    plt.tight_layout()
-    plt.savefig(out)
-    plt.close()
+    __save_chart(out)
 
 
 def __analyze_memory_usage_distribution(
@@ -277,11 +274,8 @@ def __analyze_memory_usage_distribution(
     plt.grid(True, axis="both")
     ax.set_axisbelow(True)
 
-    os.makedirs(output_dir, exist_ok=True)
     out = os.path.join(output_dir, f"memory_usage_distribution.pdf")
-    plt.tight_layout()
-    plt.savefig(out)
-    plt.close()
+    __save_chart(out)
 
 
 def __analyze_inline_xline_memory_usage_progression(
@@ -311,11 +305,8 @@ def __analyze_inline_xline_memory_usage_progression(
         sns.despine(ax=ax, left=False, bottom=False, right=False, top=False)
         ax.set_axisbelow(True)
 
-    os.makedirs(output_dir, exist_ok=True)
     out = os.path.join(output_dir, f"inline_xline_memory_usage_progression.pdf")
-    plt.tight_layout()
-    plt.savefig(out)
-    plt.close()
+    __save_chart(out)
 
 
 def __analyze_memory_usage_heatmap_by_time(
@@ -349,11 +340,8 @@ def __analyze_memory_usage_heatmap_by_time(
     sns.despine(ax=ax, left=False, bottom=False, right=False, top=False)
     ax.set_axisbelow(True)
 
-    os.makedirs(output_dir, exist_ok=True)
     out = os.path.join(output_dir, f"memory_usage_heatmap_by_time.pdf")
-    plt.tight_layout()
-    plt.savefig(out)
-    plt.close()
+    __save_chart(out)
 
 
 def __analyze_memory_usage_by_configuration(
@@ -395,11 +383,8 @@ def __analyze_memory_usage_by_configuration(
     ax.set_axisbelow(True)
     ax.view_init(elev=20, azim=140)
 
-    os.makedirs(output_dir, exist_ok=True)
     out = os.path.join(output_dir, f"memory_usage_by_configuration.pdf")
-    plt.tight_layout()
-    plt.savefig(out)
-    plt.close()
+    __save_chart(out)
 
 
 def __analyze_memory_usage_inlines_xlines_heatmap(
@@ -436,11 +421,8 @@ def __analyze_memory_usage_inlines_xlines_heatmap(
     ax.set_axisbelow(True)
     ax.grid(False)
 
-    os.makedirs(output_dir, exist_ok=True)
     out = os.path.join(output_dir, f"memory_usage_inlines_xlines_heatmap.pdf")
-    plt.tight_layout()
-    plt.savefig(out)
-    plt.close()
+    __save_chart(out)
 
 
 def __analyze_memory_usage_inlines_xlines_samples_heatmap(
@@ -479,11 +461,8 @@ def __analyze_memory_usage_inlines_xlines_samples_heatmap(
     ax.grid(True)
     ax.set_axisbelow(True)
 
-    os.makedirs(output_dir, exist_ok=True)
     out = os.path.join(output_dir, f"memory_usage_inlines_xlines_samples_heatmap.pdf")
-    plt.tight_layout()
-    plt.savefig(out)
-    plt.close()
+    __save_chart(out)
 
 
 def __analyze_execution_time_by_volume(
@@ -529,11 +508,8 @@ def __analyze_execution_time_by_volume(
     ax.set_axisbelow(True)
     plt.legend()
 
-    os.makedirs(output_dir, exist_ok=True)
     out = os.path.join(output_dir, f"execution_time_by_volume.pdf")
-    plt.tight_layout()
-    plt.savefig(out)
-    plt.close()
+    __save_chart(out)
 
 
 def __analyze_execution_time_distribution(
@@ -554,11 +530,8 @@ def __analyze_execution_time_distribution(
     ax.set_title("Execution Time Distribution Across Sessions")
     ax.set_axisbelow(True)
 
-    os.makedirs(output_dir, exist_ok=True)
     out = os.path.join(output_dir, f"execution_time_distribution.pdf")
-    plt.tight_layout()
-    plt.savefig(out)
-    plt.close()
+    __save_chart(out)
 
 
 def __analyze_execution_time_distribution_by_volume(
@@ -604,11 +577,8 @@ def __analyze_execution_time_distribution_by_volume(
     plt.xticks(rotation=45)
     plt.grid(True, axis="both")
 
-    os.makedirs(output_dir, exist_ok=True)
     out = os.path.join(output_dir, f"execution_time_distribution_by_volume.pdf")
-    plt.tight_layout()
-    plt.savefig(out)
-    plt.close()
+    __save_chart(out)
 
 
 def __analyze_model_performance(
@@ -640,11 +610,8 @@ def __analyze_model_performance(
     ax.set_axisbelow(True)
     ax.legend()
 
-    os.makedirs(output_dir, exist_ok=True)
     out = os.path.join(output_dir, f"performance_by_model.pdf")
-    plt.tight_layout()
-    plt.savefig(out)
-    plt.close()
+    __save_chart(out)
 
 
 def __analyze_model_score(model_metrics: pd.DataFrame, operator: str, output_dir: str):
@@ -679,11 +646,8 @@ def __analyze_model_score(model_metrics: pd.DataFrame, operator: str, output_dir
 
     plt.xticks(rotation=45, ha="right")
 
-    os.makedirs(output_dir, exist_ok=True)
     out = os.path.join(output_dir, f"score_by_model.pdf")
-    plt.tight_layout()
-    plt.savefig(out)
-    plt.close()
+    __save_chart(out)
 
 
 def __analyze_model_acc_rmse(
@@ -712,11 +676,8 @@ def __analyze_model_acc_rmse(
     ax = plt.gca()
     ax.set_axisbelow(True)
 
-    os.makedirs(output_dir, exist_ok=True)
     out = os.path.join(output_dir, f"accuracy_by_rmse_per_model.pdf")
-    plt.tight_layout()
-    plt.savefig(out)
-    plt.close()
+    __save_chart(out)
 
 
 def __analyze_residual_distribution(
@@ -746,11 +707,8 @@ def __analyze_residual_distribution(
     ax = plt.gca()
     ax.set_axisbelow(True)
 
-    os.makedirs(output_dir, exist_ok=True)
     out = os.path.join(output_dir, f"residuals_distribution_by_model.pdf")
-    plt.tight_layout()
-    plt.savefig(out)
-    plt.close()
+    __save_chart(out)
 
 
 def __analyze_actual_vs_predicted(
@@ -776,11 +734,8 @@ def __analyze_actual_vs_predicted(
         axes[i].set_title(f"{row['model_name']}")
         axes[i].set_axisbelow(True)
 
-    os.makedirs(output_dir, exist_ok=True)
     out = os.path.join(output_dir, f"actual_vs_predicted_by_model.pdf")
-    plt.tight_layout()
-    plt.savefig(out)
-    plt.close()
+    __save_chart(out)
 
 
 def __analyze_metrics_by_sample_size(
@@ -819,12 +774,8 @@ def __analyze_metrics_by_sample_size(
         ax.set_ylim(metric_ranges[metric])
         ax.set_axisbelow(True)
 
-    plt.tight_layout()
-
-    os.makedirs(output_dir, exist_ok=True)
     out = os.path.join(output_dir, f"metrics_evolution_by_sample_size.pdf")
-    plt.savefig(out)
-    plt.close()
+    __save_chart(out)
 
 
 def __analyze_score_by_sample_size(
@@ -850,11 +801,8 @@ def __analyze_score_by_sample_size(
     ax = plt.gca()
     ax.set_axisbelow(True)
 
-    os.makedirs(output_dir, exist_ok=True)
     out = os.path.join(output_dir, f"score_by_sample_size.pdf")
-    plt.tight_layout()
-    plt.savefig(out)
-    plt.close()
+    __save_chart(out)
 
 
 def __analyze_rmse_mae_ratio_by_sample_size(
@@ -880,11 +828,8 @@ def __analyze_rmse_mae_ratio_by_sample_size(
     ax = plt.gca()
     ax.set_axisbelow(True)
 
-    os.makedirs(output_dir, exist_ok=True)
     out = os.path.join(output_dir, f"rmse_mae_ratio_by_sample_size.pdf")
-    plt.tight_layout()
-    plt.savefig(out)
-    plt.close()
+    __save_chart(out)
 
 
 def __analyze_residual_distribution_by_sample_size(
@@ -926,11 +871,8 @@ def __analyze_residual_distribution_by_sample_size(
     ax = plt.gca()
     ax.set_axisbelow(True)
 
-    os.makedirs(output_dir, exist_ok=True)
     out = os.path.join(output_dir, f"residual_metrics_by_sample_size.pdf")
-    plt.tight_layout()
-    plt.savefig(out)
-    plt.close()
+    __save_chart(out)
 
 
 def __analyze_metrics_by_number_of_features(
@@ -969,12 +911,8 @@ def __analyze_metrics_by_number_of_features(
         ax.set_ylim(metric_ranges[metric])
         ax.set_axisbelow(True)
 
-    plt.tight_layout()
-
-    os.makedirs(output_dir, exist_ok=True)
     out = os.path.join(output_dir, f"metrics_evolution_by_number_of_features.pdf")
-    plt.savefig(out)
-    plt.close()
+    __save_chart(out)
 
 
 def __analyze_score_by_number_of_features(
@@ -1000,11 +938,8 @@ def __analyze_score_by_number_of_features(
     ax = plt.gca()
     ax.set_axisbelow(True)
 
-    os.makedirs(output_dir, exist_ok=True)
     out = os.path.join(output_dir, f"score_by_number_of_features.pdf")
-    plt.tight_layout()
-    plt.savefig(out)
-    plt.close()
+    __save_chart(out)
 
 
 def __analyze_rmse_mae_ratio_by_number_of_features(
@@ -1030,11 +965,8 @@ def __analyze_rmse_mae_ratio_by_number_of_features(
     ax = plt.gca()
     ax.set_axisbelow(True)
 
-    os.makedirs(output_dir, exist_ok=True)
     out = os.path.join(output_dir, f"rmse_mae_ratio_by_number_of_features.pdf")
-    plt.tight_layout()
-    plt.savefig(out)
-    plt.close()
+    __save_chart(out)
 
 
 def __analyze_residual_distribution_by_number_of_features(
@@ -1076,11 +1008,8 @@ def __analyze_residual_distribution_by_number_of_features(
     ax = plt.gca()
     ax.set_axisbelow(True)
 
-    os.makedirs(output_dir, exist_ok=True)
     out = os.path.join(output_dir, f"residual_metrics_by_number_of_features.pdf")
-    plt.tight_layout()
-    plt.savefig(out)
-    plt.close()
+    __save_chart(out)
 
 
 def __analyze_feature_performance(
@@ -1139,10 +1068,14 @@ def __analyze_feature_performance(
     plt.grid(True, axis="both", zorder=0)
     ax.set_axisbelow(True)
 
-    os.makedirs(output_dir, exist_ok=True)
     out = os.path.join(output_dir, f"feature_impact.pdf")
+    __save_chart(out)
+
+
+def __save_chart(output_path: str):
+    os.makedirs(os.path.dirname(output_path), exist_ok=True)
     plt.tight_layout()
-    plt.savefig(out)
+    plt.savefig(output_path)
     plt.close()
 
 
