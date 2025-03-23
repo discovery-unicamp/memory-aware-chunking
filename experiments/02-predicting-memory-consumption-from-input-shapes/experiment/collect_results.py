@@ -764,7 +764,7 @@ def evaluate_feature_selection(df_features, best_models, best_weights, min_size=
             )
             row = {
                 "num_features": len(df_op.columns),
-                "selected_features": [selected_feats],
+                "selected_features": selected_feats,
                 "model_name": model_name,
                 "rmse": m["rmse"],
                 "mae": m["mae"],

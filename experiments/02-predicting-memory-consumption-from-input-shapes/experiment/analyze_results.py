@@ -16,7 +16,6 @@ import matplotlib.pyplot as plt
 import matplotlib.ticker as ticker
 import numpy as np
 import pandas as pd
-import scipy.stats as stats  # for QQ-plots
 import seaborn as sns
 
 # ------------------------------------------------------------------------------
@@ -780,20 +779,6 @@ def analyze_additional_insights(results):
         ):
             plot_execution_time_vs_memory(dfs["profile_summary"], operator, out_dir)
 
-        # 5. Feature correlation heatmap
-        #    If "feature_selection" has raw columns or you have a dataset that merges input features
-        #    We do a quick check:
-        if "feature_selection" in dfs:
-            fsdf = dfs["feature_selection"]
-            # This step depends on you having numeric features in the DataFrame
-            # If 'selected_features' is a list of strings, we can't do direct correlation.
-            # But if you have actual numeric columns in `fsdf`, you can do:
-            # (You might need a separate dataset for that. Adjust if needed.)
-            # We'll just do an example with columns that might exist:
-            numeric_cols = fsdf.select_dtypes(include=[np.number]).columns
-            if len(numeric_cols) > 1:
-                plot_feature_correlation(fsdf[numeric_cols], operator, out_dir)
-
 
 def plot_memory_vs_volume_regression(df, operator, out_dir):
     """
@@ -870,38 +855,49 @@ def plot_residual_vs_predicted(mmetrics, operator, out_dir):
     Plots residual (y_pred - y_test) vs. predicted for each model.
     Shows if residuals grow with predictions.
     """
+    import numpy as np
+    import os
+    import matplotlib.pyplot as plt
+
+    # Check necessary columns
     if not all(
         col in mmetrics.columns for col in ["model_name", "residuals", "y_pred"]
     ):
         print(
-            f"  -> Missing needed columns in model_metrics for residual vs. predicted. Skipping."
+            "  -> Missing needed columns in model_metrics for residual vs. predicted. Skipping."
         )
         return
 
     print(f"  -> Residual vs. Predicted for {operator}")
+
+    # Create subplots (3x3)
     fig, axes = plt.subplots(nrows=3, ncols=3, figsize=(15, 12))
     axes = axes.flatten()
 
     for i, row in mmetrics.iterrows():
         if i >= len(axes):
-            break
-        model = row["model_name"]
+            break  # If there are more than 9 models, only plot the first 9
+
+        model_name = row["model_name"]
         residuals = np.array(eval(row["residuals"]))
         y_pred = np.array(eval(row["y_pred"]))
+
+        # Ensure array lengths match
         if len(residuals) != len(y_pred):
             continue
 
         ax = axes[i]
-        # residual = pred - test or test - pred; you can define consistently
-        # but let's assume from your code it's (y_pred - y_test) or vice versa
-        # We'll do residuals directly as stored in "residuals":
         ax.scatter(y_pred, residuals, alpha=0.6)
         ax.axhline(0, linestyle="--", color="red")
         ax.set_xlabel("Predicted Value")
         ax.set_ylabel("Residual")
-        ax.set_title(f"{model}")
+        ax.set_title(f"{model_name}")
 
-    fig.suptitle("Residual vs. Predicted")
+    # Adjust layout so the main title doesn't overlap subplots
+    fig.tight_layout(rect=[0, 0, 1, 0.95])
+    fig.suptitle("Residual vs. Predicted", fontsize=16)
+
+    # Save & close
     out_path = os.path.join(out_dir, "residual_vs_predicted.pdf")
     fig.savefig(out_path)
     plt.close(fig)
@@ -909,26 +905,40 @@ def plot_residual_vs_predicted(mmetrics, operator, out_dir):
 
 def plot_residual_qq(mmetrics, operator, out_dir):
     """
-    QQ-Plot for each model's residual distribution to check normality.
+    Creates a QQ-Plot for each model's residual distribution to check normality.
     """
+    import numpy as np
+    import os
+    import scipy.stats as stats
+    import matplotlib.pyplot as plt
+
+    # Quick columns check
     if not all(col in mmetrics.columns for col in ["model_name", "residuals"]):
-        print(f"  -> Missing needed columns in model_metrics for QQ-plot. Skipping.")
+        print("  -> Missing needed columns in model_metrics for QQ-plot. Skipping.")
         return
 
     print(f"  -> Residual QQ-Plot for {operator}")
+
+    # Create 3x3 subplots
     fig, axes = plt.subplots(nrows=3, ncols=3, figsize=(15, 12))
     axes = axes.flatten()
 
+    # Iterate through rows, each row is a model
     for i, row in mmetrics.iterrows():
         if i >= len(axes):
-            break
-        model = row["model_name"]
+            break  # If there are more than 9 models, we only plot the first 9
+        model_name = row["model_name"]
         residuals = np.array(eval(row["residuals"]))
+
         ax = axes[i]
         stats.probplot(residuals, dist="norm", plot=ax)
-        ax.set_title(f"QQ-Plot {model}")
+        ax.set_title(f"QQ-Plot: {model_name}")
 
-    fig.suptitle("QQ-Plots of Residuals")
+    # Adjust layout so titles won't overlap subplots
+    fig.tight_layout(rect=[0.0, 0.0, 1.0, 0.95])
+    fig.suptitle("QQ-Plots of Residuals", fontsize=16)
+
+    # Save & close
     out_path = os.path.join(out_dir, "residual_qq_plots.pdf")
     fig.savefig(out_path)
     plt.close(fig)
@@ -948,21 +958,6 @@ def plot_execution_time_vs_memory(df, operator, out_dir):
     ax.set_title("Execution Time vs. Memory Usage")
 
     out_path = os.path.join(out_dir, "execution_time_vs_memory.pdf")
-    fig.savefig(out_path)
-    plt.close(fig)
-
-
-def plot_feature_correlation(df, operator, out_dir):
-    """
-    Heatmap of correlation among numeric features,
-    e.g., in your feature_selection data or a separate dataset.
-    """
-    print(f"  -> Feature Correlation Heatmap for {operator}")
-    corr = df.corr()
-    fig, ax = plt.subplots(figsize=(8, 6))
-    sns.heatmap(corr, cmap="coolwarm", center=0, ax=ax, annot=False)
-    ax.set_title("Feature Correlation Heatmap")
-    out_path = os.path.join(out_dir, "feature_correlation_heatmap.pdf")
     fig.savefig(out_path)
     plt.close(fig)
 
