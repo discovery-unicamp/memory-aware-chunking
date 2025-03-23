@@ -197,6 +197,7 @@ def __analyze_peak_memory_usage_per_volume(
     ax1.set_axisbelow(True)
     ax1.legend(loc="upper left")
     ax2.legend(loc="upper right")
+    ax2.yaxis.grid(False)
     plt.title("Peak Memory Usage and Variability Per Volume")
     os.makedirs(output_dir, exist_ok=True)
     out = os.path.join(output_dir, f"peak_memory_by_volume.pdf")
@@ -211,7 +212,7 @@ def __analyze_memory_usage_distribution(
     print(f"Analyzing memory usage distribution {operator}")
     print("Using data:")
     print(profile_history.head())
-    plt.figure(figsize=(8, 4))
+    fig, ax = plt.subplots(figsize=(8, 4))
     sns.violinplot(
         data=profile_history,
         x="volume",
@@ -219,11 +220,13 @@ def __analyze_memory_usage_distribution(
         inner="quartile",
         cut=0,
         zorder=3,
+        scale="width",
+        bw_adjust=0.8,
+        ax=ax,
     )
-    plt.xlabel("Volume")
-    plt.ylabel("Memory Usage (GB)")
-    plt.title("Memory Usage Distribution Across Volume Configurations")
-    ax = plt.gca()
+    ax.set_xlabel("Volume")
+    ax.set_ylabel("Memory Usage (GB)")
+    ax.set_title("Memory Usage Distribution Across Volume Configurations")
     ax.xaxis.set_ticks(range(len(profile_history["volume"].unique())))
     ax.set_xticklabels(
         [
@@ -232,6 +235,7 @@ def __analyze_memory_usage_distribution(
         ]
     )
     plt.xticks(rotation=45, ha="right")
+    plt.grid(True, axis="both")
     ax.set_axisbelow(True)
     os.makedirs(output_dir, exist_ok=True)
     out = os.path.join(output_dir, f"memory_usage_distribution.pdf")
@@ -282,12 +286,12 @@ def __analyze_memory_usage_heatmap_by_time(
         aggfunc="mean",
     )
     fig, ax = plt.subplots()
-    sns.heatmap(table, cmap="viridis", ax=ax)
+    sns.heatmap(table, cmap="viridis", ax=ax, zorder=1)
     plt.xlabel("Relative Time Binned")
     plt.ylabel("Volume Group")
     plt.title("Memory Usage Over Time (Grouped by Volume)")
+    ax.grid(True, which="both", zorder=0)
     ax.set_axisbelow(True)
-    ax.grid(False)
     os.makedirs(output_dir, exist_ok=True)
     out = os.path.join(output_dir, f"memory_usage_heatmap_by.pdf")
     plt.tight_layout()
@@ -325,8 +329,8 @@ def __analyze_memory_usage_by_configuration(
             )
         )
     )
+    ax.grid(True)
     ax.set_axisbelow(True)
-    ax.grid(False)
     ax.view_init(elev=20, azim=140)
     os.makedirs(output_dir, exist_ok=True)
     out = os.path.join(output_dir, f"memory_usage_by_configuration.pdf")
@@ -346,12 +350,19 @@ def __analyze_memory_usage_inlines_xlines_heatmap(
         .max()
         .unstack()
     )
-    plt.figure()
-    sns.heatmap(df_heatmap, cmap="viridis", annot=True, fmt=".2f", linewidths=0.5)
+    fig, ax = plt.subplots()
+    sns.heatmap(
+        df_heatmap,
+        cmap="viridis",
+        annot=True,
+        fmt=".2f",
+        linewidths=0.5,
+        ax=ax,
+        zorder=1,
+    )
     plt.xlabel("Xlines")
     plt.ylabel("Inlines")
     plt.title("Peak Memory Usage Heatmap")
-    ax = plt.gca()
     ax.set_axisbelow(True)
     ax.grid(False)
     os.makedirs(output_dir, exist_ok=True)
@@ -387,8 +398,8 @@ def __analyze_memory_usage_inlines_xlines_samples_heatmap(
     ax.set_title("3D Heatmap of Peak Memory Usage")
     cbar = fig.colorbar(sc, shrink=0.5, aspect=5)
     cbar.set_label("Memory Usage (GB)")
+    ax.grid(True)
     ax.set_axisbelow(True)
-    ax.grid(False)
     os.makedirs(output_dir, exist_ok=True)
     out = os.path.join(output_dir, f"memory_usage_inlines_xlines_samples_heatmap.pdf")
     plt.tight_layout()
@@ -495,7 +506,7 @@ def __analyze_execution_time_distribution_by_volume(
     ax.set_title("Execution Time Distribution Across Volumes")
     ax.set_axisbelow(True)
     plt.xticks(rotation=45)
-    plt.grid(True, axis="y")
+    plt.grid(True, axis="both")
     os.makedirs(output_dir, exist_ok=True)
     out = os.path.join(output_dir, f"execution_time_distribution_by_volume.pdf")
     plt.tight_layout()
@@ -946,7 +957,7 @@ def __analyze_feature_performance(
     plt.ylabel("Average ΔRMSE")
     plt.xlabel("Removed Feature")
     plt.title("Impact of Removing Each Feature on RMSE")
-    plt.grid(True, axis="y", zorder=1)
+    plt.grid(True, axis="both", zorder=0)
     ax.set_axisbelow(True)
     os.makedirs(output_dir, exist_ok=True)
     out = os.path.join(output_dir, f"feature_impact.pdf")
