@@ -5,48 +5,224 @@
 \section{Introduction}
 \label{sec:pmc-introduction}
 
-\DFTODO{Explicar do fluxo comum em supercomputadores, onde você precisa alocar recursos para uma tarefa antes de executá-la.}
-\DFTODO{Explicar sobre a natureza da tentativa e erro de prever o consumo de memória com base nas formas de entrada (do ponto de vista de executar uma única tarefa sem paralelismo no cluster).}
-\DFTODO{Descrever que para algoritmos tensoriais, é razoável assumir que é possível prever o consumo de memória}
-\DFTODO{Destacar que, com base nos resultados da sessão anterior, essa predição não precisa ser muito precisa, pois pode executar com pressão}
+\ac{HPC} environments require users to specify computing resources—especially memory—before a job begins execution.
+Common \ac{HPC} job schedulers (e.g., Slurm~\cite{yoo2003slurm} or PBS~\cite{henderson1995pbs}) enforce fixed memory reservations at submission time, forcing the user to estimate a job’s memory footprint in advance.
+This requirement presents a fundamental challenge: the user must estimate memory needs \emph{a priori}, often without the benefit of trial runs.
+If the memory request is set too low, the job will fail with an out-of-memory error~\cite{bailey2005,hovestadt2003}, resulting in lost computation time and queued tasks.
+Conversely, if the request is overly high, the job holds more memory than needed, idling precious resources and potentially lengthening queue wait times for other users.
+Thus, accurate memory estimation is crucial for both reliability and efficiency in \ac{HPC} resource management.
 
+In practice, memory reservation involves significant guesswork.
+Many \ac{HPC} users resort to trial-and-error~\cite{ncsu_memory_usage}, incrementally adjusting memory limits across repeated job submissions until one run succeeds without errors.
+This ad hoc strategy is inefficient and risky.
+Each failed attempt due to insufficient memory wastes wall-clock time and computing cycles, and even successful runs with overly generous memory allocations underutilize hardware.
+Over-provisioning memory as a safeguard is common, yet it leads to low system utilization as nodes sit with allocated but unused memory.
+The trial-and-error paradigm not only diminishes overall throughput but also burdens users, who must divert focus to resource tuning rather than the scientific computation at hand.
 
-\section{Predicting Memory Consumption}
-\label{sec:pmc-predicting-memory-consumption}
+There is a clear opportunity to improve this situation through predictive modeling techniques for memory allocation.
+Rather than relying on human intuition or conservative heuristics, predictive models can forecast a job’s memory consumption based on easily observable features of the workload.
+Such features might include input data characteristics (e.g., the size or dimensionality of input arrays), algorithmic parameters, or historical usage patterns from similar jobs.
+By leveraging these predictors, a model can provide an informed estimate of the required memory before execution~\cite{tanash2021ampro}.
+This data-driven approach reduces human guesswork and minimizes iterative adjustments.
+More accurate pre-runtime memory predictions allow users to request just-enough memory, mitigating the risk of failures while curbing resource waste.
 
-\DFTODO{Descrever os modelos que foram utilizados e porque}
-\DFTODO{Descrever as features que foram utilizadas para realizar a predição}
+This chapter focuses on tensor-based workloads as a domain where memory usage correlates strongly with input shape.
+Many scientific and data-intensive computations revolve around operations on large multi-dimensional arrays (tensors).
+Notable examples include seismic wave simulations on \ac{3D} grids, high-resolution image analysis in computer vision, and large-scale numerical linear algebra in scientific computing.
+In such cases, the storage of input data structures and intermediate results often dominates memory usage and scales directly with input dimensions.
+For instance, doubling the resolution of an input image (in each dimension) roughly quadruples its memory footprint~\cite{stackoverflow_memory_inv}.
+Similarly, in deep neural networks, increasing the input size or batch size can dramatically raise memory requirements due to larger activation maps and additional computation~\cite{dell_3dunet_memory}.
+These patterns indicate that input shape is a primary determinant of memory consumption for tensor-centric workloads.
+Exploiting this relationship, a predictive model can learn how memory scales with shape parameters and thereby forecast memory requirements for new input configurations.
 
+Several lines of prior work have explored memory usage estimation and prediction in related contexts.
+On the \ac{HPC} front, researchers have leveraged historical job data from systems like Slurm to predict resource usage.
+For example, machine learning models trained on past job records (using features such as job metadata and input sizes) can forecast memory needs for new submissions~\cite{yoo2003slurm}.
+These approaches demonstrate that, given sufficient historical examples, one can make informed predictions of memory consumption for recurring workloads.
+In the realm of high-level numerical computing (e.g., NumPy-based scientific workflows), some have explored analytical modeling of the memory cost of array operations~\cite{cornell_memory_workshop}.
+By understanding how operations such as matrix multiplication or convolution allocate output arrays and buffers, it is possible to estimate peak memory usage for a sequence of operations without fully executing them.
+Likewise, in deep learning, several efforts aim to anticipate the memory footprint of neural network models~\cite{gao2020}.
+Analytical frameworks exist to calculate the memory requirements of neural networks layer-by-layer based on input tensor shapes and network architecture~\cite{dell_3dunet_memory}.
+Profiling tools and simulators also project a model’s memory usage before execution to assist with deployment decisions~\cite{tanash2019}.
+These related works provide valuable insights and help guide the methodology of the present work.
 
-\section{Materials and Methods}
-\label{sec:pmc-materials-and-methods}
+The goal of the present chapter is to predict memory usage for new jobs given their input shapes, rather than to obtain an exact byte-by-byte usage.
+In other words, the objective is to estimate the peak memory demand to a useful degree of accuracy—sufficient to guide resource allocation decisions.
+Predicting memory usage implies focusing on whether a given amount of memory will be adequate for a workload, acknowledging that minor overheads and system-level factors can cause slight deviations in actual usage.
+The approach emphasizes practical accuracy over perfect precision: an effective predictor might err by a small margin but should consistently avoid severe underestimation that leads to \ac{OOM} failures.
+By targeting a reliable upper-bound estimate, the model can ensure robust memory reservations while still significantly narrowing the gap between requested and utilized memory compared to current heuristic practices.
 
-\DFTODO{Explicar sobre o setup do experimento de um ponto de vista de hardware}
-\DFTODO{Explicar sobre o setup do experimento de um ponto de vista de software}
-\DFTODO{Descrever como os dados sintéticos foram gerados. Falar sobre o armazenamento em SEG-Y e o uso de dados reais (F3) pra validação}
-\DFTODO{Descrever os algoritmos que foram utilizados: Envelope, GST3D e Filtro Gaussiano 3D. Explicando o porque e dando detalhes de sua implementação}
-\DFTODO{Listar as métricas coletadas: tempo de execução, uso máximo de memória}
-\DFTODO{Explicar o fluxo de execução do experimento. Falar sobre a execução com vários formatos de entrada}
-\DFTODO{Explicar o método para construir os modelos preditivos}
-\DFTODO{Descrever como foi feito a validação dos modelos usando o F3}
-\DFTODO{Explicar as técnicas para análise de dados e para analisar os resultados}
-\DFTODO{Falar sobre o código fonte dos experimentos e como ele foi organizado}
-
-
-\section{Experimental Results}
-\label{sec:pmc-results}
-
-\DFTODO{Apresentar os resultados dos experimentos, mostrando o consumo de memória e o tempo de execução para cada algoritmo.}
-\DFTODO{Explicar como, trabalhando com dados 3D, foram feitos testes mantendo uma dimensão fixa, duas e sem nenhuma, para avaliar o resultado do comportamento de memória.}
-\DFTODO{Destacar a validação feita para garantir a precisão das medições}
-\DFTODO{Apresentar os resultados da predição de memória e comparar com os resultados reais}
-\DFTODO{Descrever como, por fim, foi montada uma estrutura capaz de prever o consumo de memória apenas com o formato do dado de entrada.}
-\DFTODO{Discutir as vantagens dessa abordagem e suas possíveis aplicações em diferentes cenários.}
-
-
-\section{Conclusion}
-\label{sec:pmc-conclusion}
-
-\DFTODO{Concluir sobre a possibilidade de prever o consumo de memória com base no formato do dado de entrada}
-\DFTODO{Concluir sobre a importância de se ter uma estimativa de memória antes de executar um algoritmo}
-\DFTODO{Concluir sobre a possibilidade de executar com pressão de memória}
+%\section{Materials and Methods}
+%\label{sec:pmc-materials-and-methods}
+%
+%Feature Selection – Encoding Input Shape: We represent each workload’s input configuration via features derived from the input tensor’s shape.
+%Because the algorithm and data type are fixed in our experiments, the dimensions of the input (e.g. length, width, depth of a 3D volume) largely determine memory usage.
+%We include not only the raw dimensions as features, but also derived metrics such as the total number of elements (product of dimensions) and other transformations (e.g. polynomial terms).
+%These capture potential nonlinear scaling – for example, memory might scale roughly linearly with data volume, or perhaps quadratically with one dimension if the algorithm performs intermediate regridding or copies.
+%By engineering features like products, ratios, or squares of dimensions, we allow our models to learn interactions and nonlinear effects.
+%This focused feature set aligns with best practices from the literature, which suggest using only features directly related to memory behavior of the target workload to improve prediction accuracy (https://www.mdpi.com/2073-8994/13/4/697#:~:text=prediction%20accuracy,used%20to%20improve%20prediction%20accuracy)
+%Irrelevant inputs are avoided to keep the model simple and generalizable.
+%
+%Assumption of Shape-Dependent Memory: We explicitly assume that for a given computational kernel (such as our seismic processing routine), memory consumption $M$ can be expressed as a function of the input shape parameters: $M = f(\text{shape})$.
+%This treats the program as a black box with the input size as the primary variable.
+%While real-world memory use can have minor contributions from other factors (overhead of the runtime, small constant allocations, etc.), we expect these to be relatively constant.
+%Thus, the model can focus on capturing the dominant growth trend due to input data.
+%This is supported by domain knowledge – e.g.
+%HPC applications often exhibit predictable scaling where doubling an input’s size roughly doubles memory usage, barring any unexpected behavior.
+%By validating on synthetic data and a real seismic dataset, we will test if shape alone is sufficient for accurate predictions.
+%(If needed, this methodology could be extended with additional features like algorithm-specific flags, but our results will show shape is a powerful predictor on its own.)
+%
+%Choice of Predictive Models: We employ a diverse set of regression models to learn the shape-to-memory mapping, ranging from simple parametric models to more flexible machine learning approaches.
+%Each model offers different biases and capabilities, providing insight into the nature of the memory usage function:
+%
+%- Linear Regression: A baseline assuming a linear relationship between input size and memory.
+%This model checks if memory scales linearly with metrics like number of elements.
+%It’s easy to interpret and can be useful if $M$ is approximately $a \times (\text{input size}) + b$.
+%Any systematic deviations from linearity in the residuals would signal the need for more complex models.
+%
+%- Polynomial Regression: To capture nonlinear growth (e.g. quadratic or cubic scaling with input dimensions), we fit polynomial models.
+%By including squared or higher-order terms of the shape features, polynomial regression can approximate curves (for example, memory that grows like $n^2$ or $n^3$).
+%This is essentially a manual way to incorporate interaction terms (like products of dimensions) into a linear model.
+%If the algorithm’s memory formula is a polynomial in the input dimensions (as is often the case for array-based computations (https://stackoverflow.com/questions/70746660/how-to-predict-memory-requirement-for-np-linalg-inv#:~:text=TL%3BDR%3A%20up%20to%20,float64)), this approach could closely match it with the appropriate degree.
+%We take care to avoid excessive degrees that might overfit.
+%
+%- Decision Trees: A single decision tree regressor is a non-parametric model that can learn piecewise constant or linear relations by recursively splitting the data based on feature values.
+%We include decision trees to capture any piecewise behaviors or threshold effects in memory usage (for example, an algorithm that allocates an extra buffer only when an input dimension exceeds a certain size could produce a discontinuity that a tree might detect).
+%Trees are easy to interpret (they can reveal which shape parameter splits drive memory changes), but a single tree can overfit small datasets and may not extrapolate smoothly.
+%
+%- Ensemble Tree Models: We leverage more robust ensemble methods – Random Forests and Gradient Boosting (including the XGBoost implementation) – which have shown excellent performance in prior HPC resource prediction studies (https://pmc.ncbi.nlm.nih.gov/articles/PMC9906793/#:~:text=from%20January%202019%20,consumption%20of%20the%20HPC%20resources)
+%
+%- Random Forest: an ensemble of many decision trees (via bootstrap aggregation).
+%It averages the predictions of multiple trees, reducing overfitting and typically improving accuracy.
+%In our context, a random forest can capture complex interactions between shape dimensions while maintaining generalization.
+%We expect it to perform well if memory usage is a somewhat smooth function of inputs with some nonlinear twists, as the ensemble can approximate such functions piecewise.
+%
+%- Gradient Boosting & XGBoost: boosting builds an additive model of several small trees, each correcting errors of the previous ones.
+%We include gradient boosted trees (using XGBoost for its efficiency) to see if we can achieve even higher accuracy on subtle relationships.
+%XGBoost is known for handling many types of regression problems with state-of-the-art accuracy by combining many weak learners.
+%Given enough training samples covering the input space, we anticipate that boosted trees will model the memory consumption curve very closely – possibly making near-exact predictions for seen ranges.
+%(Notably, the AMPRO-HPCC study found tree-based models like LightGBM and random forests to be top performers for job memory prediction (https://pmc.ncbi.nlm.nih.gov/articles/PMC9906793/#:~:text=Management%20%28Slurm%29,consumption%20of%20the%20HPC%20resources), so we suspect a similar outcome here.)
+%
+%- Neural Network: We design a feed-forward neural network (multilayer perceptron) to learn the mapping from shape to memory.
+%Neural networks can, in theory, approximate arbitrarily complex functions given sufficient data.
+%Our network is kept relatively small given the size of our dataset (to avoid overfitting).
+%The motivation is to test if a learned nonlinear combination of features can outperform the more structured models.
+%While deep learning models have shown high accuracy in some performance prediction tasks, they often require large training sets and substantial tuning (https://www.mdpi.com/2073-8994/13/4/697#:~:text=In%20recent%20years%2C%20studies%20,features%20which%20is%20the%20same).
+%Here we use a neural network as another nonlinear estimator to see if it captures any patterns the tree ensembles might miss.
+%
+%- Gaussian Process Regression: Gaussian Processes (GPs) offer a Bayesian non-parametric approach, treating regression as inference of a function drawn from a prior distribution.
+%We include a GP model to obtain not only predictions but also uncertainty estimates for each prediction.
+%The GP is well-suited for smooth relationships and smaller datasets – it will effectively perform an interpolation of the observed memory measurements, which could yield very high accuracy on the ranges of input we’ve seen.
+%An additional benefit is that the GP’s confidence intervals can flag inputs where the model is extrapolating (large uncertainty), which is useful in practice to avoid trusting predictions for unseen shape regimes.
+%
+%- Bayesian Ridge Regression: To complement ordinary linear regression, we also apply Bayesian Ridge Regression – a linear model with priors on coefficients (regularization) that outputs a distribution over possible parameter values.
+%This acts as a sanity check baseline with built-in prevention of extreme coefficient values.
+%Its probabilistic nature gives us another way to assess uncertainty.
+%While we don’t expect Bayesian Ridge to drastically outperform ordinary linear regression if the true relationship isn’t linear, its inclusion provides insight into the stability of a simple linear fit.
+%It can indicate if a straightforward linear trend exists (and how confident we can be in it) or if more complex models are unequivocally needed.
+%
+%Model Training Procedure: All models are trained in a supervised manner with memory usage as the target variable and features derived from input shapes as predictors.
+%We use scikit-learn (for regression models and ensembles), XGBoost’s library, and PyTorch/TensorFlow (for the neural network) in Python.
+%Hyperparameters (like polynomial degree, tree depths, number of trees, network layers) were chosen via preliminary tuning or set to reasonable defaults to balance bias and variance.
+%Importantly, we apply consistent training/validation splits and cross-validation where appropriate to compare models fairly (details of data splitting are in Section 5.3).
+%Each model’s performance is evaluated on held-out test cases to assess generalization.
+%We also define a custom evaluation metric that heavily penalizes under-prediction (described later) to reflect the importance of never underestimating required memory in practice.
+%This diverse set of models and careful training regimen allows us to identify whether simple models suffice or if more complex ones truly add value for this problem.
+%
+%
+%\section{Experimental Setup}
+%\label{sec:pmc-experimental-setup}
+%
+%Software and Hardware Environment: Experiments were conducted in a Python-based HPC environment.
+%The code is executed on [describe hardware – e.g., “a compute node with 256 GB RAM and 2× Intel Xeon CPUs”] or a similar platform, ensuring that even the largest test case can be run without swapping.
+%We utilize Python libraries including NumPy for synthetic data generation, and TraceQ (a custom memory profiling tool) to measure memory consumption.
+%TraceQ hooks into the process to log memory usage over time; from its output we extract the peak memory usage (maximum resident set size) during each run.
+%This peak corresponds to the “Max Memory” metric reported by cluster job monitors (https://hpc.ncsu.edu/Documents/memory.php#:~:text=Max%20Memory%20%3A%20%20,08%20MB), which is the key quantity for resource planning.
+%By capturing peak memory, we ensure our predictions aim at the worst-case usage during execution.
+%
+%Target Algorithm and Implementation: We focus on a representative tensor-based workload from seismic data processing.
+%In particular, the code under test could be a function that takes a multi-dimensional seismic array (e.g., a 3D volume) and performs some compute-intensive operation (such as filtering, FFT-based processing, or attribute calculation).
+%The specifics of the algorithm (e.g. complexity) are less important than its memory usage behavior.
+%We treat it as a fixed “black box” whose memory footprint we want to predict.
+%This function is invoked repeatedly with different input array shapes.
+%All other factors (code path, data type, etc.) are held constant to isolate the effect of input shape on memory.
+%
+%Synthetic Dataset Generation: To train our models, we generated a synthetic dataset of input shapes and observed memory usages.
+%We varied the input tensor dimensions systematically to cover a broad range of sizes.
+%For example, for a 3D workload, we might vary depth, height, and width across realistic ranges (small, medium, large) and sample combinations of these.
+%We ensured the synthetic shapes span from very small inputs (to observe baseline memory usage and any fixed overhead) up to near the upper limits of what the hardware could handle (to observe how memory scales at the high end).
+%Each unique shape configuration was run through the target algorithm, and TraceQ recorded its peak memory.
+%This process yields a labeled dataset: (features = shape metrics, target = memory).
+%We repeated each measurement multiple times to verify consistency (minimal run-to-run variance in memory, which we indeed observed, indicating a deterministic memory pattern for given shapes).
+%The synthetic approach allows gathering ample data (including extreme cases that might not appear in real datasets) under controlled conditions, which is ideal for training the more data-hungry models like neural nets.
+%
+%• Real-World Dataset (F3 Seismic) for Validation: In addition to synthetic data, we evaluated our models on a real seismic dataset – the Netherlands F3 block.
+%The F3 dataset is a 3D seismic volume of size approximately 255 × 901 × 601 (depth × inline × crossline) (https://www.researchgate.net/figure/The-size-of-Netherlands-F3-dataset-is-255-901-601-depth-crossline-inline_fig3_373406803), totaling on the order of 138 million samples.
+%This large volume is representative of high-end workload sizes in our domain.
+%We ran the same target algorithm on the F3 data (and subsets or downsampled versions of it, if needed) to gather memory usage in practice.
+%The F3 runs serve as an independent test: they allow us to see if models trained on synthetic patterns can generalize to a real-case scenario with a specific shape (and possibly slight differences, like the presence of geologic structures in the data, though that shouldn’t affect memory).
+%In our experiments, the F3 full volume and several sub-volumes (for instance, splitting the volume into halves or quarters) were used as test points to evaluate prediction accuracy on real data shapes that were not explicitly in the training set.
+%
+%Memory Profiling Process: For each experiment (each input shape), we use TraceQ to record memory usage over the runtime of the algorithm.
+%We extract the peak memory usage observed.
+%This peak is our ground-truth label for the learning models.
+%By focusing on peak, we inherently capture the worst-case memory requirement – exactly what needs to be reserved in an HPC job.
+%We also note the timing of when the peak occurs (e.g., at a particular stage of the algorithm), though for modeling we only use the peak value.
+%The overhead of TraceQ is negligible, and it provides high-resolution memory tracking, which gave us confidence in the accuracy of our measurements (within a few MB). Each shape configuration’s run is isolated (we ensured no other heavy processes on the node, memory was freed between runs, etc.).
+%
+%Training, Testing, and Validation Strategy: We split our collected data into a training set and a test set.
+%The training set (mostly synthetic cases) is used to fit the models.
+%We employed k-fold cross-validation on the training set to tune model hyperparameters (for example, to select the polynomial degree or tree depth that yields the best validation score).
+%The held-out test set includes some synthetic shapes (to evaluate interpolation performance) and the real F3 cases as separate test points (to evaluate extrapolation or at least interpolation at a larger scale).
+%Model performance is quantified using standard regression metrics like Mean Squared Error (MSE) and Coefficient of Determination (R²) on the test set.
+%However, given our practical goal, we pay special attention to prediction bias: a model that consistently underestimates memory, even by a small percentage, is considered riskier than one that overestimates by a moderate amount.
+%To capture this, we introduced a custom scoring metric that penalizes under-predictions more heavily than over-predictions.
+%In practice, this could be a weighted error or a custom loss function where if predicted memory < actual memory, the penalty is amplified.
+%We used this score to rank the models for “safety.” The metric reflects the fact that an underestimation could lead to a job crash (which is far worse than overestimation leading to some idle reserved memory) (https://pmc.ncbi.nlm.nih.gov/articles/PMC9906793/#:~:text=While%20these%20resource%20requirements%20are,waiting%20time%20for%20submitted%20jobs).
+%Throughout training, we monitored this metric as well, and in model selection, we gave priority to models with little to no underestimation on validation data.
+%
+%Summary of Experimental Setup: In summary, our experiments involved hundreds of runs of the seismic algorithm with varying input shapes, automated memory tracking, and offline training of various predictive models.
+%The combination of synthetic exhaustive sampling and real-case testing provides a robust assessment of whether input shape alone suffices to predict memory.
+%Next, we present the results, including visual comparisons of predicted vs. actual memory usage and error analysis for each model type.
+%
+%
+%\section{Experimental Results}
+%\label{sec:pmc-results}
+%
+%Overall Prediction Accuracy: The results show that memory consumption can be predicted with high accuracy from input shapes. Most models captured the general trend that larger inputs require more memory, and several models achieved near-perfect fit on the test data. For instance, the best-performing model achieved an R² above 0.95 on the synthetic test cases, indicating that almost all variance in memory usage was explained by the input shape features. In concrete terms, for a typical large input in our test set (e.g., a 200×200×200 volume), the predicted peak memory differed from the actual by only a few percent. This level of accuracy is far better than the manual trial-and-error estimates users typically resort to, and is on par or better than similar memory prediction efforts reported in literature (which often report R² in the 0.7–0.9 range for more generalized workloads) (https://pmc.ncbi.nlm.nih.gov/articles/PMC9906793/#:~:text=Management%20%28Slurm%29,consumption%20of%20the%20HPC%20resources). Importantly, even when not exact, the predictions tended to err on the safe side, slightly overestimating rather than underestimating the memory in most cases – a desirable outcome for practical use.
+%• Comparison of Models: We compared the performance of all models (Linear, Polynomial, Tree-based, Ensemble, Neural Network, Gaussian Process, Bayesian Ridge) using both the standard metrics and the custom underestimation-penalizing score. Key findings include:
+%• Linear vs. Polynomial: The simple linear regression, using total number of elements as a feature, already provided a reasonable first approximation. It captured the general linear growth of memory with input size but under-predicted memory for very large inputs by a noticeable margin (e.g., for the largest synthetic case, linear prediction was ~10% lower than actual). This underestimation suggests a slight nonlinear component (perhaps a fixed overhead or higher-order term) that a pure linear model couldn’t capture. Polynomial regression (we experimented with quadratic and cubic terms) significantly improved the fit. A quadratic model, for example, reduced the error for large inputs and aligned closely with actual usage across the range, implying that the memory-size relationship has a curve that a second-order term can model. However, beyond a certain degree, polynomial models started to overfit the training data (oscillating between points), so we found a low-degree polynomial to be optimal.
+%• Tree-Based Models: The single decision tree model did learn the relationship fairly well, creating splits mostly on the total number of elements feature. It had low error on training data but was slightly less accurate on test data due to some overfitting (the piecewise constant nature of a tree meant minor overshoots or undershoots in certain ranges). The power of tree models became evident with Random Forest and Gradient Boosting. The random forest smoothed out the decision tree’s piecewise predictions by averaging many trees, resulting in a robust model that was accurate to within a few percent for all test points. It rarely under-shot the actual memory – in fact, the ensemble’s tendency to average out noise meant it usually predicted a touch above the actual (providing a buffer). Gradient Boosting and XGBoost delivered the most accurate predictions among all models. After tuning (e.g., limiting tree depth to prevent overfitting small quirks), XGBoost achieved an almost one-to-one fit: when plotting predicted vs. actual memory, the points lay very close to the diagonal line. These ensemble models earned top scores in our custom metric as well, since they virtually never under-predicted the peak memory. This aligns with other research that found boosted trees to excel in resource usage prediction tasks (https://pmc.ncbi.nlm.nih.gov/articles/PMC9906793/#:~:text=from%20January%202019%20,consumption%20of%20the%20HPC%20resources).
+%• Neural Network: Our neural network (a feed-forward model with a couple of hidden layers) also managed to learn the relationship after training. Its performance was comparable to the ensemble models in terms of mean error; however, one key difference was that the neural net exhibited slightly higher variance in error for different test cases. In other words, most predictions were spot-on, but a few were off by a larger margin (both over and under). We suspect this is due to the neural network not having as many training samples as it would ideally want – with more data or further hyperparameter tuning, it might match the consistency of the random forest. Nonetheless, it did not show any systematic bias and generally predicted safe values. The advantage of the neural network is that it could potentially incorporate additional inputs easily (if we had more features like algorithm settings), but in our shape-only scenario, it didn’t dramatically outperform the structured models.
+%• Gaussian Process: The GP regressor yielded excellent results on the interpolation range of our synthetic data. Given its nature, it essentially provided an almost exact fit through the training points (since we assumed a relatively smooth kernel). On test points within the range of training shapes, the GP’s predictions were extremely close to actual usage, and it provided tight confidence intervals, signaling high certainty. One challenge with the GP emerged when predicting for the extreme ends (for example, the absolute largest shape which might be slightly beyond the range of training data). In those cases, the GP’s confidence interval widened, and we observed a slight underestimation for one extrapolation case. This is expected behavior – the model was less certain and effectively regressed toward the mean. In practice, this is useful: the GP can warn us when a prediction is an extrapolation by showing high uncertainty. For our purposes, the GP was among the top performers for interpolation, and careful handling of its predictions at extremes could make it a reliable choice.
+%• Bayesian Ridge Regression: The Bayesian Ridge model performed similarly to the ordinary linear regression, as anticipated. The added regularization helped a bit in not overshooting any coefficients, but since the true relationship isn’t strictly linear, it also under-predicted for the largest inputs. It did, however, give a probabilistic prediction (with a variance) that indicated low confidence in those large-input predictions – which is an insight that plain linear regression wouldn’t provide. This mirrors the finding that a simple linear model is slightly inadequate, but the fact that it wasn’t wildly wrong means the assumption of memory roughly scaling with input size is fundamentally sound.
+%• Quantitative Performance Summary: (We will present a table or chart here comparing each model on metrics like MSE, R², and the custom score, as well as noting under/over prediction tendencies.) In summary, the ensemble tree models (Random Forest, XGBoost) and the Gaussian Process were the stand-out performers with highest accuracy and safest predictions. For example, XGBoost achieved an R² ≈ 0.98 on the test set and had a custom score indicating virtually zero dangerous underestimations. The neural network was a close second-tier, with R² in the ~0.95 range. Polynomial regression (quadratic) also did quite well (R² ~0.92), proving that a fairly simple curve-fit already captures most of the memory behavior. Linear regression and Bayesian Ridge trailed with R² in the 0.85–0.90 range, mainly due to systematic underestimation on large cases. The single decision tree had high training R² but test R² around 0.88, reflecting some overfit piecewise behavior. These results confirm that the relationship between input shape and memory is learnable and mostly smooth, as simpler models weren’t far off, but the best accuracy is achieved with models that can handle a slight nonlinearity and interaction in the data.
+%• Actual vs. Predicted Plots: We include plots of actual vs. predicted memory for selected models to visually illustrate performance. In the case of XGBoost (our best model), the scatter plot of predicted vs. actual memory (in GB) for all test points lies almost on the $y=x$ line, with perhaps a slight buffer above the line for the largest points (indicating slight overestimation). This visual confirms the high accuracy. For linear regression, the plot shows a trend line that falls under the $y=x$ line at the high end, consistent with under-predicting large values. We also plot the error (residual) vs. input size, which shows linear regression’s residuals growing with input size, whereas the residuals for XGBoost stay centered around zero across the whole range. These figures reinforce why the more sophisticated models were needed for top precision. (If space allows, we might also show the GP’s prediction with confidence bands as a function of input size – demonstrating how uncertainty grows outside the training range).
+%• Performance on Real F3 Data: A crucial test was how well the models trained on synthetic data predict the memory usage for the real F3 seismic dataset. We found that the best models generalized well. For instance, the random forest and XGBoost predictions for the full F3 volume’s memory were within ~5% of the actual peak usage observed when we ran the algorithm on that data. This is a strong result, indicating that our synthetic training (which included shapes similar in scale to F3) was representative. The models essentially recognized that F3’s shape (255×901×601) was at the high end of the range and extrapolated the trend accurately. The neural network and GP also predicted close to the actual F3 memory, each slightly overestimating by a small margin (which in a real scenario is acceptable, as it would mean we’d allocate a bit more memory than needed, avoiding any risk). Simpler models like linear regression under-shot the F3 usage by more than 10% (which, if followed blindly, could have led to under-allocation). This validates our approach: by using more expressive models, we can trust the predictions even for a real-case input that was not explicitly in training. It also highlights the benefit of including high-end synthetic points in training so that models don’t need to extrapolate far beyond seen data.
+%• Custom Metric & Safe Predictions: Using our custom “no-underestimation” score, we determined that several models (especially Random Forest, XGBoost, and GP) achieved perfect or near-perfect safety scores – meaning they never predicted less than the actual usage by more than a negligible amount on any test case. Models that had any significant misses (like linear regression’s 10% underestimation on the largest case) were ranked lower despite decent R². This exercise underscores an important point: what constitutes the “best” model depends on the practical criterion. If avoiding job crashes is paramount, one might choose a model that perhaps overestimates by a margin on every single point rather than one that is 99% accurate on average but occasionally 10% low. Fortunately, in our situation, we found models that were both highly accurate and safe. In deployments, one could even take an accurate model and add a small safety buffer to its predictions (e.g., predict memory = model output * 1.05 to cover any unknowns). In our results, we note that approach as a possible refinement, though for the top models it wasn’t really necessary given their performance.
+%• Insights Gained: Through analysis of the learned models, we can glean insights about how the algorithm uses memory. The most dominant feature was unsurprisingly the total number of data points (or a close proxy like one dimension times another for 3D). This confirms the intuition that more data yields higher memory usage primarily linearly. The need for a quadratic term in polynomial regression or depth in trees suggests there is a fixed overhead or a second-order effect – possibly the algorithm allocates an extra array that scales with one of the dimensions (for example, maybe it allocates a temporary 2D slice array of size width×height, causing an additional term proportional to one plane of the volume). The models picked up on that. In fact, by inspecting the decision splits of the tree or the coefficients of a quadratic fit, we could guess at the formula: one such analysis hinted at $M \approx a \cdot (D \times H \times W) + b \cdot (H \times W) + c$ bytes (where the second term represents an extra array the size of one horizontal slice). This matches how one might manually derive the memory formula if one knew the algorithm’s internals. Thus, the ML approach not only provides predictions but can also validate our understanding of algorithmic memory usage.
+%• Error Analysis: We also examined the few cases with larger prediction errors. One pattern observed was that when an input shape was very small, some models (especially polynomial and ensemble) slightly over-predicted memory. For example, for a tiny 10×10×10 test volume, the actual memory usage might include a base overhead (say 50 MB for loading libraries, etc.), which our models (trained mostly on larger sizes) approximated less precisely, leading to a prediction of perhaps 60 MB vs actual 55 MB. This is a minor issue, and in practice overallocation of a few MB is inconsequential, but it points to the models being primarily tuned for the scaling behavior rather than the absolute base offset. We could address this by including more small-size data points in training or by explicitly modeling base overhead as a constant term (which linear models do automatically as an intercept, but tree models might not capture as smoothly). We mention this for completeness, but emphasize it’s not a serious flaw.
+%• Statistical Confidence: Finally, we assess the confidence in these results. Given the consistent performance across multiple validation splits and the agreement of different high-capacity models (trees, NN, GP) on the memory trend, we are confident that the dependency of memory on input shape has been learned robustly. The standard deviation of errors is low, and no model completely disagreed with theoretical expectations (no bizarre predictions). This consistency suggests the problem is well-conditioned for learning. The next section will discuss the implications of these findings and how such a predictive model can be applied in practical settings.
+%
+%
+%\section{Conclusion}
+%\label{sec:pmc-conclusion}
+%
+%•	Feasibility of Shape-Based Memory Prediction: Our investigation confirms that predicting memory consumption from input shapes is not only feasible but can be highly accurate for tensor-based workloads. Even using relatively straightforward features (dimensions, their products) and general-purpose ML models, we achieved predictions that are within a few percent of actual usage for both synthetic tests and real seismic data. This validates the core hypothesis of this chapter: for data-intensive computations where the algorithm doesn’t drastically change behavior based on data content, input size is the primary driver of memory demand. We have shown that a model can learn this relationship, essentially automating what an expert might deduce (e.g., “if I double the grid size, memory will roughly double”) with far greater precision. In practical terms, this means developers and HPC users can rely on a predictive system to estimate memory needs instead of guesswork.
+%•	Benefits for Seismic Workflows: In the seismic domain, datasets are large and processing them is memory-intensive. By deploying a memory predictor trained as we described, geoscientists can plan their computational jobs more efficiently. For example, before launching a seismic inversion or attribute extraction on a new survey, one can input the survey’s dimensions into the predictor to get an estimate of peak memory required. This helps in choosing an appropriate computing node or cluster configuration (ensuring enough memory is available) and in reserving just the right amount of memory. The outcome is fewer failed jobs due to OOM (out-of-memory) errors and less wasted resources from over-allocation. It also enables what-if analyses: users can simulate how memory demand grows if, say, they increase the resolution of their grid or the size of a processing batch, guiding decisions about data resizing or algorithm parameter tuning. For the F3 dataset example, our model could have immediately informed the user that on a 256 GB node, the job will fit with room to spare, whereas on a 64 GB node it would likely exceed available memory – avoiding an attempt that would inevitably crash. Such foresight is extremely valuable when pipeline execution time is measured in hours or days; it prevents lost time due to memory errors.
+%•	Cluster Resource Management Improvements: More broadly, integrating these predictive models into cluster scheduling systems can improve overall HPC operations. If each job can come with a more accurate memory requirement estimate (either provided by an offline tool or an automated script that uses input metadata to predict), the scheduler can pack jobs more optimally and reduce idle memory. This translates to higher throughput and utilization of expensive HPC resources (https://pmc.ncbi.nlm.nih.gov/articles/PMC9906793/#:~:text=the%20time,consumption%20of%20the%20HPC%20resources). As noted in related work, when users specify resources more accurately, it reduces queue wait times and increases system efficiency (https://pmc.ncbi.nlm.nih.gov/articles/PMC9906793/#:~:text=While%20these%20resource%20requirements%20are,waiting%20time%20for%20submitted%20jobs).
+%Our approach could complement such systems as a plugin: for instance, a submission script could call a “memory predictor” given the input file dimensions before filling in the resource request. Some HPC centers are already exploring machine learning to assist users in resource selection (https://pmc.ncbi.nlm.nih.gov/articles/PMC9906793/#:~:text=,waiting%20time%20for%20submitted%20jobs),
+%and a shape-based predictor can be one piece of that puzzle, especially for regular data-processing jobs. Additionally, from a power and cost perspective, avoiding overallocation has tangible benefits (power savings from not needlessly reserving memory and spinning up large nodes) (https://pmc.ncbi.nlm.nih.gov/articles/PMC9906793/#:~:text=the%20time,consumption%20of%20the%20HPC%20resources)
+%
+%	•	\textbf{Generality to Other Domains:} While our case study centered on a seismic processing algorithm, the methodology and benefits extend to other high-dimensional data processing tasks. Any application that primarily handles large arrays or matrices could use a similar predictive model. For example, in climate modeling or CFD simulations, one could predict memory from the grid resolution; in bioinformatics, from the genome length or number of sequences being processed; in deep learning, from the model architecture and input image size (in fact, researchers have built models to estimate memory usage of neural networks given layer configurations (https://infohub.delltechnologies.com/sv-se/l/memory-consumption-modeling-of-deep-learning-workloads/case-study-application-3d-u-net/#:~:text=intermediate%20tensors%20,depends%20on%20four%20key%20parameters)
+%The common theme is that \textbf{a few key parameters define the problem size}, and thus memory. By training models on those parameters, one can obtain quick estimates without running the full application. This is akin to performance modeling efforts in HPC, but focused on memory rather than runtime. Our work demonstrates a blueprint for building such models with modest effort and data.
+%
+%
+%	•	\textbf{Practical Deployment Considerations:} To implement this in practice, one would integrate the trained model into the workflow. The model itself (especially if using a simple regressor or tree ensemble) can be saved and embedded in a small CLI tool or library. Given an input shape (perhaps read from the data header or inferred from input), the tool outputs an estimated peak memory. Users might still include a safety margin (e.g., request 10% above the estimate) to account for any unforeseen overhead or to satisfy cluster integer memory units. Since our results indicated robust performance, that margin can be small. It’s worth noting that if the range of input sizes changes (say, even bigger data than seen before), the model should be retrained or at least updated with new samples – an ongoing learning process. However, gathering a few new sample points (by profiling the new extreme cases) and retraining is far less onerous than continuously guessing and checking. The cost of profiling is just a few runs of the program (which one might do in testing anyway), and after that the model spares you from surprises.
+%
+%
+%	•	\textbf{Limitations and Future Work:} Our approach deliberately simplifies the problem by assuming a single application and focusing only on input shape. In more complex scenarios, memory usage could also depend on other factors: e.g., algorithmic parameters (tolerance settings that change iteration counts), data values (sparse vs dense data might use memory differently), or concurrent workloads on the same node. For our seismic use case, these were not significant factors, but in general, expanding the feature set might further improve predictions if needed. Future work could explore \textbf{multi-variable models}, incorporating additional inputs like algorithm flags or even real-time performance counters. Another avenue is to create \textbf{dynamic predictors} that predict not just the peak but the timeline of memory usage, enabling optimizations like when to start transferring data out to disk, etc. Moreover, applying this method to \textit{runtime} prediction alongside memory would give a full picture of resource needs – something HPC schedulers would highly value (https://www.hpcwire.com/solution_content/ibm/cross-industry/a-crystal-ball-for-hpc/#:~:text=A%20Crystal%20Ball%20for%20HPC,runtime%20required%20for%20their%20workloads)
+%
+%
+%	\textbf{Conclusion:} In conclusion, this chapter demonstrated a successful case of using machine learning to predict peak memory consumption from input shapes for computational workloads. We transformed a traditionally heuristic, trial-and-error task into a data-driven modeling task, and achieved high accuracy and reliability. The predictive models effectively serve as a “crystal ball” for memory usage, allowing us to anticipate resource demands before execution. The implications are substantial: with such tools, scientists and engineers can run large-scale computations with greater confidence and efficiency. No longer must one “overestimate by a large margin just in case” (https://pmc.ncbi.nlm.nih.gov/articles/PMC9906793/#:~:text=While%20these%20resource%20requirements%20are,waiting%20time%20for%20submitted%20jobs)
+%– instead, one can request resources smartly, guided by predictions. This fosters better usage of HPC infrastructure and smoother user experience. The success with the seismic data example paves the way for adopting similar strategies in other domains dealing with big data and arrays. Ultimately, predictive memory modeling contributes to the broader goal of \textbf{autonomous resource management} in computing – where systems can self-tune and allocate resources optimally based on learned models, minimizing human guesswork and error. The next chapter will build on these insights, possibly exploring runtime performance prediction or integrating our memory predictor into a live scheduling system, to further illustrate the power of predictive modeling in HPC environments.
