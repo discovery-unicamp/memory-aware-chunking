@@ -230,12 +230,80 @@ Section~\ref{sec:pmc-results} elaborates on these experimental outcomes and comp
 
 \begin{figure}[htbp]
     \centering
-    % Placeholder for data pipeline figure
-    \fbox{\rule{0pt}{1in}\rule{.9\linewidth}{0pt}}
-    \caption{Schematic of the pipeline.
-        (1) Generation of synthetic \ac{SEG-Y} data.
-        (2) Container-based memory profiling for each operator.
-        (3) Aggregation of profiles, extraction of peak memory usage, and feature construction.
-        (4) Training and evaluation of regression models.}
+    \resizebox{\textwidth}{!}{
+        \begin{tikzpicture}[
+            font=\sffamily\small,
+            phase/.style={
+                draw=black,
+                thick,
+                fill=gray!10,
+                rectangle,
+                rounded corners,
+                drop shadow,
+                align=center,
+                minimum width=3.8cm,
+                inner sep=0.4cm
+            },
+            box/.style={
+                draw=black,
+                thick,
+                fill=white,
+                rectangle,
+                rounded corners,
+                align=center,
+                minimum width=3.8cm,
+                minimum height=1.1cm
+            },
+            arrow/.style={
+                ->,
+                thick
+            },
+            node distance=0.4cm and 0.8cm
+        ]
+
+            % Phase 1: Data Generation
+            \node[phase] (phase1) {Phase 1:\\Data Generation};
+            \node[box, below=of phase1] (p1input) {\textbf{Input}\\Shape parameters\\(inlines, xlines, samples)};
+            \node[box, below=of p1input] (p1process) {\textbf{Process}\\Generate synthetic\\SEG-Y volumes};
+            \node[box, below=of p1process] (p1output) {\textbf{Output}\\Synthetic data files};
+
+            \draw[arrow] (p1input) -- (p1process);
+            \draw[arrow] (p1process) -- (p1output);
+
+            % Phase 2: Memory Profiling
+            \node[phase, right=3cm of phase1] (phase2) {Phase 2:\\Memory Profiling};
+            \node[box, below=of phase2] (p2input) {\textbf{Input}\\Synthetic SEG-Y files};
+            \node[box, below=of p2input] (p2process) {\textbf{Process}\\Container-based\\operators (traceq)};
+            \node[box, below=of p2process] (p2output) {\textbf{Output}\\.prof files};
+
+            \draw[arrow] (p2input) -- (p2process);
+            \draw[arrow] (p2process) -- (p2output);
+            \draw[arrow] (p1output.east) -- ++(0.7,0) |- (p2input.west);
+
+            % Phase 3: Feature Aggregation
+            \node[phase, right=3cm of phase2] (phase3) {Phase 3:\\Aggregation \& Feature\\Construction};
+            \node[box, below=of phase3] (p3input) {\textbf{Input}\\.prof files + shape info};
+            \node[box, below=of p3input] (p3process) {\textbf{Process}\\Parse peak usage\\Derive features};
+            \node[box, below=of p3process] (p3output) {\textbf{Output}\\Feature dataset};
+
+            \draw[arrow] (p3input) -- (p3process);
+            \draw[arrow] (p3process) -- (p3output);
+            \draw[arrow] (p2output.east) -- ++(0.7,0) |- (p3input.west);
+
+            % Phase 4: Model Training
+            \node[phase, right=3cm of phase3] (phase4) {Phase 4:\\Model Training \& Evaluation};
+            \node[box, below=of phase4] (p4input) {\textbf{Input}\\Feature dataset};
+            \node[box, below=of p4input] (p4process) {\textbf{Process}\\Train regression\\(XGBoost, NN, etc)};
+            \node[box, below=of p4process] (p4output) {\textbf{Output}\\Memory usage\\predictions};
+
+            \draw[arrow] (p4input) -- (p4process);
+            \draw[arrow] (p4process) -- (p4output);
+            \draw[arrow] (p3output.east) -- ++(0.7,0) |- (p4input.west);
+
+        \end{tikzpicture}
+    }
+    \caption{Schematic of the memory prediction pipeline. It includes synthetic data generation, containerized profiling, feature extraction, and regression model training.}
     \label{fig:pmc_datapipeline}
 \end{figure}
+
+\end{document}
