@@ -1,6 +1,5 @@
 """
 Analyzes memory usage prediction experiment results for Memory-Aware Chunking,
-including extended/new analyses for deeper insights.
 
 1. Reads environment variables (OUTPUT_DIR, OPERATORS_DIR).
 2. Finds operator directories and their CSV results.
@@ -742,37 +741,29 @@ def plot_feature_performance(df, operator, out_dir):
 
 
 # ------------------------------------------------------------------------------
-# EXTRA INSIGHTS / NEW ANALYSIS
+# EXTRA INSIGHTS
 # ------------------------------------------------------------------------------
 def analyze_additional_insights(results):
-    """
-    OPTIONAL: Additional analyses suggested to deepen insight.
-    Feel free to comment out or refine these depending on data availability.
-    """
     print("---- EXTRA: Additional Explorations & Plots ----")
     for operator, dfs in results.items():
         print(f"Additional insights for operator: {operator}")
         out_dir = os.path.join(OPERATORS_DIR, operator, "charts")
 
-        # 1. If 'profile_summary' is available, we can do a memory vs volume regression:
         if "profile_summary" in dfs:
             psum = dfs["profile_summary"]
             plot_memory_vs_volume_regression(psum, operator, out_dir)
 
-        # 2. If 'profile_history' has inlines, xlines, samples, do a pairplot:
         if "profile_history" in dfs:
             phist = dfs["profile_history"]
             # This requires that you have columns "inlines", "xlines", "samples"
             if all(col in phist.columns for col in ["inlines", "xlines", "samples"]):
                 plot_memory_vs_dimensions(phist, operator, out_dir)
 
-        # 3. If 'model_metrics' is available, we can do residual vs. predicted or QQ
         if "model_metrics" in dfs:
             mmetrics = dfs["model_metrics"]
             plot_residual_vs_predicted(mmetrics, operator, out_dir)
             plot_residual_qq(mmetrics, operator, out_dir)
 
-        # 4. If we want to see execution time vs. memory usage in 'profile_summary'
         if "profile_summary" in dfs and all(
             c in dfs["profile_summary"].columns
             for c in ["peak_memory_usage_avg", "execution_time_avg"]
@@ -792,14 +783,10 @@ def plot_memory_vs_volume_regression(df, operator, out_dir):
         return
 
     print(f"  -> Memory vs. Volume (Regression) for {operator}")
-    # Fit a simple linear model: y = m*x + b
     x = df["volume"].values
     y = df["peak_memory_usage_avg"].values
 
-    # np.polyfit returns [slope, intercept] if deg=1, but let's do it carefully
-    # Actually, polyfit returns [m, b] in a different order with 'deg=1' for polynomial
-    # So let's store them carefully:
-    m, b = np.polyfit(x, y, 1)  # slope, intercept
+    m, b = np.polyfit(x, y, 1)
 
     fig, ax = plt.subplots()
     ax.scatter(x, y, label="Observed", zorder=3)
@@ -809,7 +796,6 @@ def plot_memory_vs_volume_regression(df, operator, out_dir):
     ax.set_title("Memory vs. Volume with Linear Fit")
     ax.legend()
 
-    # Format volume axis
     ax.xaxis.set_major_formatter(
         ticker.FuncFormatter(lambda v, _: format_volume_label(v))
     )
@@ -833,13 +819,9 @@ def plot_memory_vs_dimensions(df, operator, out_dir):
     print(f"  -> Memory vs. Dimensions Pairplot for {operator}")
     subset = df[needed_cols].copy()
 
-    # Large pairplots can be slow for big data; consider sampling if huge
-    # subset = subset.sample(n=500, random_state=42)  # if needed
-
-    # Create pairplot
     g = sns.pairplot(
         subset,
-        kind="reg",  # includes a regression line in each scatter
+        kind="reg",
         plot_kws={"line_kws": {"color": "red"}},
         diag_kind="kde",
     )
@@ -859,7 +841,6 @@ def plot_residual_vs_predicted(mmetrics, operator, out_dir):
     import os
     import matplotlib.pyplot as plt
 
-    # Check necessary columns
     if not all(
         col in mmetrics.columns for col in ["model_name", "residuals", "y_pred"]
     ):
@@ -870,19 +851,17 @@ def plot_residual_vs_predicted(mmetrics, operator, out_dir):
 
     print(f"  -> Residual vs. Predicted for {operator}")
 
-    # Create subplots (3x3)
     fig, axes = plt.subplots(nrows=3, ncols=3, figsize=(15, 12))
     axes = axes.flatten()
 
     for i, row in mmetrics.iterrows():
         if i >= len(axes):
-            break  # If there are more than 9 models, only plot the first 9
+            break
 
         model_name = row["model_name"]
         residuals = np.array(eval(row["residuals"]))
         y_pred = np.array(eval(row["y_pred"]))
 
-        # Ensure array lengths match
         if len(residuals) != len(y_pred):
             continue
 
@@ -893,7 +872,6 @@ def plot_residual_vs_predicted(mmetrics, operator, out_dir):
         ax.set_ylabel("Residual")
         ax.set_title(f"{model_name}")
 
-    # Adjust layout so the main title doesn't overlap subplots
     fig.tight_layout(rect=[0, 0, 1, 0.95])
     fig.suptitle("Residual vs. Predicted", fontsize=16)
 
@@ -912,21 +890,18 @@ def plot_residual_qq(mmetrics, operator, out_dir):
     import scipy.stats as stats
     import matplotlib.pyplot as plt
 
-    # Quick columns check
     if not all(col in mmetrics.columns for col in ["model_name", "residuals"]):
         print("  -> Missing needed columns in model_metrics for QQ-plot. Skipping.")
         return
 
     print(f"  -> Residual QQ-Plot for {operator}")
 
-    # Create 3x3 subplots
     fig, axes = plt.subplots(nrows=3, ncols=3, figsize=(15, 12))
     axes = axes.flatten()
 
-    # Iterate through rows, each row is a model
     for i, row in mmetrics.iterrows():
         if i >= len(axes):
-            break  # If there are more than 9 models, we only plot the first 9
+            break
         model_name = row["model_name"]
         residuals = np.array(eval(row["residuals"]))
 
@@ -934,11 +909,9 @@ def plot_residual_qq(mmetrics, operator, out_dir):
         stats.probplot(residuals, dist="norm", plot=ax)
         ax.set_title(f"QQ-Plot: {model_name}")
 
-    # Adjust layout so titles won't overlap subplots
     fig.tight_layout(rect=[0.0, 0.0, 1.0, 0.95])
     fig.suptitle("QQ-Plots of Residuals", fontsize=16)
 
-    # Save & close
     out_path = os.path.join(out_dir, "residual_qq_plots.pdf")
     fig.savefig(out_path)
     plt.close(fig)

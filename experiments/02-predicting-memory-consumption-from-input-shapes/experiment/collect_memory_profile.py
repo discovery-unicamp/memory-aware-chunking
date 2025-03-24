@@ -54,7 +54,6 @@ def main():
         "gaussian_filter": gaussian_filter.gaussian_filter_from_segy,
     }
 
-    # Ensure the chosen ALGORITHM is valid; default to 'envelope' otherwise
     if ALGORITHM not in algorithms:
         print(f"Warning: Unknown ALGORITHM '{ALGORITHM}'. Falling back to 'envelope'.")
         enabled_algorithm = envelope.envelope_from_segy
@@ -76,7 +75,6 @@ def main():
         }
     )
 
-    # Execute the chosen function under traceq.profile
     traceq.profile(enabled_algorithm, INPUT_PATH)
 
 
