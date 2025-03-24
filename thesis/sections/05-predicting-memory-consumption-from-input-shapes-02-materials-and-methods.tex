@@ -1,0 +1,241 @@
+\section{Materials and Methods}
+\label{sec:pmc-materials-and-methods}
+
+This section explains the complete methodology for gathering memory-consumption data, generating shape-based features, and training predictive models.
+The overall pipeline includes four core phases.
+(i) Data Generation,
+(ii) Memory Profiling,
+(iii) Result Collection,
+and (iv) Analysis.
+These phases ensure consistent, reproducible, and high-quality measurements, which support machine learning models that learn memory usage from shape attributes.
+
+\vspace{1em}
+\noindent
+\textbf{Phase 1: Data Generation.}
+The experiment begins with synthetic seismic datasets.
+In a typical seismic application, three dimensions describe the data.
+\emph{inlines}, \emph{xlines}, and \emph{samples}.
+The script systematically enumerates shape configurations by varying these dimensions from an \texttt{INITIAL\_SIZE} to a \texttt{FINAL\_SIZE} with increments of \texttt{STEP\_SIZE}.
+For example, when the initial size equals 100, the final size equals 600, and the step size equals 100, the script generates volumes of sizes
+\(\{\,(100,100,100),\,(100,100,200),\dots,(600,600,600)\}\)
+and writes them to \ac{SEG-Y}~\cite{barry1975segy} files.
+These synthetic datasets mimic actual seismic data and span diverse volumes to reveal how memory grows with increasing dimension sizes.
+
+\vspace{1em}
+\noindent
+\textbf{Phase 2: Memory Profiling.}
+A shell script schedules container-based jobs to run seismic operators on each generated dataset.
+Chapter~\ref{ch:measuring-memory-consumption} describes the \ac{HPC}-like constraints and the rationale for isolating each job to reduce interference.
+Accordingly, the script starts \ac{dind} containers pinned to specific \ac{CPU} cores through \texttt{--cpuset-cpus}.
+This binding ensures comparable runs.
+The script then processes three main operators:
+
+\begin{itemize}
+    \item \emph{Envelope}~\cite{taner1979complex}: A classic seismic attribute that computes instantaneous amplitude for each trace.
+    \item \emph{\ac{GST3D}}~\cite{bigun2004recognition}: A structural attribute designed to highlight seismic faults or discontinuities.
+    \item \emph{3D Gaussian Filter}~\cite{gonzalez2002digital}: A spatial smoothing operator for seismic volumes.
+\end{itemize}
+
+Each operator appears as a Docker image defined in the \texttt{Dockerfile}.
+Each container execution uses a Python script to load and process input data.
+The \texttt{traceq} library records \ac{RSS} over time, as shown in Chapter~\ref{ch:measuring-memory-consumption}.
+On completion, a \texttt{.prof} file stores the memory timeline and associated metadata, including timestamps and shape parameters.
+This procedure captures peak memory usage accurately.
+
+\vspace{1em}
+\noindent
+\textbf{Executing Operators and Gathering Profiles.}
+Listing~\ref{lst:exp_sh} shows portions of the shell script.
+The script orchestrates the sequence.
+(i) create Docker volumes,
+(ii) run a Python script to generate the synthetic datasets,
+(iii) for every generated \ac{SEG-Y} file, execute Envelope, \ac{GST3D}, or Gaussian Filter,
+(iv) run a Python script to parse and consolidate measurements,
+and (v) finalize executing another Python script for exploratory data analysis.
+Each run deposits output \ac{CSV} files and profiles in designated \texttt{OUTPUT\_DIR} subdirectories.
+
+\vspace{1em}
+\begin{lstlisting}[style=bashstyle,caption={Excerpts from \texttt{experiment.sh}~\cite{delucca2025experiment2script} that orchestrate Docker-based runs. Variables like \texttt{DATASET\_FINAL\_SIZE} and \texttt{DATASET\_STEP\_SIZE} define shape ranges for dataset generation.}, label={lst:exp_sh}]
+#!/usr/bin/env sh
+TIMESTAMP="$(date +%Y%m%d%H%M%S)"
+CPUSET_CPUS="0"
+DATASET_FINAL_SIZE="800"
+DATASET_STEP_SIZE="50"
+
+echo "Generating input data..."
+docker run \
+  --cpuset-cpus=0 \
+  -v "${DIND_VOLUME_NAME}:/var/lib/docker:rw" \
+  ...
+  --env EXPERIMENT_COMMAND="generate_data.py" \
+  --env EXPERIMENT_ENV="\
+    -e OUTPUT_DIR=/experiment/out \
+    -e FINAL_SIZE=${DATASET_FINAL_SIZE} \
+    -e STEP_SIZE=${DATASET_STEP_SIZE} \
+  " \
+  docker:28.0.1-dind \
+  "/workspace/experiment.sh"
+
+echo "Collecting memory profile for Envelope..."
+for file in "${OUTPUT_DIR}/inputs"/*.segy; do
+  filename=$(basename "$file" .segy)
+  docker run \
+    --cpuset-cpus=0 \
+    ...
+    --env EXPERIMENT_COMMAND="collect_memory_profile.py" \
+    --env EXPERIMENT_ENV="\
+      -e ALGORITHM=envelope \
+      -e INPUT_PATH=/experiment/out/inputs/${filename}.segy \
+    " \
+    docker:28.0.1-dind \
+    "/workspace/experiment.sh"
+done
+...
+\end{lstlisting}
+
+\noindent
+Table~\ref{tab:env_vars} summarizes relevant environment variables used by these scripts.
+They control dataset sizes, repetition counts, and output paths.
+
+\begin{table}[htbp]
+    \centering
+    \caption{Key environment variables for the experimental scripts.
+    Defaults appear in parentheses.
+    \vspace{1em}}
+    \label{tab:env_vars}
+    \begin{tabular}{ll}
+        \hline
+        \textbf{Variable}             & \textbf{Description}                                                                        \\
+        \hline
+        \texttt{DATASET\_FINAL\_SIZE} & Final dimension size (e.g., 800)                                                            \\
+        \texttt{DATASET\_STEP\_SIZE}  & Step size between dimension increments (e.g., 50)                                           \\
+        \texttt{EXPERIMENT\_N\_RUNS}  & Number of repeated runs per shape (e.g., 30)                                                \\
+        \texttt{CPUSET\_CPUS}         & \ac{CPU} core pinning for Docker containers (e.g., 0)                                       \\
+        \texttt{OUTPUT\_DIR}          & Directory for output profiles, logs, and \texttt{\ac{CSV}} files                            \\
+        \texttt{ALGORITHM}            & Selected operator (e.g., \texttt{envelope}, \texttt{\ac{GST3D}}, \texttt{gaussian\_filter}) \\
+        \hline
+    \end{tabular}
+\end{table}
+
+\vspace{1em}
+\noindent
+\textbf{Phase 3: Results Collection and Feature Construction.}
+This phase consists in evaluating the \texttt{.prof} files output by \texttt{traceq}, extracting peak memory usage, and associating it with the input shape.
+The script identifies inlines, xlines, and samples from filenames, notes the operator, retains the maximum time-series \ac{RSS} value, and compiles a consolidated dataframe.
+It also derives extended features such as total volume
+(\(\text{inlines} \times \text{xlines} \times \text{samples}\)),
+logarithmic transforms
+(e.g., \(\log_2(\text{volume})\)),
+surface area,
+dimension ratios,
+and polynomial expansions.
+These features capture various ways shape correlates with peak memory usage.
+Listing~\ref{lst:results_py} shows how this phase generates and transforms these features.
+
+\begin{lstlisting}[style=pythonstyle,
+    caption={Feature extraction excerpt from \texttt{collect\_results.py}~\cite{delucca2025experiment2resultscollection}. Additional derived metrics capture polynomial or ratio-based growth.},
+    label={lst:results_py}]
+df_features["volume"] = (
+    df_features["inlines"]
+    * df_features["xlines"]
+    * df_features["samples"]
+)
+
+df_features["diagonal_length"] = np.sqrt(
+    df_features["inlines"]**2
+    + df_features["xlines"]**2
+    + df_features["samples"]**2
+)
+
+df_features["surface_area"] = 2 * (
+    df_features["inlines"] * df_features["xlines"]
+    + df_features["inlines"] * df_features["samples"]
+    + df_features["xlines"] * df_features["samples"]
+)
+
+df_features["log_inlines"] = np.log2(df_features["inlines"])
+df_features["log_volume"] = np.log2(df_features["volume"])
+...
+\end{lstlisting}
+
+\vspace{1em}
+\noindent
+\textbf{Phase 4: Model Training and Analysis.}
+The script from phase 3 trains multiple regression models using \texttt{inlines}, \texttt{xlines}, \texttt{samples}, and derived features as predictors.
+Peak memory usage acts as the target variable.
+A consistent 80/20 training/test split ensures fair comparisons.
+Envelope, \ac{GST3D}, and Gaussian Filter runs each receive separate analyses.
+Performance metrics include \ac{RMSE}~\cite{hyndman2006}, \ac{MAE}~\cite{willmott2005mae}, $R^2$~\cite{draper1998applied}, and an accuracy score that measures the fraction of predictions within a specified relative error.
+An \texttt{Optuna}-based~\cite{akiba2019optuna} parameter search can emphasize safe upper-bound estimates in \ac{HPC} contexts where underestimations produce critical failures.
+The following models form the basis of each comparison:
+
+\begin{itemize}
+    \item \textbf{Linear Regression, Polynomial Regression}~\cite{hastie2009elements}\\
+    These models create foundational baselines to capture the relationship between features and memory usage.
+    Linear regression indicates whether memory usage scales directly with trace or sample counts.
+    Polynomial regression extends linear models with higher-order terms to account for mild nonlinearities.
+    Caution is required since purely linear fits underfit complex relationships, and high-degree polynomials risk overfitting.
+
+    \item \textbf{Decision Trees}~\cite{breiman1984classification}, \textbf{Random Forest}~\cite{breiman2001random}, \textbf{\ac{XGBoost}}~\cite{chen2016xgboost}\\
+    These tree-based methods automatically model complex feature interactions and nonlinearities.
+    Decision Trees provide easy interpretability and can indicate shape thresholds that strongly affect memory.
+    Random Forest aggregates multiple trees to reduce variance and enhance generalization.
+    \ac{XGBoost} incrementally refines an ensemble of weak learners, which often results in higher accuracy on structured data.
+    Hyperparameter tuning (e.g., tree depth or learning rate) is essential to avoid overfitting.
+
+    \item \textbf{Neural Networks (\ac{MLP})}~\cite{rumelhart1986learning}\\
+    \ac{MLP} architectures can approximate intricate functions when provided sufficient capacity.
+    This property can reveal subtle relationships between shape parameters and memory requirements.
+    These models often demand larger datasets, rigorous hyperparameter optimization, and careful overfitting control.
+
+    \item \textbf{Gaussian Processes}~\cite{rasmussen2006gaussian}\\
+    This approach offers both mean predictions and uncertainty estimates.
+    Uncertainty bounds are especially valuable in \ac{HPC} scenarios where underestimating memory can cause abrupt job failures.
+    Large datasets pose computational challenges because of the \(O(n^3)\) scaling, and kernels must be selected carefully.
+
+    \item \textbf{Bayesian Ridge Regression}~\cite{bishop2006pattern}\\
+    This extension of linear models applies Bayesian inference to estimate coefficients and yields robust predictions with uncertainty quantification.
+    HPC workloads benefit from these uncertainty estimates when resource over-provisioning is less harmful than running out of memory.
+    Polynomial or interaction terms might still be necessary to represent nonlinear growth patterns.
+\end{itemize}
+
+The script final Python script then visualizes memory distributions, residual plots, feature evaluations, and data-reduction experiments.
+This exploration reveals each model’s generalization capacity, indicates which features add minimal value, and evaluates the number of training examples that the predictive framework requires.
+Partial dependence plots and tree-based model interpretations expose how inlines, xlines, and samples exert the highest influence on memory usage.
+
+\vspace{1em}
+\noindent
+\textbf{Technical Considerations.}
+\begin{itemize}
+    \item \emph{Containerization and Reproducibility:}
+    Each stage runs in a Docker container with pinned versions of Python packages.
+    This standardized environment preserves consistent results by preventing version drift.
+    \item \emph{\ac{CPU} Affinity:}
+    The \texttt{--cpuset-cpus=0} parameter restricts execution to a single core and reduces background noise.
+    Multiple runs per dataset shape (\texttt{EXPERIMENT\_N\_RUNS}) further stabilize measurements.
+    \item \emph{Parallelization:}
+    The Docker orchestration scales to multiple \ac{CPU} cores, but the design imposes single-core experiments for repeatability.
+    Actual \ac{HPC} clusters manage concurrency at the scheduler level, but the core principle of shape-driven memory profiling remains applicable.
+    \item \emph{Cache Handling:}
+    Chapter~\ref{ch:measuring-memory-consumption} recommends dropping Linux memory caches to eliminate carry-over effects.
+    This option appears in the scripts to ensure a clean environment for memory measurements.
+\end{itemize}
+
+\vspace{1em}
+\noindent
+Figure~\ref{fig:pmc_datapipeline} illustrates the entire workflow.
+The process generates synthetic \ac{SEG-Y} volumes, runs containerized operators for memory profiling, and consolidates results into a final dataset that links shape features to peak memory usage.
+Regression models then learn to map input dimensions to memory demand.
+Section~\ref{sec:pmc-results} elaborates on these experimental outcomes and compares the predictive accuracy of the considered models.
+
+\begin{figure}[htbp]
+    \centering
+    % Placeholder for data pipeline figure
+    \fbox{\rule{0pt}{1in}\rule{.9\linewidth}{0pt}}
+    \caption{Schematic of the pipeline.
+        (1) Generation of synthetic \ac{SEG-Y} data.
+        (2) Container-based memory profiling for each operator.
+        (3) Aggregation of profiles, extraction of peak memory usage, and feature construction.
+        (4) Training and evaluation of regression models.}
+    \label{fig:pmc_datapipeline}
+\end{figure}

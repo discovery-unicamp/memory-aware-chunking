@@ -1,0 +1,46 @@
+\section{Introduction}
+\label{sec:pmc-introduction}
+
+\ac{HPC} environments require users to specify computing resources, especially memory, before a job begins execution.
+Common \ac{HPC} job schedulers, such as Slurm~\cite{yoo2003slurm} or \ac{PBS}~\cite{henderson1995pbs}, enforce fixed memory reservations at submission time.
+This enforcement compels users to estimate a job's memory footprint in advance.
+That requirement creates a fundamental challenge: users must predict memory needs \emph{a priori}, often without the benefit of trial runs.
+Setting the memory request too low causes out-of-memory errors~\cite{bailey2005,hovestadt2003}, leading to lost computing time and queued tasks.
+Setting it too high wastes memory and reduces overall system utilization because nodes retain unused allocations.
+Accurate memory estimation therefore remains crucial for reliability and efficiency in \ac{HPC} resource management.
+
+Most users rely on guesswork to determine memory reservations.
+Many \ac{HPC} users adopt trial-and-error methods~\cite{ncsu_memory_usage}, iteratively adjusting memory limits across repeated job submissions until one run completes without errors.
+This approach leads to inefficiency and significant risk.
+Each failed attempt wastes wall-clock time and computational cycles, while each successful run with excessive memory allocations deprives other jobs of available resources.
+Over-provisioning represents a common workaround but leaves systems underutilized.
+That trial-and-error paradigm reduces overall throughput and burdens users with resource-tuning responsibilities instead of scientific exploration.
+
+Predictive modeling for memory allocation offers a clear path to improvement.
+Models can forecast a job's memory demand using readily available workload features such as input data size, dimensionality, algorithmic parameters, or usage patterns from similar jobs.
+These forecasts reduce guesswork and limit the need for iterative resubmissions.
+More accurate pre-runtime memory predictions enable users to request memory more precisely, mitigating failure risks and alleviating resource waste~\cite{tanash2021ampro}.
+
+The content in this chapter prioritizes tensor-based workloads, which exhibit strong correlations between memory usage and input shape.
+Numerous scientific and data-centric applications center on large multidimensional arrays, known as tensors.
+Examples include seismic wave simulations on \ac{3D} grids, high-resolution image analysis in computer vision, and large-scale numerical linear algebra routines in scientific computing.
+Memory consumption in these scenarios often scales according to array dimensions, because storage for input data structures and intermediate results typically dominates memory usage.
+For example, doubling the resolution of an input image in each dimension roughly quadruples its memory footprint~\cite{stackoverflow_memory_inv}, while in deep neural networks increasing either input size or batch size similarly amplifies memory usage due to larger activation maps and additional computation~\cite{dell_3dunet_memory}.
+These relationships underscore the crucial role of input shape in determining memory demands for tensor-centric workloads.
+A predictive model that captures how memory scales with shape parameters can then offer robust estimates for new input configurations.
+
+Several research directions have explored memory usage estimation and prediction in related fields.
+In the \ac{HPC} domain, historical job data from systems like Slurm often enable machine learning models to predict resource consumption.
+These models exploit features such as job metadata and input sizes to forecast memory requirements~\cite{yoo2003slurm}.
+That approach demonstrates that ample historical data can support reliable predictions for recurring workloads.
+In high-level numerical computing, analytical modeling of memory for array operations provides another possibility~\cite{cornell_memory_workshop}.
+Matrix multiplications, convolutions, and other array-based methods can be studied to deduce peak memory usage without full execution.
+Deep learning frameworks take a similar route to anticipate a network's memory footprint.
+Layer-by-layer analysis of network architectures and input tensor dimensions reveals how memory usage accumulates~\cite{gao2020, dell_3dunet_memory}.
+Profiling and simulation tools further assist deployment decisions by projecting memory usage before runtime~\cite{tanash2019}.
+
+The primary objective of the present chapter is to estimate memory usage for new jobs given their input shapes, rather than to yield an exact byte-level measurement.
+This emphasis on practical accuracy aims to provide a sufficiently precise estimate of peak memory demand to guide resource allocation.
+Slight discrepancies arise due to overheads and system factors, but a well-calibrated predictor avoids severe underestimates that result in \ac{OOM} failures.
+Focusing on a reliable upper-bound estimate allows users to reserve memory with greater confidence.
+Narrowing the gap between requested and consumed memory improves performance over purely heuristic-based approaches and alleviates the risks and inefficiencies commonly associated with guesswork.
