@@ -52,84 +52,233 @@ Predicting memory usage implies focusing on whether a given amount of memory wil
 The approach emphasizes practical accuracy over perfect precision: an effective predictor might err by a small margin but should consistently avoid severe underestimation that leads to \ac{OOM} failures.
 By targeting a reliable upper-bound estimate, the model can ensure robust memory reservations while still significantly narrowing the gap between requested and utilized memory compared to current heuristic practices.
 
-%\section{Materials and Methods}
-%\label{sec:pmc-materials-and-methods}
-%
-%Feature Selection – Encoding Input Shape: We represent each workload’s input configuration via features derived from the input tensor’s shape.
-%Because the algorithm and data type are fixed in our experiments, the dimensions of the input (e.g. length, width, depth of a 3D volume) largely determine memory usage.
-%We include not only the raw dimensions as features, but also derived metrics such as the total number of elements (product of dimensions) and other transformations (e.g. polynomial terms).
-%These capture potential nonlinear scaling – for example, memory might scale roughly linearly with data volume, or perhaps quadratically with one dimension if the algorithm performs intermediate regridding or copies.
-%By engineering features like products, ratios, or squares of dimensions, we allow our models to learn interactions and nonlinear effects.
-%This focused feature set aligns with best practices from the literature, which suggest using only features directly related to memory behavior of the target workload to improve prediction accuracy (https://www.mdpi.com/2073-8994/13/4/697#:~:text=prediction%20accuracy,used%20to%20improve%20prediction%20accuracy)
-%Irrelevant inputs are avoided to keep the model simple and generalizable.
-%
-%Assumption of Shape-Dependent Memory: We explicitly assume that for a given computational kernel (such as our seismic processing routine), memory consumption $M$ can be expressed as a function of the input shape parameters: $M = f(\text{shape})$.
-%This treats the program as a black box with the input size as the primary variable.
-%While real-world memory use can have minor contributions from other factors (overhead of the runtime, small constant allocations, etc.), we expect these to be relatively constant.
-%Thus, the model can focus on capturing the dominant growth trend due to input data.
-%This is supported by domain knowledge – e.g.
-%HPC applications often exhibit predictable scaling where doubling an input’s size roughly doubles memory usage, barring any unexpected behavior.
-%By validating on synthetic data and a real seismic dataset, we will test if shape alone is sufficient for accurate predictions.
-%(If needed, this methodology could be extended with additional features like algorithm-specific flags, but our results will show shape is a powerful predictor on its own.)
-%
-%Choice of Predictive Models: We employ a diverse set of regression models to learn the shape-to-memory mapping, ranging from simple parametric models to more flexible machine learning approaches.
-%Each model offers different biases and capabilities, providing insight into the nature of the memory usage function:
-%
-%- Linear Regression: A baseline assuming a linear relationship between input size and memory.
-%This model checks if memory scales linearly with metrics like number of elements.
-%It’s easy to interpret and can be useful if $M$ is approximately $a \times (\text{input size}) + b$.
-%Any systematic deviations from linearity in the residuals would signal the need for more complex models.
-%
-%- Polynomial Regression: To capture nonlinear growth (e.g. quadratic or cubic scaling with input dimensions), we fit polynomial models.
-%By including squared or higher-order terms of the shape features, polynomial regression can approximate curves (for example, memory that grows like $n^2$ or $n^3$).
-%This is essentially a manual way to incorporate interaction terms (like products of dimensions) into a linear model.
-%If the algorithm’s memory formula is a polynomial in the input dimensions (as is often the case for array-based computations (https://stackoverflow.com/questions/70746660/how-to-predict-memory-requirement-for-np-linalg-inv#:~:text=TL%3BDR%3A%20up%20to%20,float64)), this approach could closely match it with the appropriate degree.
-%We take care to avoid excessive degrees that might overfit.
-%
-%- Decision Trees: A single decision tree regressor is a non-parametric model that can learn piecewise constant or linear relations by recursively splitting the data based on feature values.
-%We include decision trees to capture any piecewise behaviors or threshold effects in memory usage (for example, an algorithm that allocates an extra buffer only when an input dimension exceeds a certain size could produce a discontinuity that a tree might detect).
-%Trees are easy to interpret (they can reveal which shape parameter splits drive memory changes), but a single tree can overfit small datasets and may not extrapolate smoothly.
-%
-%- Ensemble Tree Models: We leverage more robust ensemble methods – Random Forests and Gradient Boosting (including the XGBoost implementation) – which have shown excellent performance in prior HPC resource prediction studies (https://pmc.ncbi.nlm.nih.gov/articles/PMC9906793/#:~:text=from%20January%202019%20,consumption%20of%20the%20HPC%20resources)
-%
-%- Random Forest: an ensemble of many decision trees (via bootstrap aggregation).
-%It averages the predictions of multiple trees, reducing overfitting and typically improving accuracy.
-%In our context, a random forest can capture complex interactions between shape dimensions while maintaining generalization.
-%We expect it to perform well if memory usage is a somewhat smooth function of inputs with some nonlinear twists, as the ensemble can approximate such functions piecewise.
-%
-%- Gradient Boosting & XGBoost: boosting builds an additive model of several small trees, each correcting errors of the previous ones.
-%We include gradient boosted trees (using XGBoost for its efficiency) to see if we can achieve even higher accuracy on subtle relationships.
-%XGBoost is known for handling many types of regression problems with state-of-the-art accuracy by combining many weak learners.
-%Given enough training samples covering the input space, we anticipate that boosted trees will model the memory consumption curve very closely – possibly making near-exact predictions for seen ranges.
-%(Notably, the AMPRO-HPCC study found tree-based models like LightGBM and random forests to be top performers for job memory prediction (https://pmc.ncbi.nlm.nih.gov/articles/PMC9906793/#:~:text=Management%20%28Slurm%29,consumption%20of%20the%20HPC%20resources), so we suspect a similar outcome here.)
-%
-%- Neural Network: We design a feed-forward neural network (multilayer perceptron) to learn the mapping from shape to memory.
-%Neural networks can, in theory, approximate arbitrarily complex functions given sufficient data.
-%Our network is kept relatively small given the size of our dataset (to avoid overfitting).
-%The motivation is to test if a learned nonlinear combination of features can outperform the more structured models.
-%While deep learning models have shown high accuracy in some performance prediction tasks, they often require large training sets and substantial tuning (https://www.mdpi.com/2073-8994/13/4/697#:~:text=In%20recent%20years%2C%20studies%20,features%20which%20is%20the%20same).
-%Here we use a neural network as another nonlinear estimator to see if it captures any patterns the tree ensembles might miss.
-%
-%- Gaussian Process Regression: Gaussian Processes (GPs) offer a Bayesian non-parametric approach, treating regression as inference of a function drawn from a prior distribution.
-%We include a GP model to obtain not only predictions but also uncertainty estimates for each prediction.
-%The GP is well-suited for smooth relationships and smaller datasets – it will effectively perform an interpolation of the observed memory measurements, which could yield very high accuracy on the ranges of input we’ve seen.
-%An additional benefit is that the GP’s confidence intervals can flag inputs where the model is extrapolating (large uncertainty), which is useful in practice to avoid trusting predictions for unseen shape regimes.
-%
-%- Bayesian Ridge Regression: To complement ordinary linear regression, we also apply Bayesian Ridge Regression – a linear model with priors on coefficients (regularization) that outputs a distribution over possible parameter values.
-%This acts as a sanity check baseline with built-in prevention of extreme coefficient values.
-%Its probabilistic nature gives us another way to assess uncertainty.
-%While we don’t expect Bayesian Ridge to drastically outperform ordinary linear regression if the true relationship isn’t linear, its inclusion provides insight into the stability of a simple linear fit.
-%It can indicate if a straightforward linear trend exists (and how confident we can be in it) or if more complex models are unequivocally needed.
-%
-%Model Training Procedure: All models are trained in a supervised manner with memory usage as the target variable and features derived from input shapes as predictors.
-%We use scikit-learn (for regression models and ensembles), XGBoost’s library, and PyTorch/TensorFlow (for the neural network) in Python.
-%Hyperparameters (like polynomial degree, tree depths, number of trees, network layers) were chosen via preliminary tuning or set to reasonable defaults to balance bias and variance.
-%Importantly, we apply consistent training/validation splits and cross-validation where appropriate to compare models fairly (details of data splitting are in Section 5.3).
-%Each model’s performance is evaluated on held-out test cases to assess generalization.
-%We also define a custom evaluation metric that heavily penalizes under-prediction (described later) to reflect the importance of never underestimating required memory in practice.
-%This diverse set of models and careful training regimen allows us to identify whether simple models suffice or if more complex ones truly add value for this problem.
-%
-%
+
+\section{Materials and Methods}
+\label{sec:pmc-materials-and-methods}
+
+This section describes the end-to-end experimental methodology for gathering memory consumption data, generating features tied to input shapes, and training predictive models.
+The pipeline consists of four primary phases:
+\emph{data generation}, \emph{memory profiling}, \emph{result collection}, and \emph{analysis}.
+The described workflow ensures consistency, reproducibility, and high-quality measurements suitable for training machine learning models that predict memory usage from shape attributes.
+
+\vspace{1em}
+\noindent
+\textbf{Phase 1: Data Generation.}
+The experiment begins by producing synthetic seismic datasets through the \texttt{generate\_data.py} script.
+In a typical seismic context, three dimensions characterize the data:
+\emph{inlines}, \emph{xlines}, and \emph{samples}.
+The script systematically enumerates shape configurations by varying these three dimensions from an \texttt{INITIAL\_SIZE} to a \texttt{FINAL\_SIZE} with increments of \texttt{STEP\_SIZE}.
+For instance, when these values are set to $100$, $600$, and $100$, respectively, the script generates volumes of sizes
+$\{$ $(100,100,100),$ $(100,100,200),$ $\dots,$ $(600,600,600)$ $\}$
+and writes each as a SEG-Y~\cite{barry1975segy} file (\texttt{.segy}).
+These datasets serve as reproducible stand-ins for genuine seismic data, covering a wide range of volumes and highlighting how memory grows with dimension size.
+
+\vspace{1em}
+\noindent
+\textbf{Phase 2: Memory Profiling.}
+The \texttt{experiment.sh} shell script coordinates container-based jobs to run different seismic operators on each generated dataset.
+Under \ac{HPC}-like constraints, jobs must be executed in an isolated manner to avoid interference (this is described in more detail on chapter~\ref{ch:measuring-memory-consumption}).
+Accordingly, \texttt{experiment.sh} launches Docker-in-Docker (\texttt{dind}) containers, each pinned to a specific \ac{CPU} core through \texttt{--cpuset-cpus}, ensuring that runs are comparable.
+The script then proceeds with three main operators:
+
+\begin{itemize}
+    \item \emph{Envelope~\cite{taner1979complex}}: A classic seismic attribute that calculates instantaneous amplitude for each trace.
+    \item \emph{\ac{GST3D}~\cite{bigun2004recognition}}: A structural attribute that highlights seismic faults or discontinuities.
+    \item \emph{3D Gaussian Filter~\cite{gonzalez2002digital}}: A spatial smoothing operator applied to seismic volumes.
+\end{itemize}
+
+Each operator is compiled into a Docker image (as defined in the provided \texttt{Dockerfile}), and each container execution uses the \texttt{collect\_memory\_profile.py} script to load and process the input data.
+Internally, memory tracking is done through the \texttt{traceq} library, which measures \ac{RSS} over time as described in chapter~\ref{ch:measuring-memory-consumption}.
+At completion, a \texttt{.prof} file is written, containing a time series of memory usage and metadata (e.g., timestamps, shape parameters).
+Such profiling ensures peak memory usage is captured accurately.
+
+\vspace{1em}
+\noindent
+\textbf{Executing Operators and Gathering Profiles.}
+Listing~\ref{lst:exp_sh} provides an excerpt from \texttt{experiment.sh}.
+The script organizes the flow:
+(1) create Docker volumes,
+(2) run \texttt{generate\_data.py},
+(3) for each SEG-Y file, execute Envelope, \ac{GST3D}, or Gaussian Filter,
+(4) run \texttt{collect\_results.py} to parse, clean, and consolidate the measurements, and
+(5) finalize by invoking \texttt{analyze\_results.py} for exploratory data analysis.
+Each run places output CSV files and profiles in designated paths under \texttt{OUTPUT\_DIR}.
+
+\begin{lstlisting}[style=bashstyle,caption={Excerpts from \texttt{experiment.sh} orchestrating Docker-based runs. Variables like \texttt{DATASET\_FINAL\_SIZE} and \texttt{DATASET\_STEP\_SIZE} set shape range for dataset generation.}, label={lst:exp_sh}]
+#!/usr/bin/env sh
+TIMESTAMP="$(date +%Y%m%d%H%M%S)"
+CPUSET_CPUS="0"
+DATASET_FINAL_SIZE="800"
+DATASET_STEP_SIZE="50"
+
+echo "Generating input data..."
+docker run \
+  --cpuset-cpus=0 \
+  -v "${DIND_VOLUME_NAME}:/var/lib/docker:rw" \
+  ...
+  --env EXPERIMENT_COMMAND="generate_data.py" \
+  --env EXPERIMENT_ENV="\
+    -e OUTPUT_DIR=/experiment/out \
+    -e FINAL_SIZE=${DATASET_FINAL_SIZE} \
+    -e STEP_SIZE=${DATASET_STEP_SIZE} \
+  " \
+  docker:28.0.1-dind \
+  "/workspace/experiment.sh"
+
+echo "Collecting memory profile for Envelope..."
+for file in "${OUTPUT_DIR}/inputs"/*.segy; do
+  filename=$(basename "$file" .segy)
+  docker run \
+    --cpuset-cpus=0 \
+    ...
+    --env EXPERIMENT_COMMAND="collect_memory_profile.py" \
+    --env EXPERIMENT_ENV="\
+      -e ALGORITHM=envelope \
+      -e INPUT_PATH=/experiment/out/inputs/${filename}.segy \
+    " \
+    docker:28.0.1-dind \
+    "/workspace/experiment.sh"
+done
+...
+\end{lstlisting}
+
+\noindent
+Table~\ref{tab:env_vars} summarizes key environment variables used throughout these scripts.
+They govern dataset sizes, repetition counts, and output paths, making the entire pipeline highly configurable.
+
+\begin{table}[htbp]
+    \centering
+    \caption{Key environment variables for the experimental scripts.
+    Defaults are shown in parentheses.
+    \vspace{1em}}
+    \label{tab:env_vars}
+    \begin{tabular}{ll}
+        \hline
+        \textbf{Variable}             & \textbf{Description}                                                                   \\
+        \hline
+        \texttt{DATASET\_FINAL\_SIZE} & Final dimension size in \texttt{generate\_data.py} (e.g., 800)                         \\
+        \texttt{DATASET\_STEP\_SIZE}  & Step size between dimension increments (e.g., 50)                                      \\
+        \texttt{EXPERIMENT\_N\_RUNS}  & Number of repeated runs per shape (e.g., 30)                                           \\
+        \texttt{CPUSET\_CPUS}         & CPU core pinning for Docker containers (e.g., 0)                                       \\
+        \texttt{OUTPUT\_DIR}          & Directory for output profiles, logs, CSV files                                         \\
+        \texttt{ALGORITHM}            & Selected operator (e.g., \texttt{envelope}, \texttt{gst3d}, \texttt{gaussian\_filter}) \\
+        \hline
+    \end{tabular}
+\end{table}
+
+\vspace{1em}
+\noindent
+\textbf{Phase 3: Results Collection and Feature Construction.}
+Once the profiling completes, \texttt{collect\_results.py} parses every \texttt{.prof} file produced by \texttt{traceq}, extracts peak memory usage, and correlates it with the input shape.
+Specifically, this script (1) reads inlines, xlines, and samples from the filename, (2) identifies the operator, (3) takes time-series memory usage and isolates the maximum, and (4) builds a consolidated dataframe.
+During this step, it also derives higher-level features such as
+\emph{total volume} ($\text{inlines} \times \text{xlines} \times \text{samples}$),
+\emph{logarithmic transforms} (e.g., $\log_2(\text{volume})$),
+\emph{surface area},
+\emph{ratios of dimensions},
+and \emph{polynomial expansions}.
+These features capture different possible relationships between shape and peak memory usage.
+Listing~\ref{lst:results_py} shows an excerpt of how \texttt{collect\_results.py} enumerates and transforms features.
+
+\begin{lstlisting}[style=pythonstyle,
+    caption={Feature extraction excerpt from \texttt{collect\_results.py}. Additional derived metrics help capture polynomial or ratio-based growth.},
+    label={lst:results_py}]
+df_features["volume"] = (
+    df_features["inlines"]
+    * df_features["xlines"]
+    * df_features["samples"]
+)
+
+df_features["diagonal_length"] = np.sqrt(
+    df_features["inlines"]**2
+    + df_features["xlines"]**2
+    + df_features["samples"]**2
+)
+
+df_features["surface_area"] = 2 * (
+    df_features["inlines"] * df_features["xlines"]
+    + df_features["inlines"] * df_features["samples"]
+    + df_features["xlines"] * df_features["samples"]
+)
+
+df_features["log_inlines"] = np.log2(df_features["inlines"])
+df_features["log_volume"] = np.log2(df_features["volume"])
+...
+\end{lstlisting}
+
+\vspace{1em}
+\noindent
+\textbf{Phase 4: Model Training and Analysis.}
+The same script (\texttt{collect\_results.py}) then trains multiple regression models, each leveraging \texttt{inlines}, \texttt{xlines}, \texttt{samples}, and derived features as predictors, with the target variable set to \emph{peak memory usage}.
+A consistent training/test split (e.g., 80/20) ensures fair comparisons.
+For each operator (envelope, \ac{GST3D}, Gaussian filter), performance metrics such as \textit{\ac{RMSE}}~\cite{hyndman2006}, \textit{\ac{MAE}}~\cite{willmott2005mae}, \textit{R\textsuperscript{2}}~\cite{draper1998applied}, and a custom \emph{accuracy} metric (fraction of predictions within a given relative error) are computed.
+Additionally, an Optuna-based~\cite{akiba2019optuna} parameter search can adjust the weighting of these metrics to identify the most robust model under \ac{HPC} constraints, where underestimation can be especially harmful.
+Below, we outline the key regression models considered:
+
+\begin{itemize}
+    \item \textbf{Linear Regression, Polynomial Regression}~\cite{hastie2009elements}\\
+    \emph{Why use them?} These models provide simple baselines for capturing relationships between features and memory usage. Linear regression fits a straight line (or hyperplane) to the data, often revealing if memory usage scales roughly proportionally to the number of traces or samples. Polynomial regression extends this by incorporating higher-order terms to capture mild nonlinearities.\\
+    \emph{Watch out for:} Purely linear models underfit when the real relationship is more complex, and high-degree polynomials risk overfitting.
+
+    \item \textbf{Decision Trees}~\cite{breiman1984classification}, \textbf{Random Forest}~\cite{breiman2001random}, \textbf{Gradient Boosting (XGBoost)}~\cite{chen2016xgboost}\\
+    \emph{Why use them?} These tree-based models can capture complex interactions and nonlinearities automatically.
+    \begin{itemize}
+        \item \emph{Decision Trees:} Simple to interpret and can highlight how certain threshold splits in \texttt{inlines}, \texttt{xlines}, or \texttt{samples} affect memory requirements.
+        \item \emph{Random Forest:} An ensemble of trees trained on random data subsets; reduces variance and often yields better generalization.
+        \item \emph{Gradient Boosting (XGBoost):} Sequentially builds an ensemble of weak learners (trees), typically achieving high accuracy in many structured-data problems.
+    \end{itemize}
+    \emph{Watch out for:} Overfitting if the trees grow too deep or the learning rate is set improperly. Hyperparameter tuning (e.g., via Optuna) is crucial.
+
+    \item \textbf{Neural Networks (Feed-forward MLP)}~\cite{rumelhart1986learning}\\
+    \emph{Why use them?} MLPs can approximate complex, highly nonlinear functions if given sufficient capacity, potentially uncovering intricate memory-usage relationships.
+    \emph{Watch out for:} They often require larger datasets, careful hyperparameter tuning, and can be less interpretable. Overfitting is also a risk if the network is too large relative to the available data.
+
+    \item \textbf{Gaussian Processes}~\cite{rasmussen2006gaussian}\\
+    \emph{Why use them?} Provide both predictions and estimates of uncertainty, which is particularly helpful in \ac{HPC} contexts where underestimating memory can lead to system crashes.
+    \emph{Watch out for:} They can be computationally expensive for large datasets (\(O(n^3)\) scaling) and require appropriate kernel choices.
+
+    \item \textbf{Bayesian Ridge Regression}~\cite{bishop2006pattern}\\
+    \emph{Why use it?} Extends basic linear models with Bayesian inference to estimate coefficients, yielding robust predictions and uncertainty measures—especially valuable for HPC tasks demanding safe memory estimates.
+    \emph{Watch out for:} Like standard linear models, it may not capture highly nonlinear relationships without adding polynomial or interaction features.
+\end{itemize}
+
+Finally, \texttt{analyze\_results.py} visualizes memory usage distributions, regression residuals, feature selection tests, and data-reduction experiments.
+This step provides deeper insight into how well each model generalizes, whether certain features are superfluous, and how many training points are truly required.
+The user can, for instance, examine partial dependence plots or interpret tree-based models to see which dimensions exert the greatest effect on memory usage.
+
+\vspace{1em}
+\noindent
+\textbf{Technical Considerations.}
+\begin{itemize}
+    \item \emph{Containerization and Reproducibility:}
+    Every stage is executed in Docker containers that install the necessary dependencies (see the provided \texttt{Dockerfile} and references to Python tooling for \texttt{traceq}).
+    Container images are built with pinned versions of \texttt{python}, \texttt{pip}, and other packages, ensuring results do not change due to environment drift.
+    \item \emph{\ac{CPU} Affinity:}
+    \texttt{--cpuset-cpus=0} pins processes to a single core, minimizing external noise.
+    Repeated runs per dataset shape (\texttt{EXPERIMENT\_N\_RUNS}) add further robustness by averaging out minor system perturbations.
+    \item \emph{Parallelization:}
+    Though the Docker orchestration can scale to multiple \ac{CPU} cores, the design enforces isolated single-core experiments for consistency.
+    In a real \ac{HPC} cluster, job schedulers would handle concurrency, but the underlying approach of shape-based memory profiling remains valid.
+    \item \emph{SIGINT and Memory Cache Drops:}
+    In \ac{HPC} environments, leftover memory from prior executions can skew usage measurements.
+    The scripts optionally drop Linux memory caches to avoid carry-over effects, as recommended in prior memory-profiling guidelines explained on chapter~\ref{ch:measuring-memory-consumption}.
+\end{itemize}
+
+\vspace{1em}
+\noindent
+This unified pipeline, shown schematically in Figure~\ref{fig:pmc_datapipeline}, yields a high-fidelity dataset linking shape parameters to precise peak memory usage for multiple operators.
+After collecting profiles and derived features, a diverse suite of regression models learns the mapping from $(\text{inlines}, \text{xlines}, \text{samples})$ to memory demand.
+Subsequent analyses, including error breakdowns and comparisons across algorithms, clarify whether \emph{shape} alone is sufficient to accurately predict memory usage.
+The following sections (Section~\ref{sec:pmc-results} and beyond) detail the results of these experiments and compare the performance of all selected models.
+
+\begin{figure}[htbp]
+    \centering
+    % Placeholder for data pipeline figure
+    \fbox{\rule{0pt}{1in}\rule{.9\linewidth}{0pt}}
+    \caption{Schematic view of the pipeline: (1) generation of synthetic SEG-Y data, (2) container-based memory profiling per operator, (3) result aggregation with peak usage extraction and feature construction, and (4) regression model training and analysis.}
+    \label{fig:pmc_datapipeline}
+\end{figure}
+
 %\section{Experimental Setup}
 %\label{sec:pmc-experimental-setup}
 %
