@@ -1,55 +1,77 @@
-%\section{Experimental Setup}
-%\label{sec:pmc-experimental-setup}
-%
-%Software and Hardware Environment: Experiments were conducted in a Python-based HPC environment.
-%The code is executed on [describe hardware – e.g., “a compute node with 256 GB RAM and 2× Intel Xeon CPUs”] or a similar platform, ensuring that even the largest test case can be run without swapping.
-%We utilize Python libraries including NumPy for synthetic data generation, and TraceQ (a custom memory profiling tool) to measure memory consumption.
-%TraceQ hooks into the process to log memory usage over time; from its output we extract the peak memory usage (maximum resident set size) during each run.
-%This peak corresponds to the “Max Memory” metric reported by cluster job monitors (https://hpc.ncsu.edu/Documents/memory.php#:~:text=Max%20Memory%20%3A%20%20,08%20MB), which is the key quantity for resource planning.
-%By capturing peak memory, we ensure our predictions aim at the worst-case usage during execution.
-%
-%Target Algorithm and Implementation: We focus on a representative tensor-based workload from seismic data processing.
-%In particular, the code under test could be a function that takes a multi-dimensional seismic array (e.g., a 3D volume) and performs some compute-intensive operation (such as filtering, FFT-based processing, or attribute calculation).
-%The specifics of the algorithm (e.g. complexity) are less important than its memory usage behavior.
-%We treat it as a fixed “black box” whose memory footprint we want to predict.
-%This function is invoked repeatedly with different input array shapes.
-%All other factors (code path, data type, etc.) are held constant to isolate the effect of input shape on memory.
-%
-%Synthetic Dataset Generation: To train our models, we generated a synthetic dataset of input shapes and observed memory usages.
-%We varied the input tensor dimensions systematically to cover a broad range of sizes.
-%For example, for a 3D workload, we might vary depth, height, and width across realistic ranges (small, medium, large) and sample combinations of these.
-%We ensured the synthetic shapes span from very small inputs (to observe baseline memory usage and any fixed overhead) up to near the upper limits of what the hardware could handle (to observe how memory scales at the high end).
-%Each unique shape configuration was run through the target algorithm, and TraceQ recorded its peak memory.
-%This process yields a labeled dataset: (features = shape metrics, target = memory).
-%We repeated each measurement multiple times to verify consistency (minimal run-to-run variance in memory, which we indeed observed, indicating a deterministic memory pattern for given shapes).
-%The synthetic approach allows gathering ample data (including extreme cases that might not appear in real datasets) under controlled conditions, which is ideal for training the more data-hungry models like neural nets.
-%
-%• Real-World Dataset (F3 Seismic) for Validation: In addition to synthetic data, we evaluated our models on a real seismic dataset – the Netherlands F3 block.
-%The F3 dataset is a 3D seismic volume of size approximately 255 × 901 × 601 (depth × inline × crossline) (https://www.researchgate.net/figure/The-size-of-Netherlands-F3-dataset-is-255-901-601-depth-crossline-inline_fig3_373406803), totaling on the order of 138 million samples.
-%This large volume is representative of high-end workload sizes in our domain.
-%We ran the same target algorithm on the F3 data (and subsets or downsampled versions of it, if needed) to gather memory usage in practice.
-%The F3 runs serve as an independent test: they allow us to see if models trained on synthetic patterns can generalize to a real-case scenario with a specific shape (and possibly slight differences, like the presence of geologic structures in the data, though that shouldn’t affect memory).
-%In our experiments, the F3 full volume and several sub-volumes (for instance, splitting the volume into halves or quarters) were used as test points to evaluate prediction accuracy on real data shapes that were not explicitly in the training set.
-%
-%Memory Profiling Process: For each experiment (each input shape), we use TraceQ to record memory usage over the runtime of the algorithm.
-%We extract the peak memory usage observed.
-%This peak is our ground-truth label for the learning models.
-%By focusing on peak, we inherently capture the worst-case memory requirement – exactly what needs to be reserved in an HPC job.
-%We also note the timing of when the peak occurs (e.g., at a particular stage of the algorithm), though for modeling we only use the peak value.
-%The overhead of TraceQ is negligible, and it provides high-resolution memory tracking, which gave us confidence in the accuracy of our measurements (within a few MB). Each shape configuration’s run is isolated (we ensured no other heavy processes on the node, memory was freed between runs, etc.).
-%
-%Training, Testing, and Validation Strategy: We split our collected data into a training set and a test set.
-%The training set (mostly synthetic cases) is used to fit the models.
-%We employed k-fold cross-validation on the training set to tune model hyperparameters (for example, to select the polynomial degree or tree depth that yields the best validation score).
-%The held-out test set includes some synthetic shapes (to evaluate interpolation performance) and the real F3 cases as separate test points (to evaluate extrapolation or at least interpolation at a larger scale).
-%Model performance is quantified using standard regression metrics like Mean Squared Error (MSE) and Coefficient of Determination (R²) on the test set.
-%However, given our practical goal, we pay special attention to prediction bias: a model that consistently underestimates memory, even by a small percentage, is considered riskier than one that overestimates by a moderate amount.
-%To capture this, we introduced a custom scoring metric that penalizes under-predictions more heavily than over-predictions.
-%In practice, this could be a weighted error or a custom loss function where if predicted memory < actual memory, the penalty is amplified.
-%We used this score to rank the models for “safety.” The metric reflects the fact that an underestimation could lead to a job crash (which is far worse than overestimation leading to some idle reserved memory) (https://pmc.ncbi.nlm.nih.gov/articles/PMC9906793/#:~:text=While%20these%20resource%20requirements%20are,waiting%20time%20for%20submitted%20jobs).
-%Throughout training, we monitored this metric as well, and in model selection, we gave priority to models with little to no underestimation on validation data.
-%
-%Summary of Experimental Setup: In summary, our experiments involved hundreds of runs of the seismic algorithm with varying input shapes, automated memory tracking, and offline training of various predictive models.
-%The combination of synthetic exhaustive sampling and real-case testing provides a robust assessment of whether input shape alone suffices to predict memory.
-%Next, we present the results, including visual comparisons of predicted vs. actual memory usage and error analysis for each model type.
-%
+\section{Experimental Setup}
+\label{sec:pmc-experimental-setup}
+
+As mentioned in section~\ref{sec:pmc-materials-and-methods}, the experiment was executed as follows: we generated seismic data, ran a containerized workflow to process each dataset while recording memory usage, and finally aggregated the results into a single dataset for analysis and model fitting.
+Below, we summarize each step in the pipeline and how it was automated.
+
+\subsection{Execution Environment and Workflow Automation}
+\label{subsec:pmc-execution-environment-and-workflow-automation}
+
+All runs took place on a single \ac{HPC} node (Intel\textregistered\ Xeon\textregistered\ Silver 4310, 256 \ac{GB} \ac{RAM}, and two \ac{RTX}~A6000 \ac{GPU}s), located on the \ac{UNICAMP} Discovery Labs, using a Python-based container environment.
+Although \ac{GPU} were available, our main memory experiments ran on \ac{CPU} to keep runs consistent across shapes.
+Docker containers helped ensure reproducibility by freezing Python package versions and isolating each run.
+
+We automated the entire workflow through a single shell script,
+\texttt{scripts/experiment.sh}~\cite{delucca2025experiment2script}, which:
+\begin{enumerate}
+    \item \textbf{Created Docker volumes} for storing intermediate data and outputs.
+    \item \textbf{Generated synthetic \ac{3D} seismic volumes} (Section~\ref{sec:pmc-materials-and-methods} describes the shapes and sizes chosen).
+    \item \textbf{Executed the seismic operators} inside pinned containers (via \texttt{–cpuset-cpus=0}), one run per shape configuration.
+    This \ac{CPU} pinning ensures consistent timing and minimal interference among runs.
+    \item \textbf{Used \texttt{TraceQ}} to record memory consumption during execution, capturing \ac{RSS} over time.
+    \item \textbf{Extracted and consolidated results}, including peak memory usage, shape metadata, and run logs, into \texttt{.csv} files.
+\end{enumerate}
+
+This script looped over all possible combinations of \texttt{(inlines, xlines, samples)}.
+A final pass of the script parsed \texttt{TraceQ} output, joined shape information with peak memory usage, and produced a consolidated table for the modeling phase.
+
+\subsection{Synthetic Data Generation and Real-Data Validation}
+\label{subsec:pmc-synthetic-data-generation-and-real-data-validation}
+
+\paragraph{Synthetic Volumes.}
+We programmatically enumerated \ac{3D} array dimensions from smaller volumes (e.g., $100$ $\times$ $100$ $\times$ $100$) up to larger ones near the machine’s memory limit.
+Each synthetic volume was written to a \ac{SEG-Y} file, ensuring consistent format for the seismic operators.
+This step let us systematically cover a range of sizes that might never appear in real datasets but are critical for understanding worst-case memory needs.
+
+\paragraph{Netherlands F3 Dataset~\cite{f3dataset}.}
+For real-data validation, we worked with the standard Netherlands F3 seismic volume.
+We used the full $651$ $\times$ $951$ $\times$ $462$ block and compared the predictions from our models against the actual memory usage.
+This allowed us to validate our models against a real-world dataset and assess their generalization capabilities.
+
+\subsection{Containerized Seismic Operators and Memory Profiling}
+\label{subsec:containerized-seismic-operators-and-memory-profiling}
+
+Each experiment (each shape) was run in a dedicated Docker container with pinned \ac{CPU} resources.
+We employed three main seismic operators:
+\emph{Envelope}, \emph{\ac{GST3D}}, and a \emph{3D Gaussian Filter}.
+While their internal computations differ, from the outside we treated them as “black boxes” that receive seismic volumes and transform them in memory-intensive ways.
+
+To log memory usage, the container startup script activated \texttt{TraceQ}, which hooks into the Python process and periodically snapshots \ac{RSS}.
+When the operator finished, \texttt{TraceQ} saved a \texttt{.prof} file containing the entire memory timeline.
+By isolating each run in its own container and controlling \ac{CPU} usage, we minimized cross-talk from other processes.
+
+\subsection{Data Consolidation}
+\label{subsec:data-consolidation}
+
+After all runs completed, the script systematically merged:
+\begin{itemize}
+    \item \emph{Peak Memory Values:} The highest \ac{RSS} from each \texttt{.prof} file.
+    \item \emph{Shape and Operator Metadata:} Inline, xline, and sample counts; which operator was used; and any other relevant metadata.
+    \item \emph{Derived Features:} Total volume (\text{inlines} $\times$ \text{xlines} $\times$ \text{samples}), logarithms, and geometric attributes (surface area, diagonal length, etc.).
+\end{itemize}
+
+This merged dataset became the raw material for model fitting.
+The final \texttt{.csv} files placed in \texttt{OUTPUT\_DIR} containing all runs, labeled with each operator, shape, and peak memory usage.
+
+\subsection{Repository Structure and Notebooks}
+\label{subsec:repository-structure-and-notebooks}
+
+All code and instructions for reproducing the experiment are publicly available:
+\begin{itemize}
+    \item \textbf{\texttt{Github repository}}~\cite{delucca2025experiment2} which contains the full source code and instructions.
+    \item \textbf{\texttt{scripts/experiment.sh}}~\cite{delucca2025experiment2script} automates data generation, operator execution, and memory profiling.
+    \item \textbf{\texttt{notebooks/}}~\cite{delucca2025experiment2notebooks} folder contains detailed Jupyter notebooks covering data exploration, model training, hyperparameter tuning, and error analysis.
+\end{itemize}
+
+By keeping container definitions, experiment scripts, and analysis notebooks together, we ensure end-to-end reproducibility.
+Anyone can tweak shape ranges, operator settings, or container parameters to replicate (or extend) these runs in different environments while preserving the same orchestration logic.
