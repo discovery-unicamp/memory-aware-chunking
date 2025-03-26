@@ -6,6 +6,16 @@ Analyzes memory usage prediction experiment results for Memory-Aware Chunking.
 3. Produces numerous plots based on memory usage, model performance,
    data reduction, feature selection, and additional insights.
 4. Produces cross-operator plots aggregating data across all operators.
+
+Newly Added Charts:
+- actual_vs_predicted_by_model.pdf (all operators)
+- feature_impact.pdf (all operators)
+- memory_progression_envelope.pdf (per operator)
+- metrics_evolution_by_number_of_features.pdf (cross)
+- metrics_evolution_by_sample_size.pdf (cross)
+- residual_metrics_by_number_of_features.pdf (cross)
+- residual_metrics_by_sample_size.pdf (cross)
+- residual_vs_predicted.pdf (cross)
 """
 
 import ast
@@ -106,7 +116,7 @@ def load_all_operators(operators_dir):
 
 
 # ------------------------------------------------------------------------------
-# Analysis Section (Profile)
+# Analysis Section (Profile) - Single Operator
 # ------------------------------------------------------------------------------
 def analyze_profile(results):
     """
@@ -126,6 +136,7 @@ def analyze_profile(results):
         profile_dir = os.path.join(OUTPUT_DIR, "charts", "profile")
         os.makedirs(profile_dir, exist_ok=True)
 
+        # Existing standard memory/time profile plots
         plot_peak_memory_usage_per_volume(summary, operator, profile_dir)
         plot_memory_usage_distribution(history, operator, profile_dir)
         plot_inline_xline_progression(history, operator, profile_dir)
@@ -136,6 +147,10 @@ def analyze_profile(results):
         plot_execution_time_by_volume(summary, operator, profile_dir)
         plot_execution_time_distribution(summary, operator, profile_dir)
         plot_execution_time_distribution_by_volume(history, operator, profile_dir)
+
+        # NEW: memory_progression_envelope.pdf (per operator)
+        plot_memory_progression(history, operator, profile_dir)
+
         print()
     print()
 
@@ -435,8 +450,91 @@ def plot_execution_time_distribution_by_volume(df, operator, out_dir):
     save_chart(fig, os.path.join(out_dir, filename))
 
 
+def plot_memory_progression(df, operator, out_dir):
+    """
+    Generates a memory-usage progression chart for a single operator, faceted by xlines/inlines,
+    with lines colored/styled by 'samples'.
+
+    If operator == 'gst3d', it applies smoothing/downsampling to the data.
+    Otherwise, it plots data as-is.
+    """
+
+    import matplotlib.pyplot as plt
+    import seaborn as sns
+    import os
+
+    # 1) Optional smoothing/downsampling function
+    def smooth_and_downsample(sub_df):
+        sub_df = sub_df.sort_values("relative_time").copy()
+        # Rolling average
+        sub_df["captured_memory_usage"] = (
+            sub_df["captured_memory_usage"]
+            .rolling(window=5, center=True, min_periods=1)
+            .mean()
+        )
+        # Downsampling: keep every 5th point
+        sub_df = sub_df.iloc[::5, :]
+        return sub_df
+
+    # 2) If operator == "gst3d", group by shape columns and apply smoothing
+    if operator.lower() == "gst3d":
+        df = (
+            df.groupby(["xlines", "inlines", "samples"], group_keys=True)
+            .apply(smooth_and_downsample)
+            .reset_index(drop=True)
+        )
+
+    # 3) Convert columns to strings for Seaborn faceting
+    df["xlines"] = df["xlines"].astype(str)
+    df["inlines"] = df["inlines"].astype(str)
+    df["samples"] = df["samples"].astype(str)
+
+    # 4) Use Seaborn relplot
+    g = sns.relplot(
+        data=df,
+        x="relative_time",
+        y="captured_memory_usage",
+        row="xlines",
+        col="inlines",
+        hue="samples",
+        style="samples",
+        kind="line",
+        estimator=None,  # we want raw data, not an aggregator
+        facet_kws={"sharex": False, "sharey": False},
+        height=3,
+        aspect=1.4,
+    )
+
+    # 5) Cosmetic adjustments
+    g.set_axis_labels("Relative Time", "Memory Usage (GB)")
+    g.set_titles(row_template="Xlines={row_name}", col_template="Inlines={col_name}")
+    g.fig.suptitle(
+        f"Memory Usage Progression - Operator: {operator}", fontsize=21, y=1.01
+    )
+
+    # Draw black borders around each facet
+    for ax in g.axes.flat:
+        rect = ax.patch
+        rect.set_edgecolor("black")
+        rect.set_linewidth(1.5)
+
+    # Access Seaborn's automatic legend
+    legend = g._legend
+    if legend:
+        legend.get_frame().set_edgecolor("black")
+        legend.get_frame().set_linewidth(2.0)
+        legend.get_frame().set_linestyle("--")
+        # Move legend if desired
+        legend.set_bbox_to_anchor((1.0, 0.5))
+
+    g.tight_layout()
+    out_path = os.path.join(out_dir, f"memory_progression_{operator}.pdf")
+    g.fig.savefig(out_path, bbox_inches="tight")
+    plt.close(g.fig)
+
+
 # ------------------------------------------------------------------------------
-# Analysis Section (Model)
+# Analysis Section (Model) - Single Operator
 # ------------------------------------------------------------------------------
 def analyze_model(results):
     """
@@ -533,7 +631,7 @@ def plot_residual_distribution(df, operator, out_dir):
     print(f"  -> Residual distribution for {operator}")
     fig, ax = plt.subplots()
     for _, row in df.iterrows():
-        # Use safe eval or literal_eval
+        # Use ast.literal_eval
         residuals = ast.literal_eval(row["residuals"])
         sns.kdeplot(residuals, fill=True, alpha=0.3, label=row["model_name"], ax=ax)
 
@@ -574,7 +672,7 @@ def plot_actual_vs_predicted(df, operator, out_dir):
 
 
 # ------------------------------------------------------------------------------
-# Analysis Section (Data Reduction)
+# Analysis Section (Data Reduction) - Single Operator
 # ------------------------------------------------------------------------------
 def analyze_data_reduction(results):
     """
@@ -677,7 +775,7 @@ def plot_residual_distribution_by_sample_size(df, operator, out_dir):
 
 
 # ------------------------------------------------------------------------------
-# Analysis Section (Feature Selection)
+# Analysis Section (Feature Selection) - Single Operator
 # ------------------------------------------------------------------------------
 def analyze_feature_selection(results):
     """
@@ -718,9 +816,12 @@ def plot_metrics_by_feature_count(df, operator, out_dir):
         ax.set_title(title)
         ax.set_xlabel("Num Features")
 
-    plt.tight_layout()
-    filename = f"metrics_evolution_by_number_of_features_{operator}.pdf"
-    save_chart(fig, os.path.join(out_dir, filename))
+    save_chart(
+        fig,
+        os.path.join(
+            out_dir, f"metrics_evolution_by_number_of_features_{operator}.pdf"
+        ),
+    )
 
 
 def plot_score_by_feature_count(df, operator, out_dir):
@@ -781,6 +882,8 @@ def plot_residual_by_feature_count(df, operator, out_dir):
 
 def plot_feature_performance(df, operator, out_dir):
     print(f"  -> Feature performance impact for {operator}")
+    import ast
+
     data = df.copy()
     data["selected_features"] = data["selected_features"].apply(ast.literal_eval)
     data.sort_values("num_features", ascending=False, inplace=True, ignore_index=True)
@@ -825,7 +928,7 @@ def plot_feature_performance(df, operator, out_dir):
 
 
 # ------------------------------------------------------------------------------
-# EXTRA INSIGHTS
+# EXTRA INSIGHTS - Single Operator
 # ------------------------------------------------------------------------------
 def analyze_additional_insights(results):
     """
@@ -924,7 +1027,7 @@ def plot_memory_vs_dimensions(df, operator, out_dir):
 
 def plot_residual_vs_predicted(mmetrics, operator, out_dir):
     """
-    Plots residual (y_pred - y_test) vs predicted for each model.
+    Plots residual (y_pred - y_test) vs. predicted for each model.
     """
     import numpy as np
     import matplotlib.pyplot as plt
@@ -944,6 +1047,7 @@ def plot_residual_vs_predicted(mmetrics, operator, out_dir):
     for i, row in mmetrics.iterrows():
         if i >= len(axes):
             break
+
         model_name = row["model_name"]
         residuals = np.array(ast.literal_eval(row["residuals"]))
         y_pred = np.array(ast.literal_eval(row["y_pred"]))
@@ -1019,7 +1123,7 @@ def plot_execution_time_vs_memory(df, operator, out_dir):
 
 
 # ------------------------------------------------------------------------------
-# Cross-Operator Analyses
+# Cross-Operator Analyses (Profile)
 # ------------------------------------------------------------------------------
 def analyze_profile_cross(results):
     """
@@ -1042,7 +1146,7 @@ def analyze_profile_cross(results):
         plot_cross_peak_memory_by_volume(summary_all, cross_dir)
         plot_cross_execution_time_by_volume(summary_all, cross_dir)
     else:
-        print("  -> No operator has 'profile_summary' to build cross-operator charts.")
+        print("  -> No operator has 'profile_summary' for cross-operator charts.")
 
 
 def plot_cross_peak_memory_by_volume(df, out_dir):
@@ -1105,6 +1209,9 @@ def plot_cross_execution_time_by_volume(df, out_dir):
     save_chart(fig, os.path.join(out_dir, filename))
 
 
+# ------------------------------------------------------------------------------
+# Cross-Operator Analyses (Model)
+# ------------------------------------------------------------------------------
 def analyze_model_cross(results):
     """
     Creates cross-operator charts using 'model_metrics' from each operator.
@@ -1122,23 +1229,27 @@ def analyze_model_cross(results):
             model_data.append(df)
 
     if not model_data:
-        print("  -> No operator has 'model_metrics' to build cross-operator charts.")
+        print("  -> No operator has 'model_metrics' for cross-operator charts.")
         return
 
     all_metrics = pd.concat(model_data, ignore_index=True)
     plot_cross_model_performance(all_metrics, cross_dir)
     plot_cross_model_rmse(all_metrics, cross_dir)
 
+    # NEW CROSS CHARTS
+    # actual_vs_predicted_by_model.pdf (all operators)
+    plot_cross_actual_vs_predicted_by_model(all_metrics, cross_dir)
+    # residual_vs_predicted.pdf (all operators)
+    plot_cross_residual_vs_predicted(all_metrics, cross_dir)
+
 
 def plot_cross_model_performance(df, out_dir):
     """
-    A grouped bar chart showing each operator's model_name vs. R² or Accuracy, etc.
+    A grouped bar chart showing each operator's model_name vs. R² (example).
     """
     fig, ax = plt.subplots()
-    # Example: group by operator, then plot average R2
     grouped = df.groupby(["operator", "model_name"])["r2"].mean().reset_index()
 
-    # Pivot for easier plotting
     pivoted = grouped.pivot(index="model_name", columns="operator", values="r2")
     pivoted.plot(kind="bar", ax=ax, zorder=3)
     ax.set_title("Cross-Operator: Average R² per Model")
@@ -1171,6 +1282,120 @@ def plot_cross_model_rmse(df, out_dir):
     save_chart(fig, os.path.join(out_dir, filename))
 
 
+# NEW CROSS: actual_vs_predicted_by_model.pdf
+def plot_cross_actual_vs_predicted_by_model(df, out_dir):
+    """
+    Creates a multi-panel figure, one panel per model_name.
+    Within each panel, it overlays actual vs predicted lines for each operator.
+    """
+    import matplotlib.pyplot as plt
+    from matplotlib.lines import Line2D
+
+    models = df["model_name"].unique()
+    operators = df["operator"].unique()
+    out_path = os.path.join(out_dir, "actual_vs_predicted_by_model.pdf")
+    print("  -> Cross: actual_vs_predicted_by_model.pdf")
+
+    # Prepare color map for operators
+    color_map = dict(zip(operators, sns.color_palette(n_colors=len(operators))))
+
+    cols = 3
+    rows = int(np.ceil(len(models) / cols))
+    fig, axes = plt.subplots(rows, cols, figsize=(5 * cols, 4 * rows))
+    axes = axes.flatten()
+
+    for i, model in enumerate(models):
+        ax = axes[i]
+        sub_model = df[df["model_name"] == model]
+        for op in sub_model["operator"].unique():
+            sub_op = sub_model[sub_model["operator"] == op]
+            for _, row in sub_op.iterrows():
+                y_test = ast.literal_eval(row["y_test"])
+                y_pred = ast.literal_eval(row["y_pred"])
+                # Actual => dashed
+                ax.plot(y_test, "--", color=color_map[op])
+                # Predicted => solid
+                ax.plot(y_pred, "-", color=color_map[op])
+        ax.set_title(model)
+        ax.set_xlabel("Sample Index")
+        ax.set_ylabel("Value")
+
+    # Build legends
+    # Operator legend
+    operator_handles = [
+        Line2D([], [], color=color_map[op], marker="o", linestyle="None", label=op)
+        for op in operators
+    ]
+    # Style legend
+    style_actual = Line2D([], [], color="black", linestyle="--", label="Actual")
+    style_pred = Line2D([], [], color="black", linestyle="-", label="Predicted")
+
+    # Place legends
+    fig.legend(
+        handles=operator_handles + [style_actual, style_pred],
+        loc="upper right",
+        bbox_to_anchor=(0.96, 0.96),
+        title="Operators / Type",
+    )
+    fig.suptitle("All Operators - Actual vs. Predicted by Model", fontsize=16)
+    fig.tight_layout(rect=[0, 0, 1, 0.95])
+
+    fig.savefig(out_path, bbox_inches="tight")
+    plt.close(fig)
+
+
+# NEW CROSS: residual_vs_predicted.pdf
+def plot_cross_residual_vs_predicted(df, out_dir):
+    """
+    Plots residual vs predicted for all operators/models in one chart or multiple subplots.
+    """
+    out_path = os.path.join(out_dir, "residual_vs_predicted.pdf")
+    print("  -> Cross: residual_vs_predicted.pdf")
+
+    # We'll flatten all points and color by operator, style by model.
+    all_points = []
+    for _, row in df.iterrows():
+        if "residuals" not in row or "y_pred" not in row:
+            continue
+        res = ast.literal_eval(row["residuals"])
+        y_pred = ast.literal_eval(row["y_pred"])
+        if len(res) != len(y_pred):
+            continue
+        for r_val, p_val in zip(res, y_pred):
+            all_points.append(
+                {
+                    "operator": row["operator"],
+                    "model_name": row["model_name"],
+                    "residual": r_val,
+                    "predicted": p_val,
+                }
+            )
+    if not all_points:
+        print("  -> No residual/predicted data available.")
+        return
+
+    df_points = pd.DataFrame(all_points)
+    fig, ax = plt.subplots()
+    sns.scatterplot(
+        data=df_points,
+        x="predicted",
+        y="residual",
+        hue="operator",
+        style="model_name",
+        ax=ax,
+        alpha=0.6,
+    )
+    ax.axhline(0, color="red", linestyle="--")
+    ax.set_xlabel("Predicted Value")
+    ax.set_ylabel("Residual")
+    ax.set_title("Cross-Operator: Residual vs. Predicted")
+    ax.legend(bbox_to_anchor=(1.02, 1), loc="upper left")
+    save_chart(fig, out_path)
+
+
+# ------------------------------------------------------------------------------
+# Cross-Operator Analyses (Data Reduction)
+# ------------------------------------------------------------------------------
 def analyze_data_reduction_cross(results):
     """
     Creates cross-operator charts using 'data_reduction' from each operator.
@@ -1188,11 +1413,15 @@ def analyze_data_reduction_cross(results):
             dr_data.append(df)
 
     if not dr_data:
-        print("  -> No operator has 'data_reduction' to build cross-operator charts.")
+        print("  -> No operator has 'data_reduction' for cross-operator charts.")
         return
 
     all_dr = pd.concat(dr_data, ignore_index=True)
     plot_cross_data_reduction(all_dr, cross_dir)
+
+    # NEW CROSS charts:
+    plot_cross_metrics_evolution_by_sample_size(all_dr, cross_dir)
+    plot_cross_residual_metrics_by_sample_size(all_dr, cross_dir)
 
 
 def plot_cross_data_reduction(df, out_dir):
@@ -1214,6 +1443,82 @@ def plot_cross_data_reduction(df, out_dir):
     save_chart(fig, os.path.join(out_dir, filename))
 
 
+# NEW CROSS: metrics_evolution_by_sample_size.pdf
+def plot_cross_metrics_evolution_by_sample_size(df, out_dir):
+    """
+    2x2 chart showing RMSE, MAE, R², Accuracy vs. num_samples for each operator in separate lines.
+    """
+    filename = "metrics_evolution_by_sample_size.pdf"
+    out_path = os.path.join(out_dir, filename)
+    print(f"  -> Cross: {filename}")
+
+    fig, axes = plt.subplots(2, 2, figsize=(10, 8))
+    metrics_map = {
+        "RMSE": ("rmse", axes[0, 0]),
+        "MAE": ("mae", axes[0, 1]),
+        "R²": ("r2", axes[1, 0]),
+        "Accuracy": ("accuracy", axes[1, 1]),
+    }
+
+    for metric_name, (col, ax) in metrics_map.items():
+        for op in df["operator"].unique():
+            sub = df[df["operator"] == op].sort_values("num_samples")
+            ax.plot(sub["num_samples"], sub[col], marker="o", label=op)
+        ax.set_title(metric_name)
+        ax.set_xlabel("Number of Samples")
+
+    handles, labels = axes[0, 0].get_legend_handles_labels()
+    fig.legend(handles, labels, loc="upper center", ncol=len(labels))
+    fig.suptitle("Cross-Operator: Metrics Evolution by Sample Size")
+    fig.tight_layout(rect=[0, 0, 1, 0.94])
+    fig.savefig(out_path)
+    plt.close(fig)
+
+
+# NEW CROSS: residual_metrics_by_sample_size.pdf
+def plot_cross_residual_metrics_by_sample_size(df, out_dir):
+    """
+    Similar to the single-operator version: plots residual-based metrics (MAE, RMSE) vs sample_size,
+    lines for each operator.
+    """
+    filename = "residual_metrics_by_sample_size.pdf"
+    out_path = os.path.join(out_dir, filename)
+    print(f"  -> Cross: {filename}")
+
+    # If "residuals" exist, compute metrics from them. Otherwise, fallback to 'mae','rmse'.
+    df = df.copy()
+    if "residuals" in df.columns:
+        df["residuals_eval"] = df["residuals"].apply(
+            lambda x: np.array(ast.literal_eval(x)) if pd.notna(x) else []
+        )
+        df["mae_calc"] = df["residuals_eval"].apply(
+            lambda x: np.mean(np.abs(x)) if len(x) else np.nan
+        )
+        df["rmse_calc"] = df["residuals_eval"].apply(
+            lambda x: np.sqrt(np.mean(x**2)) if len(x) else np.nan
+        )
+    else:
+        df["mae_calc"] = df["mae"]
+        df["rmse_calc"] = df["rmse"]
+
+    fig, ax = plt.subplots()
+    ops = df["operator"].unique()
+    for op in ops:
+        sub = df[df["operator"] == op].sort_values("num_samples")
+        ax.plot(sub["num_samples"], sub["mae_calc"], marker="o", label=f"{op} MAE")
+        ax.plot(sub["num_samples"], sub["rmse_calc"], marker="s", label=f"{op} RMSE")
+
+    ax.set_title("Cross-Operator: Residual Metrics vs. Number of Samples")
+    ax.set_xlabel("Number of Samples")
+    ax.set_ylabel("Error")
+    ax.legend()
+    fig.savefig(out_path)
+    plt.close(fig)
+
+
+# ------------------------------------------------------------------------------
+# Cross-Operator Analyses (Feature Selection)
+# ------------------------------------------------------------------------------
 def analyze_feature_selection_cross(results):
     """
     Creates cross-operator charts using 'feature_selection' from each operator.
@@ -1231,18 +1536,22 @@ def analyze_feature_selection_cross(results):
             fs_data.append(df)
 
     if not fs_data:
-        print(
-            "  -> No operator has 'feature_selection' to build cross-operator charts."
-        )
+        print("  -> No operator has 'feature_selection' for cross-operator charts.")
         return
 
     all_fs = pd.concat(fs_data, ignore_index=True)
     plot_cross_feature_selection(all_fs, cross_dir)
 
+    # NEW CROSS: feature_impact.pdf, metrics_evolution_by_number_of_features.pdf,
+    #            residual_metrics_by_number_of_features.pdf
+    plot_cross_feature_impact(all_fs, cross_dir)
+    plot_cross_metrics_evolution_by_number_of_features(all_fs, cross_dir)
+    plot_cross_residual_metrics_by_number_of_features(all_fs, cross_dir)
+
 
 def plot_cross_feature_selection(df, out_dir):
     """
-    Example cross-operator chart: line plot of average R² vs number_of_features, per operator.
+    Example cross-operator chart: line plot of average R² vs num_features, per operator.
     """
     fig, ax = plt.subplots()
     operators = df["operator"].unique()
@@ -1261,6 +1570,128 @@ def plot_cross_feature_selection(df, out_dir):
     save_chart(fig, os.path.join(out_dir, filename))
 
 
+# NEW CROSS: feature_impact.pdf
+def plot_cross_feature_impact(df, out_dir):
+    """
+    Aggregates single-feature removal steps for all operators in one chart.
+    """
+    filename = "feature_impact.pdf"
+    out_path = os.path.join(out_dir, filename)
+    print(f"  -> Cross: {filename}")
+
+    df = df.copy()
+    df["selected_features"] = df["selected_features"].apply(ast.literal_eval)
+    # Sort by operator, then descending num_features
+    df.sort_values(["operator", "num_features"], ascending=[True, False], inplace=True)
+
+    records = []
+    for op in df["operator"].unique():
+        sub_op = df[df["operator"] == op].reset_index(drop=True)
+        for i in range(len(sub_op) - 1):
+            feats_now = set(sub_op.loc[i, "selected_features"])
+            feats_next = set(sub_op.loc[i + 1, "selected_features"])
+            removed = feats_now - feats_next
+            if len(removed) == 1:
+                [removed_feat] = removed
+                d_rmse = sub_op.loc[i + 1, "rmse"] - sub_op.loc[i, "rmse"]
+                records.append(
+                    {
+                        "operator": op,
+                        "removed_feature": removed_feat,
+                        "delta_rmse": d_rmse,
+                    }
+                )
+
+    if not records:
+        print("No single-feature removal steps found in cross feature_selection data.")
+        return
+
+    rec_df = pd.DataFrame(records)
+    fig, ax = plt.subplots()
+    sns.barplot(data=rec_df, x="removed_feature", y="delta_rmse", hue="operator", ax=ax)
+    ax.set_xlabel("Removed Feature")
+    ax.set_ylabel("Avg ΔRMSE")
+    ax.set_title("Cross-Operator: Impact of Removing Each Feature on RMSE")
+    ax.set_xticklabels(ax.get_xticklabels(), rotation=45, ha="right")
+    ax.legend(bbox_to_anchor=(1.02, 1), loc="upper left")
+    fig.tight_layout()
+    fig.savefig(out_path)
+    plt.close(fig)
+
+
+# NEW CROSS: metrics_evolution_by_number_of_features.pdf
+def plot_cross_metrics_evolution_by_number_of_features(df, out_dir):
+    """
+    2x2 chart: RMSE, MAE, R², Accuracy vs. num_features for each operator.
+    """
+    filename = "metrics_evolution_by_number_of_features.pdf"
+    out_path = os.path.join(out_dir, filename)
+    print(f"  -> Cross: {filename}")
+
+    fig, axes = plt.subplots(2, 2, figsize=(10, 8))
+    metrics_map = {
+        "RMSE": ("rmse", axes[0, 0]),
+        "MAE": ("mae", axes[0, 1]),
+        "R²": ("r2", axes[1, 0]),
+        "Accuracy": ("accuracy", axes[1, 1]),
+    }
+
+    for metric_name, (col, ax) in metrics_map.items():
+        for op in df["operator"].unique():
+            sub = df[df["operator"] == op].sort_values("num_features")
+            ax.plot(sub["num_features"], sub[col], marker="o", label=op)
+        ax.set_title(metric_name)
+        ax.set_xlabel("Number of Features")
+
+    handles, labels = axes[0, 0].get_legend_handles_labels()
+    fig.legend(handles, labels, loc="upper center", ncol=len(labels))
+    fig.suptitle("Cross-Operator: Metrics Evolution by Number of Features")
+    fig.tight_layout(rect=[0, 0, 1, 0.94])
+    fig.savefig(out_path)
+    plt.close(fig)
+
+
+# NEW CROSS: residual_metrics_by_number_of_features.pdf
+def plot_cross_residual_metrics_by_number_of_features(df, out_dir):
+    """
+    Similar approach: plot lines for each operator, x=num_features, y=MAE or RMSE from residuals.
+    """
+    filename = "residual_metrics_by_number_of_features.pdf"
+    out_path = os.path.join(out_dir, filename)
+    print(f"  -> Cross: {filename}")
+
+    data = df.copy()
+    if "residuals" in data.columns:
+        data["residuals_eval"] = data["residuals"].apply(
+            lambda x: np.array(ast.literal_eval(x)) if pd.notna(x) else []
+        )
+        data["mae_calc"] = data["residuals_eval"].apply(
+            lambda x: np.mean(np.abs(x)) if len(x) else np.nan
+        )
+        data["rmse_calc"] = data["residuals_eval"].apply(
+            lambda x: np.sqrt(np.mean(x**2)) if len(x) else np.nan
+        )
+    else:
+        data["mae_calc"] = data["mae"]
+        data["rmse_calc"] = data["rmse"]
+
+    fig, ax = plt.subplots()
+    for op in data["operator"].unique():
+        sub = data[data["operator"] == op].sort_values("num_features")
+        ax.plot(sub["num_features"], sub["mae_calc"], marker="o", label=f"{op} MAE")
+        ax.plot(sub["num_features"], sub["rmse_calc"], marker="s", label=f"{op} RMSE")
+
+    ax.set_title("Cross-Operator: Residual Metrics vs. Number of Features")
+    ax.set_xlabel("Number of Features")
+    ax.set_ylabel("Error")
+    ax.legend()
+    fig.savefig(out_path)
+    plt.close(fig)
+
+
+# ------------------------------------------------------------------------------
+# Cross-Operator Additional Insights
+# ------------------------------------------------------------------------------
 def analyze_additional_insights_cross(results):
     """
     Creates cross-operator charts that might combine multiple CSV sources.
