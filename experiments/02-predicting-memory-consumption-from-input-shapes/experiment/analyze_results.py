@@ -16,6 +16,15 @@ Newly Added Charts:
 - residual_metrics_by_number_of_features.pdf (cross)
 - residual_metrics_by_sample_size.pdf (cross)
 - residual_vs_predicted.pdf (cross)
+
+Additional Extended Analyses (Section 9):
+- Time-to-Peak Memory Plots
+- Linear Scaling-Factor (Slope) Analysis
+- Feature Correlation Heatmaps
+- Residual vs. Single Feature
+- Best Model Summary (Cross-Operator)
+- Data Reduction “Breakdown Point” (Inflection)
+- HPC Resource “Safety Margin” Plots
 """
 
 import ast
@@ -82,6 +91,9 @@ def main():
     analyze_data_reduction_cross(results)
     analyze_feature_selection_cross(results)
     analyze_additional_insights_cross(results)
+
+    # 9. New enhancements (extended analyses)
+    analyze_new_enhancements(results)
 
 
 # ------------------------------------------------------------------------------
@@ -1282,7 +1294,6 @@ def plot_cross_model_rmse(df, out_dir):
     save_chart(fig, os.path.join(out_dir, filename))
 
 
-# NEW CROSS: actual_vs_predicted_by_model.pdf
 def plot_cross_actual_vs_predicted_by_model(df, out_dir):
     """
     Creates a multi-panel figure, one panel per model_name.
@@ -1344,7 +1355,6 @@ def plot_cross_actual_vs_predicted_by_model(df, out_dir):
     plt.close(fig)
 
 
-# NEW CROSS: residual_vs_predicted.pdf
 def plot_cross_residual_vs_predicted(df, out_dir):
     """
     Plots residual vs predicted for all operators/models in one chart or multiple subplots.
@@ -1443,7 +1453,6 @@ def plot_cross_data_reduction(df, out_dir):
     save_chart(fig, os.path.join(out_dir, filename))
 
 
-# NEW CROSS: metrics_evolution_by_sample_size.pdf
 def plot_cross_metrics_evolution_by_sample_size(df, out_dir):
     """
     2x2 chart showing RMSE, MAE, R², Accuracy vs. num_samples for each operator in separate lines.
@@ -1475,7 +1484,6 @@ def plot_cross_metrics_evolution_by_sample_size(df, out_dir):
     plt.close(fig)
 
 
-# NEW CROSS: residual_metrics_by_sample_size.pdf
 def plot_cross_residual_metrics_by_sample_size(df, out_dir):
     """
     Similar to the single-operator version: plots residual-based metrics (MAE, RMSE) vs sample_size,
@@ -1570,7 +1578,6 @@ def plot_cross_feature_selection(df, out_dir):
     save_chart(fig, os.path.join(out_dir, filename))
 
 
-# NEW CROSS: feature_impact.pdf
 def plot_cross_feature_impact(df, out_dir):
     """
     Aggregates single-feature removal steps for all operators in one chart.
@@ -1619,7 +1626,6 @@ def plot_cross_feature_impact(df, out_dir):
     plt.close(fig)
 
 
-# NEW CROSS: metrics_evolution_by_number_of_features.pdf
 def plot_cross_metrics_evolution_by_number_of_features(df, out_dir):
     """
     2x2 chart: RMSE, MAE, R², Accuracy vs. num_features for each operator.
@@ -1651,7 +1657,6 @@ def plot_cross_metrics_evolution_by_number_of_features(df, out_dir):
     plt.close(fig)
 
 
-# NEW CROSS: residual_metrics_by_number_of_features.pdf
 def plot_cross_residual_metrics_by_number_of_features(df, out_dir):
     """
     Similar approach: plot lines for each operator, x=num_features, y=MAE or RMSE from residuals.
@@ -1720,6 +1725,284 @@ def save_chart(fig, out_path):
     fig.tight_layout()
     fig.savefig(out_path)
     plt.close(fig)
+
+
+# ------------------------------------------------------------------------------
+# 9. Additional Extended Analyses
+# ------------------------------------------------------------------------------
+def analyze_new_enhancements(results):
+    """
+    Section 9: Additional analyses & plots not covered in previous sections.
+    Calls specialized functions below for each operator or across operators.
+    """
+    print("---- STEP 9: New Enhancements (Extended Analyses) ----")
+
+    # 9.1 Time-to-Peak Memory Analysis
+    for operator, dfs in results.items():
+        if "profile_history" in dfs:
+            ph = dfs["profile_history"]
+            out_dir = os.path.join(OUTPUT_DIR, "charts", "insights")
+            os.makedirs(out_dir, exist_ok=True)
+            plot_time_to_peak(ph, operator, out_dir)
+
+    # 9.2 HPC Memory Scaling-Factor (Slope) - CROSS
+    #    We can do a cross-operator approach if each operator has 'profile_summary'.
+    summaries = []
+    for operator, dfs in results.items():
+        if "profile_summary" in dfs:
+            psum = dfs["profile_summary"].copy()
+            psum["operator"] = operator
+            summaries.append(psum)
+    if summaries:
+        all_summary = pd.concat(summaries, ignore_index=True)
+        out_dir = os.path.join(OUTPUT_DIR, "charts", "cross", "insights")
+        os.makedirs(out_dir, exist_ok=True)
+        plot_memory_scaling_factor(all_summary, out_dir)
+
+    # 9.3 Feature Correlation Heatmaps (Per Operator)
+    for operator, dfs in results.items():
+        if "profile_summary" in dfs:
+            psum = dfs["profile_summary"].copy()
+            out_dir = os.path.join(OUTPUT_DIR, "charts", "insights")
+            os.makedirs(out_dir, exist_ok=True)
+            plot_feature_correlation(psum, operator, out_dir)
+
+    # 9.4 Best Model Summary (Cross-Operator)
+    #    We'll use the cross-operator model_metrics to find top model per operator
+    model_data = []
+    for operator, dfs in results.items():
+        if "model_metrics" in dfs:
+            mm = dfs["model_metrics"].copy()
+            mm["operator"] = operator
+            model_data.append(mm)
+    if model_data:
+        all_mm = pd.concat(model_data, ignore_index=True)
+        out_dir = os.path.join(OUTPUT_DIR, "charts", "cross", "model")
+        os.makedirs(out_dir, exist_ok=True)
+        plot_best_model_per_operator(all_mm, out_dir)
+
+    # 9.5 HPC Resource “Safety Margin” Plots (Per Operator)
+    for operator, dfs in results.items():
+        if "profile_history" in dfs:
+            ph = dfs["profile_history"].copy()
+            out_dir = os.path.join(OUTPUT_DIR, "charts", "insights")
+            os.makedirs(out_dir, exist_ok=True)
+            plot_hpc_safety_margin(ph, operator, out_dir, percentile=0.95)
+
+    # 9.6 Residual vs. Each Feature (Optional) - If you have merged data to link residuals to shape.
+    #    (Placeholder, see the docstring in the snippet from earlier suggestions.)
+    #    If your pipeline merges them, you could call something like:
+    #    plot_residuals_vs_features(merged_df, operator, out_dir)
+    #    after you have a merged DataFrame of shape + model residual info.
+
+
+def plot_time_to_peak(df, operator, out_dir):
+    """
+    For each session_id, find the time (relative_time) when memory usage is max.
+    Then plot a distribution or boxplot across volumes.
+    """
+    needed_cols = ["session_id", "captured_memory_usage", "relative_time", "volume"]
+    if not all(col in df.columns for col in needed_cols):
+        print(
+            f"  -> Missing columns for time-to-peak analysis in {operator}. Skipping."
+        )
+        return
+
+    print(f"  -> Time-to-Peak Memory for {operator}")
+    grouped = df.groupby("session_id")
+    peak_times = []
+    for sid, sub in grouped:
+        max_mem = sub["captured_memory_usage"].max()
+        idx = sub["captured_memory_usage"].idxmax()
+        t_peak = sub.loc[idx, "relative_time"]
+        volume = sub.loc[idx, "volume"]
+        peak_times.append({"session_id": sid, "time_to_peak": t_peak, "volume": volume})
+
+    ptdf = pd.DataFrame(peak_times)
+
+    fig, ax = plt.subplots()
+    sns.boxplot(data=ptdf, x="volume", y="time_to_peak", ax=ax)
+    ax.set_title(f"Time to Peak Memory Usage - {operator}")
+    ax.set_xlabel("Volume")
+    ax.set_ylabel("Time to Peak (s)")
+    volumes = sorted(ptdf["volume"].unique())
+    ax.set_xticklabels(
+        [format_volume_label(v) for v in volumes], rotation=45, ha="right"
+    )
+
+    filename = f"time_to_peak_{operator}.pdf"
+    save_chart(fig, os.path.join(out_dir, filename))
+
+
+def plot_memory_scaling_factor(summary_all, out_dir):
+    """
+    For each operator, fit peak_memory_usage_avg = m*volume + b,
+    then plot bar chart of slope (m).
+    """
+    print("  -> Cross-Operator Memory Scaling Factor")
+    operators = summary_all["operator"].unique()
+    slope_data = []
+
+    for op in operators:
+        sub = summary_all[summary_all["operator"] == op].dropna(
+            subset=["volume", "peak_memory_usage_avg"]
+        )
+        if len(sub) < 2:
+            continue
+        x = sub["volume"].values
+        y = sub["peak_memory_usage_avg"].values
+        m, b = np.polyfit(x, y, 1)
+        slope_data.append({"operator": op, "slope": m})
+
+    if not slope_data:
+        print("  -> Not enough data for memory scaling factor.")
+        return
+
+    sdf = pd.DataFrame(slope_data)
+
+    fig, ax = plt.subplots()
+    sns.barplot(data=sdf, x="operator", y="slope", ax=ax)
+    ax.set_title("Memory Scaling Factor (Slope) by Operator")
+    ax.set_xlabel("Operator")
+    ax.set_ylabel("Slope (GB per volume unit)")
+
+    filename = "cross_operator_memory_scaling_factor.pdf"
+    save_chart(fig, os.path.join(out_dir, filename))
+
+
+def plot_feature_correlation(summary, operator, out_dir):
+    """
+    Create a correlation heatmap among shape-based columns and memory/time metrics.
+    Expects columns like: 'inlines', 'xlines', 'samples', 'volume',
+    'peak_memory_usage_avg', 'execution_time_avg'.
+    """
+    needed = [
+        "inlines",
+        "xlines",
+        "samples",
+        "volume",
+        "peak_memory_usage_avg",
+        "execution_time_avg",
+    ]
+    existing_cols = [c for c in needed if c in summary.columns]
+    if len(existing_cols) < 3:
+        print(f"  -> Skipping correlation heatmap for {operator} (not enough columns).")
+        return
+
+    print(f"  -> Feature Correlation Heatmap for {operator}")
+    corr_df = summary[existing_cols].corr()
+
+    fig, ax = plt.subplots()
+    sns.heatmap(corr_df, annot=True, cmap="coolwarm", fmt=".2f", ax=ax)
+    ax.set_title(f"Feature Correlations - {operator}")
+
+    filename = f"feature_correlation_{operator}.pdf"
+    save_chart(fig, os.path.join(out_dir, filename))
+
+
+def plot_best_model_per_operator(all_metrics, out_dir):
+    """
+    Creates a bar chart of best model (max score) for each operator,
+    using a simpler approach that doesn't require 'include_group_keys'.
+    """
+    print("  -> Cross-Operator Best Model per Operator")
+
+    # Instead of groupby.apply(...), do this one-liner:
+    # 1) group your df by "operator"
+    # 2) find the index of the max "score" for each group
+    # 3) select those rows from all_metrics
+    best_idxs = all_metrics.groupby("operator")["score"].idxmax()
+    best_rows = all_metrics.loc[best_idxs].reset_index(drop=True)
+
+    fig, ax = plt.subplots()
+    x = np.arange(len(best_rows))
+
+    ax.bar(x, best_rows["score"], color="skyblue", zorder=3)
+    ax.set_xticks(x)
+    ax.set_xticklabels(best_rows["operator"], rotation=45, ha="right")
+
+    # Optionally label each bar with the best model name
+    for i, row in best_rows.iterrows():
+        ax.text(
+            i,
+            row["score"],
+            row["model_name"],
+            ha="center",
+            va="bottom",
+            rotation=90,
+            fontsize=9,
+            zorder=4,
+        )
+
+    ax.set_title("Best Model Score per Operator")
+    ax.set_ylabel("Score")
+
+    filename = "best_model_per_operator.pdf"
+    save_chart(fig, os.path.join(out_dir, filename))
+
+
+def plot_hpc_safety_margin(df, operator, out_dir, percentile=0.95):
+    needed = ["session_id", "captured_memory_usage", "volume"]
+    if not all(col in df.columns for col in needed):
+        print(f"  -> Missing columns for HPC safety margin in {operator}. Skipping.")
+        return
+
+    print(f"  -> HPC Safety Margin for {operator} (pct={percentile})")
+
+    grouped = df.groupby("volume")["captured_memory_usage"]
+
+    # Step 1: compute mean usage
+    stats_df = grouped.agg(avg_usage="mean").reset_index()
+
+    # Step 2: compute the p95 usage
+    stats_df["p95_usage"] = grouped.apply(
+        lambda x: np.percentile(x, percentile * 100)
+    ).values
+
+    fig, ax = plt.subplots()
+    x = np.arange(len(stats_df))
+
+    ax.bar(x - 0.2, stats_df["avg_usage"], width=0.4, label="Avg", zorder=3)
+    ax.bar(
+        x + 0.2,
+        stats_df["p95_usage"],
+        width=0.4,
+        label=f"{int(percentile*100)}th pct",
+        zorder=3,
+    )
+
+    ax.set_xticks(x)
+    ax.set_xticklabels(
+        [format_volume_label(v) for v in stats_df["volume"]], rotation=45, ha="right"
+    )
+    ax.set_title(f"Memory Safety Margin - {operator}")
+    ax.set_ylabel("Memory Usage (GB)")
+    ax.legend()
+
+    filename = f"memory_safety_margin_{operator}.pdf"
+    save_chart(fig, os.path.join(out_dir, filename))
+
+
+# ------------------------------------------------------------------------------
+# (Optional) Residual vs Single Feature Stub
+# ------------------------------------------------------------------------------
+def plot_residuals_vs_features(
+    merged_df, operator, out_dir, features=["inlines", "xlines", "samples"]
+):
+    """
+    EXAMPLE (not automatically called by default).
+
+    For each model, plots residuals vs. each specified feature.
+
+    NOTE: This requires that you have a single DataFrame `merged_df`
+    that contains columns:
+      - 'model_name'
+      - 'residual'
+      - 'inlines', 'xlines', 'samples' (or your shape features)
+      - optional: 'session_id'
+    If you haven't merged the shape info with the model residuals, do so first.
+    """
+    pass
 
 
 # ------------------------------------------------------------------------------
