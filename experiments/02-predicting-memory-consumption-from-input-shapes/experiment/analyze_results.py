@@ -214,7 +214,9 @@ def plot_inline_xline_progression(df, operator, out_dir):
         despine=False,
     )
     g.map_dataframe(
-        sns.lineplot, x="relative_time", y="captured_memory_usage", marker="o"
+        sns.lineplot,
+        x="relative_time",
+        y="captured_memory_usage",
     )
     g.set_axis_labels("Relative Time", "Captured Memory (GB)")
     g.set_titles(col_template="Inlines={col_name}", row_template="Xlines={row_name}")
