@@ -1,2 +1,42 @@
 \section{Conclusion}
 \label{sec:pmc-conclusion}
+
+This chapter explored the relationship between seismic input shapes and operator-specific memory consumption, focusing on three major processing routines—Envelope, \ac{GST3D}, and Gaussian Filter—and detailed how varying sample sizes, selected features, and modeling pipelines affect predictive accuracy.
+Several salient findings emerged:
+
+\begin{itemize}
+    \item \textbf{Linear Volume Dependence and Operator Sensitivity.}
+    All operators demonstrated a near-linear escalation in peak \ac{RAM} usage with respect to total input volume (\( \text{inlines} \times \text{xlines} \times \text{samples} \)).
+    \ac{GST3D} remained the most sensitive, displaying a steeper volume-based slope compared to Envelope and Gaussian Filter.
+    Envelope and Gaussian Filter, by contrast, showed comparatively gentler linear relationships, suggesting that their computational kernels rely less on large intermediate buffers.
+
+    \item \textbf{Feature Selection and the Predominance of Volume.}
+    Systematic removal of shape-derived features (e.g., diagonal length, surface area, ratio transformations) underscored that \emph{volume} alone captures most of the variance in peak memory usage.
+    Even advanced transformations (logarithmic or polynomial terms) contributed only marginal improvements once volume was included.
+    \ac{GST3D} occasionally benefited from additional parameters (e.g., diagonal length), but not enough to outweigh the straightforward predictive power of volume.
+
+    \item \textbf{Model Performance and Robustness.}
+    Across nine regression approaches, simpler or regularized methods—like \ac{Linear Regression}, Elastic Net, and decision-tree ensembles—performed well, achieving \(R^2 \approx 0.99\) or higher in many configurations.
+    Specifically:
+    \begin{itemize}
+        \item \textbf{Envelope}: Gradient Boosting offered top-level accuracy, though multiple models clustered in the same performance range.
+        \item \textbf{\ac{GST3D}}: Decision Trees (and some ensemble variants) captured memory usage reliably but exhibited greater sensitivity to missing data in the mid-volume range.
+        \item \textbf{Gaussian Filter}: \ac{Linear Regression} proved sufficient, reinforcing that this operator’s memory footprint aligns closely with volume.
+    \end{itemize}
+    All methods exhibited mild to moderate right-skew in their residual distributions, yet \ac{RMSE} and \ac{MAE} remained low once mid- and upper-bound volumes were adequately represented.
+
+    \item \textbf{Subsampling and Data Requirements.}
+    Pruning the dataset to 30–40 shape configurations preserved high $R^2$ values, indicating that modest sampling—particularly anchored at small and large volumes—enables accurate modeling.
+    \ac{GST3D} showed slightly larger degradation at smaller sample counts, reflecting its more complex intermediate data allocations.
+    By contrast, Envelope and Gaussian Filter sustained robust predictions with moderate data reduction.
+\end{itemize}
+
+Overall, Chapter~\ref{sec:pmc-results} establishes that:
+\begin{enumerate}
+    \item \emph{Volume is the primary explanatory feature} for predicting peak memory usage, with additional variables offering only minor gains.
+    \item Simple or linear-in-spirit regressors often suffice to model Envelope and Gaussian Filter, while \ac{GST3D} can benefit from tree-based methods if data coverage in the mid-volume range is adequate.
+    \item A sample size of approximately 30–40 shape configurations provides a practical lower bound for stable memory prediction, making data collection efforts more tractable for real-world \ac{HPC} scenarios.
+\end{enumerate}
+
+With these findings, we have a clearer framework for implementing memory-aware chunking strategies: one can rely on volume-based models (potentially augmented by minimal shape features) and still maintain accurate peak \ac{RAM} estimates, even with relatively small training sets.
+The subsequent chapter applies these insights to optimize data-parallel chunking and scheduling decisions for large-scale seismic workloads.
