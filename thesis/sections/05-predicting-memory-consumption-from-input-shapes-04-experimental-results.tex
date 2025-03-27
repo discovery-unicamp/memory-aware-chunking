@@ -1,127 +1,97 @@
 \section{Experimental Results}
 \label{sec:pmc-results}
 
-This chapter presents the results of predicting memory consumption from seismic input shapes.
-The results are evaluated into five main categories: (i) memory and execution-time profiling, (ii) model performance overview, (iii) feature selection experiments, (iv) data reduction studies, and (v) cross-operator comparisons.
-Each section provides insights into the memory usage patterns of the seismic operators, the performance of regression models, the impact of feature selection, and the robustness of the models under data scarcity.
-All analyses and experiment results are located in the \texttt{experiment} directory of the project repository~\cite{delucca2025experiment2results}.
+This section presents comprehensive results for predicting memory consumption in seismic workloads based on their \ac{3D} input shapes.
+We organize the findings into five main categories: (i) memory and execution-time profiling, (ii) model performance overview, (iii) feature selection experiments, (iv) data reduction studies, and (v) cross-operator comparisons.
+Each category reveals different facets of how shape parameters affect resource requirements, model behavior, and prediction robustness.
+All code, scripts, and output files that underlie these analyses reside in the \texttt{experiment} directory of the project repository~\cite{delucca2025experiment2results}.
 
 \subsection{Experiment Outputs Overview}
 \label{subsec:pmc-results-experiment-outputs-overview}
 
-This section introduces the operators under study, highlights the main experimental goals, and outlines key data artifacts.
-The final segments of the pipeline generated five distinct \ac{CSV} files that consolidate memory usage measurements, model evaluations, feature selection outcomes, and data-reduction experiments.
-These artifacts form the basis for subsequent analyses in the following sections.
+This subsection briefly outlines the three seismic operators examined (Envelope, \ac{GST3D}, and the 3D Gaussian Filter), underscores the main experimental objectives, and describes the key \ac{CSV} files generated during the final stages of the pipeline.
+These \ac{CSV} artifacts are the foundation for the analyses presented in the following subsections.
 
 \vspace{1em}
 \noindent
 \textbf{Operators and Experimental Goals.}
-Three operators were evaluated: Envelope, \ac{GST3D}, and the 3D Gaussian Filter.
-All three process seismic data volumes and exhibit distinct computational traits.
-The primary objective involved modeling their peak \ac{RAM} consumption based on shape parameters (inlines, xlines, and samples), thereby enabling more informed \ac{HPC} resource allocations.
+We investigated three commonly used seismic processing operators:
+\begin{itemize}
+    \item \emph{Envelope}: Computes instantaneous amplitude along seismic traces.
+    \item \emph{\ac{GST3D}}: Highlights discontinuities or faults using structural tensors.
+    \item \emph{3D Gaussian Filter}: Applies a smoothing operation across volumes to reduce high-frequency noise.
+\end{itemize}
+All three involve memory-intensive operations on potentially large \ac{3D} volumes.
+Our primary goal was to build regression models that predict each operator’s peak memory usage as a function of shape parameters (\textit{inlines}, \textit{xlines}, and \textit{samples}), enabling more accurate \ac{HPC} job submissions.
 
 \vspace{1em}
 \noindent
 \textbf{Data Artifacts.}
-The experiment produced five core \ac{CSV} files:
+During the final stage of the pipeline, five main \ac{CSV} outputs were generated:
 \begin{enumerate}
-    \item \emph{profile\_history.csv}:
-    Time-series snapshots of \ac{RSS} and corresponding timestamps.
-    Each row represents one data capture during an operator’s execution.
-    \item \emph{profile\_summary.csv}:
-    Aggregated statistics about peak memory usage and execution time per input volume.
-    This file stores the mean, standard deviation, minimum, and maximum peak memory usage, along with average runtimes and related descriptors.
-    \item \emph{model\_metrics.csv}:
-    Performance metrics (\ac{RMSE}, \ac{MAE}, $R^2$, accuracy, and an overall score) for each trained regression model.
-    It also includes arrays of residuals, predicted values, and ground truths for deeper error analysis.
-    \item \emph{feature\_selection.csv}:
-    Results of experiments that use different subsets of features to predict memory usage.
-    Each row documents the selected features, model configuration, and associated performance (\ac{RMSE}, \ac{MAE}, $R^2$, accuracy, and score).
-    \item \emph{data\_reduction.csv}:
-    Outputs from varying the number of training samples.
-    The file compares performance metrics across multiple training-set sizes to study model robustness under data scarcity.
+    \item \emph{profile\_history.csv}: Stores time-series \ac{RSS} measurements and timestamps for each operator run. This file is useful for detecting moment-to-moment memory fluctuations.
+    \item \emph{profile\_summary.csv}: Summarizes peak memory usage, execution time, and statistical descriptors (means, standard deviations, minima, and maxima) per volume configuration.
+    \item \emph{model\_metrics.csv}: Captures regression model performances (\ac{RMSE}, \ac{MAE}, $R^2$, and accuracy metrics), along with arrays of predictions and residuals.
+    \item \emph{feature\_selection.csv}: Documents experiments that limit the predictor set to specific features or transformations to assess their importance in predicting memory usage.
+    \item \emph{data\_reduction.csv}: Compares how models behave when trained on progressively smaller subsets of the full dataset, providing insight into data requirements for stable predictions.
 \end{enumerate}
 
 \vspace{1em}
 \noindent
 \textbf{Shape Configurations.}
-The synthetic datasets spanned multiple \ac{3D} dimensions.
-Volumes ranged from smaller shapes (e.g., $100$ $\times$ $100$ $\times$ $100$) to significantly larger ones close to memory limits of the test system.
-Each operator was executed for these volumes to capture comprehensive memory-profiling data.
-This systematic approach reveals how memory usage and execution time evolve as the number of traces or samples grows.
+The synthetic seismic volumes encompassed a broad range of \ac{3D} shapes, from $100 \times 100 \times 100$ up to sizes near the system’s memory limits.
+By spanning both small and large volumes, we could characterize memory usage trends across diverse problem scales.
+Each operator was run on each shape variant, yielding a comprehensive grid of memory and runtime measurements.
 
 \vspace{1em}
 \noindent
 \textbf{Chapter Roadmap.}
-Section~\ref{sec:pmc-results-memory-and-execution-time-profiling} first presents how memory usage behaved during operator runs and highlights the aggregated profiling statistics.
-Subsequent sections detail model performance across regression approaches, emphasizing how different features and training subsets affect accuracy.
-The final portion compares Envelope, \ac{GST3D}, and Gaussian Filter side by side to underscore differences and provide practical insights for \ac{HPC} scheduling.
+Section~\ref{sec:pmc-results-memory-and-execution-time-profiling} explores the memory-usage trends and execution-time patterns for each operator.
+Subsequent sections delve into model performance, assessing how various feature sets and data volumes influence predictive accuracy.
+We conclude by comparing Envelope, \ac{GST3D}, and Gaussian Filter side by side, identifying operator-specific nuances that can inform more reliable \ac{HPC} scheduling.
 
 
 \section{Memory and Execution-Time Profiling}
 \label{sec:pmc-results-memory-and-execution-time-profiling}
 
-This section examines how memory usage and execution time scale with input volume and seismic dimension sizes for Envelope, \ac{GST3D}, and the Gaussian Filter.
+In this section, we focus on raw memory and execution-time measurements before discussing any modeling approach.
+By examining usage patterns, run durations, and dimension-specific behaviors, we contextualize the challenges of predicting peak memory consumption in an \ac{HPC} setting.
 
 \subsection{Linear Trends and Variability}
 \label{subsec:linear-trends-and-variability}
 
-Figure~\ref{fig:peak_memory_facet} show that average peak memory usage grows linearly with increasing volume for Envelope, \ac{GST3D}, and Gaussian Filter.
-A higher \ac{CV} is observed for smaller volumes, whereas larger volumes yield more stable, yet higher, memory consumption.
+Figure~\ref{fig:peak_memory_facet} shows how average peak memory usage tends to scale linearly with the overall volume (\(\text{inlines} \times \text{xlines} \times \text{samples}\)). The Envelope, \ac{GST3D}, and Gaussian Filter operators each display a relatively direct proportionality between volume and memory demand.
+Interestingly, larger volumes produce consistently higher yet less variable memory consumption, whereas smaller volumes display higher \ac{CV} (coefficient of variation).
+
+A possible explanation for this disparity is that smaller volumes involve shorter-run processes in which overheads (e.g., Python interpreter initialization, I/O buffering) can appear more prominently, thus creating variability.
+As volumes grow, these overheads become negligible compared to the large data arrays and associated computations.
+Consequently, memory usage “smooths out” and increasingly reflects the operator’s intrinsic workload characteristics.
 
 \begin{figure*}[htbp]
     \centering
     \begin{subfigure}[t]{0.49\textwidth}
         \centering
         \includegraphics[width=\textwidth]{assets/images/05/peak_memory_by_volume_envelope}
-        \caption{Envelope: Smaller volumes exhibit higher variability,
-            while larger volumes show a consistent linear growth.}
+        \caption{Envelope: Smaller volumes exhibit higher variability, while larger volumes show a consistent linear growth trend.}
     \end{subfigure}
     \hfill
     \begin{subfigure}[t]{0.49\textwidth}
         \centering
         \includegraphics[width=\textwidth]{assets/images/05/peak_memory_by_volume_gst3d}
-        \caption{\ac{GST3D}: Exhibits a steeper slope relative to Envelope.}
+        \caption{\ac{GST3D}: This operator has a steeper slope compared to Envelope, reflecting more elaborate data structures.}
     \end{subfigure}
     \hfill
     \begin{subfigure}[t]{0.49\textwidth}
         \centering
         \includegraphics[width=\textwidth]{assets/images/05/peak_memory_by_volume_gaussian-filter}
-        \caption{Gaussian Filter: Memory consumption scales linearly,
-            though less steeply than \ac{GST3D}.}
+        \caption{Gaussian Filter: Memory usage also scales linearly but with a gentler slope than \ac{GST3D}.}
     \end{subfigure}
-    \caption{Peak memory usage by volume for three operators: Envelope, \ac{GST3D}, and the Gaussian Filter.
-    Memory usage grows linearly with volume, with larger volumes requiring more resources.}
+    \caption{Peak memory usage by volume for Envelope, \ac{GST3D}, and Gaussian Filter. Each operator shows an approximate linear growth rate as volume increases, but the slope and variability differ.}
     \label{fig:peak_memory_facet}
 \end{figure*}
 
-Figure~\ref{fig:ex_peak_mu_facet} indicate that execution time and memory usage both rise in near-linear fashion across all operators.
-Similarly, figure~\ref{fig:execution_time_by_volume_facet} confirm that execution time correlates strongly with volume for each seismic algorithm evaluated.
-
-\begin{figure*}[htbp]
-    \centering
-    \begin{subfigure}[t]{0.49\textwidth}
-        \centering
-        \includegraphics[width=\textwidth]{assets/images/05/cross_execution_time_by_volume}
-        \caption{Execution time by volume for Envelope, \ac{GST3D}, and the Gaussian Filter.}
-    \end{subfigure}
-    \hfill
-    \begin{subfigure}[t]{0.49\textwidth}
-        \centering
-        \includegraphics[width=\textwidth]{assets/images/05/cross_peak_memory_by_volume}
-        \caption{Peak memory usage by volume for Envelope, \ac{GST3D}, and the Gaussian Filter.}
-    \end{subfigure}
-    \hfill
-    \begin{subfigure}[t]{0.49\textwidth}
-        \centering
-        \includegraphics[width=\textwidth]{assets/images/05/cross_operator_memory_scaling_factor}
-        \caption{Linear-fit slope of memory usage vs volume by operator.
-        Higher values imply more rapid growth with increasing volume.}
-    \end{subfigure}
-    \caption{Peak memory usage and execution time by volume for Envelope, \ac{GST3D}, and the Gaussian Filter.
-    Both metrics exhibit a clear linear trend, with larger volumes requiring more resources.}
-    \label{fig:ex_peak_mu_facet}
-\end{figure*}
+In parallel with rising memory usage, Figure~\ref{fig:execution_time_by_volume_facet} (detailed below) confirms that execution times also follow a predominantly linear trajectory with volume.
+These combined observations suggest that volume—and more broadly, input shape—acts as a dominant factor in resource demands for seismic workloads.
 
 \begin{figure*}[htbp]
     \centering
@@ -138,16 +108,44 @@ Similarly, figure~\ref{fig:execution_time_by_volume_facet} confirm that executio
         \centering
         \includegraphics[width=\textwidth]{assets/images/05/execution_time_by_volume_gaussian-filter}
     \end{subfigure}
-    \caption{Execution time by volume for Envelope, \ac{GST3D}, and the Gaussian Filter.
-    The chart shows a clear linear trend, with larger volumes requiring more time to process.}
+    \caption{Execution time by volume for Envelope, \ac{GST3D}, and Gaussian Filter. All three operators show an increasing trend, reinforcing the impact of volume on processing duration.}
     \label{fig:execution_time_by_volume_facet}
 \end{figure*}
 
 \subsection{Execution Time Distributions and Scaling Factor}
 \label{subsec:execution-time-distributions-and-scaling}
 
-Figure~\ref{fig:execution_time_distribution_facet} depict right-skewed distributions of run durations, indicative of gamma- or lognormal-like behavior.
-Most runs complete quickly, but outliers at the high end extend the tail.
+To complement the volume-based analysis, Figures~\ref{fig:ex_peak_mu_facet}(a)--(b) compare execution time and peak memory usage across all operators.
+Both metrics escalate in near-lockstep with input size.
+Figure~\ref{fig:ex_peak_mu_facet}(c) then quantifies memory scaling slopes via linear-fits for each operator’s average peak \ac{RAM} usage. \ac{GST3D} stands out for having the highest slope, suggesting it holds more intermediate data structures during discontinuity detection.
+Envelope lies in the middle, while Gaussian Filter’s slope is relatively smaller, implying that it processes data blocks more incrementally.
+
+\begin{figure*}[htbp]
+    \centering
+    \begin{subfigure}[t]{0.49\textwidth}
+        \centering
+        \includegraphics[width=\textwidth]{assets/images/05/cross_execution_time_by_volume}
+        \caption{Execution time vs. volume for all three operators.}
+    \end{subfigure}
+    \hfill
+    \begin{subfigure}[t]{0.49\textwidth}
+        \centering
+        \includegraphics[width=\textwidth]{assets/images/05/cross_peak_memory_by_volume}
+        \caption{Peak memory usage vs. volume for all three operators.}
+    \end{subfigure}
+    \hfill
+    \begin{subfigure}[t]{0.49\textwidth}
+        \centering
+        \includegraphics[width=\textwidth]{assets/images/05/cross_operator_memory_scaling_factor}
+        \caption{Linear-fit slope values (GB/volume). Higher values indicate more pronounced memory growth.}
+    \end{subfigure}
+    \caption{Combined view of execution time and peak memory usage by volume, and a bar chart revealing the linear-fit slopes for Envelope, \ac{GST3D}, and Gaussian Filter. \ac{GST3D} uses memory most aggressively, while Gaussian Filter is comparatively more memory efficient.}
+    \label{fig:ex_peak_mu_facet}
+\end{figure*}
+
+In addition, the run durations exhibit right-skewed behavior (Figure~\ref{fig:execution_time_distribution_facet}), consistent with gamma- or lognormal-like distributions.
+While most executions concentrate in the lower range, occasional runs can be significantly longer.
+Such tails are not unexpected in \ac{HPC} environments, where system-level noise or particular dataset structures can cause prolonged I/O or memory allocation overhead.
 
 \begin{figure*}[htbp]
     \centering
@@ -165,86 +163,57 @@ Most runs complete quickly, but outliers at the high end extend the tail.
         \centering
         \includegraphics[width=\textwidth]{assets/images/05/execution_time_distribution_gaussian-filter}
     \end{subfigure}
-    \caption{Execution time distributions for Envelope, \ac{GST3D}, and the Gaussian Filter.
-    The distribution shows a clear left skew, with most runs completing quickly.}
+    \caption{Execution time distributions for Envelope, \ac{GST3D}, and the Gaussian Filter. Each distribution displays a heavy right tail, indicating that while most runs finish quickly, certain configurations or system conditions can cause notable slowdowns.}
     \label{fig:execution_time_distribution_facet}
 \end{figure*}
-
-Figure~\ref{fig:ex_peak_mu_facet} shows a bar chart of the linear-fit coefficients (slopes) for each operator’s average peak \ac{RAM} usage vs volume.
-\ac{GST3D} exhibits the largest slope, reflecting more elaborate data structures and intermediate buffers for discontinuity detection.
-Envelope has a moderate slope, whereas Gaussian Filter is the least steep, indicating more incremental memory use.
 
 \subsection{Dimension-Specific and Time-Progression Analysis}
 \label{subsec:dimension-specific-and-time-progression-analysis}
 
-Figure~\ref{fig:memory_usage_by_configuration_envelope} show dimension-specific breakdowns (inlines, xlines, samples) for the Envelope operator, confirming that each dimension contributes similarly to overall memory usage.
-Also, figure~\ref{fig:memory_usage_by_configuration_envelope} illustrate that higher memory consumption correlates with longer run durations for the Envelope operator.
+To better understand how different axes of the seismic volume factor into resource usage, we break down memory usage by \emph{inlines}, \emph{xlines}, and \emph{samples} for the Envelope operator (Figure~\ref{fig:memory_usage_by_configuration_envelope}).
+We observe that each dimension exerts a similar influence on memory consumption; no single dimension overwhelmingly dominates the Envelope’s consumption pattern.
+This outcome aligns with the notion that Envelope is an element-wise amplitude calculation, depending uniformly on the size of the entire input array.
 
 \begin{figure*}[htbp]
     \centering
     \begin{subfigure}[t]{0.49\textwidth}
         \centering
         \includegraphics[width=\textwidth]{assets/images/05/memory_usage_by_configuration_envelope}
-        \caption{Memory usage by inlines, xlines, and samples for Envelope.
-        All dimensions contribute equally to memory consumption.}
+        \caption{Memory usage binned by individual shape parameters. Each axis increases overall memory similarly.}
     \end{subfigure}
     \hfill
     \begin{subfigure}[t]{0.49\textwidth}
         \centering
         \includegraphics[width=\textwidth]{assets/images/05/execution_time_vs_memory_envelope}
-        \caption{Execution time vs memory usage for Envelope.}
+        \caption{Execution time vs. memory usage for Envelope, indicating a mild correlation (longer runs often consume more \ac{RAM}).}
     \end{subfigure}
     \hfill
     \begin{subfigure}[t]{0.49\textwidth}
         \centering
         \includegraphics[width=\textwidth]{assets/images/05/memory_usage_inlines_xlines_samples_heatmap_envelope}
-        \caption{Memory usage heatmap by inlines, xlines, and samples for Envelope.}
+        \caption{Heatmap combining inlines, xlines, and samples into a 2D view; warmer colors indicate higher memory usage.}
     \end{subfigure}
-    \caption{Memory usage and execution time analysis for the Envelope operator.}
+    \caption{Memory usage and runtime analysis for the Envelope operator. All three dimensions appear to scale memory demand in a similar manner, and bigger shapes generally require longer processing times.}
     \label{fig:memory_usage_by_configuration_envelope}
 \end{figure*}
 
-Violin charts in Figure~\ref{fig:memory_usage_distribution} illustrate memory usage fluctuations over time for each operator.
-Envelope shows wider distributions, indicating more gradual ramps and fluctuations.
-Gaussian Filter and \ac{GST3D} reach stable peak memory usage more rapidly, resulting in thinner violins.
-
-\begin{figure*}[htbp]
-    \centering
-    \begin{subfigure}[t]{0.49\textwidth}
-        \centering
-        \includegraphics[width=\textwidth]{assets/images/05/memory_usage_distribution_envelope}
-    \end{subfigure}
-    \hfill
-    \begin{subfigure}[t]{0.49\textwidth}
-        \centering
-        \includegraphics[width=\textwidth]{assets/images/05/memory_usage_distribution_gst3d}
-    \end{subfigure}
-    \hfill
-    \begin{subfigure}[t]{0.49\textwidth}
-        \centering
-        \includegraphics[width=\textwidth]{assets/images/05/memory_usage_distribution_gaussian-filter}
-    \end{subfigure}
-    \caption{Violin charts of memory usage over time for Envelope, \ac{GST3D}, and the Gaussian Filter.
-    Envelope exhibits wider distributions, while \ac{GST3D} and the Gaussian Filter show more stable memory usage.}
-    \label{fig:memory_usage_distribution}
-\end{figure*}
-
-Figure~\ref{fig:memory_usage_by_configuration_envelope} shows a heatmap indicating that memory usage rises uniformly across the three dimensions.
-Figure~\ref{fig:inline_xline_memory_usage_progression_envelope} confirm that Envelope ramps more uniformly in time.
+Figure~\ref{fig:inline_xline_memory_usage_progression_envelope} further highlights how the Envelope operator’s memory usage accumulates over time.
+The growth pattern is relatively uniform, aligning with the straightforward element-wise nature of the algorithm.
+More complex operators like \ac{GST3D} may reveal steeper or stage-based ramps, particularly if certain algorithmic phases allocate additional buffers or caching mechanisms at specific intervals.
 
 \begin{figure}[htbp]
     \centering
     \includegraphics[width=\textwidth]{assets/images/05/inline_xline_memory_usage_progression_envelope}
-    \caption{Memory usage progression by inlines and xlines for Envelope.}
+    \caption{Memory usage progression over time (Envelope operator) for different inlines and xlines. The consumption profile ramps up gradually rather than spiking in distinct phases.}
     \label{fig:inline_xline_memory_usage_progression_envelope}
 \end{figure}
 
 \subsection{Memory Safety Margins}
 \label{subsec:memory-safety-margins}
 
-Figure~\ref{fig:memory_safety_margins} highlight the difference between average and 95th-percentile memory usage across tested volumes.
-Envelope and \ac{GST3D} can exhibit large gaps in memory usage, which indicates that some runs exceed the typical allocation by a significant margin.
-Isolating experiments via containerization did not fully eliminate kernel-level optimizations or other system effects that cause these outliers.
+In real-world \ac{HPC} contexts, underestimating memory can cause abrupt job failures, while overestimation wastes resources.
+Figure~\ref{fig:memory_safety_margin} showcases how much peak usage can deviate from average usage by comparing mean and 95th-percentile values.
+Envelope and \ac{GST3D} exhibit particularly large deviations for certain volume ranges, hinting that HPC practitioners may need to add a safety buffer beyond the mean consumption to accommodate transient memory spikes.
 
 \begin{figure*}[htbp]
     \centering
@@ -262,32 +231,38 @@ Isolating experiments via containerization did not fully eliminate kernel-level 
         \centering
         \includegraphics[width=\textwidth]{assets/images/05/memory_safety_margin_gaussian-filter}
     \end{subfigure}
-    \caption{Memory safety margins for Envelope, \ac{GST3D}, and the Gaussian Filter.
-    The 95th percentile often surpasses the average, suggesting occasional high-memory runs.}
+    \caption{Memory safety margins for Envelope, \ac{GST3D}, and the Gaussian Filter. The 95th-percentile often surpasses mean usage by a noticeable margin, revealing the unpredictability of peak memory events.}
     \label{fig:memory_safety_margin}
 \end{figure*}
+
+These outliers can arise from transient allocation bursts, system-level scheduling, or overhead fluctuations.
+Even with container-based isolation, kernel-level memory management can introduce sporadic spikes.
+Recognizing these high-percentile events is critical for designing robust pre-runtime memory estimators.
+If left unaccounted for, such transient peaks could lead to underestimation, especially for borderline volumes.
 
 \subsection{Dimension Correlations}
 \label{subsec:dimension-correlations}
 
-Figure~\ref{fig:memory_vs_dimensions_pairplot_gst3d} presents a pairplot examining \ac{GST3D} memory usage alongside inlines, xlines, and samples.
-Positive slopes confirm that higher dimensions correlate with increased memory.
-Negative slopes among dimension--dimension cells primarily reflect the experimental test grid, where large values in one dimension often paired with smaller values in another.
-Despite these trade-offs, the net memory footprint rose whenever any dimension increased significantly.
+We can further investigate how dimension-specific growth patterns contribute to overall memory usage by plotting pairwise relationships between memory usage and the three shape parameters.
+Figure~\ref{fig:memory_vs_dimensions_pairplot_gst3d} shows that \ac{GST3D}, in particular, has strong positive correlations between each dimension and peak memory.
+Meanwhile, dimension--dimension scatter plots sometimes show inverse correlations due to the systematic way shapes were varied (when one axis is large, another might be slightly smaller).
+Nevertheless, once all three dimensions expand simultaneously, the net memory usage grows sharply.
 
 \begin{figure}[htbp]
     \centering
     \includegraphics[width=0.9\textwidth]{assets/images/05/memory_vs_dimensions_pairplot_gst3d}
-    \caption{Pairplot of memory usage vs inlines, xlines, and samples for \ac{GST3D}.
-    Larger shapes yield higher \ac{RAM} usage.}
+    \caption{Pairplot for \ac{GST3D} memory usage against inlines, xlines, and samples. Positive slopes in memory-related plots confirm that larger shape parameters escalate the overall memory footprint.}
     \label{fig:memory_vs_dimensions_pairplot_gst3d}
 \end{figure}
+
+These pairwise correlations, combined with the linear volume trend, underscore that each dimension matters and that polynomial or interaction-based features can help capture how memory usage evolves in less trivial cases (e.g., operators whose complexity grows nonlinearly along certain axes).
 
 \subsection{Summary of Observed Resource Usage}
 \label{subsec:resource-usage-summary}
 
-Table~\ref{tab:operator_summary_aggregates} summarizes key metrics for each operator, including tested volume ranges, peak memory usage ranges, and execution time ranges.
-It combines the raw data into concise statistics that highlight how quickly memory usage and runtime escalate with increasing volume.
+Table~\ref{tab:operator_summary_aggregates} provides a high-level summary of all tested volume ranges, memory usage spans, and measured execution times for each operator.
+It highlights how, for similarly sized volumes, \ac{GST3D} consistently demands the greatest \ac{RAM}, with Envelope requiring intermediate amounts, and Gaussian Filter at the lower end (though still significant).
+Processing times echo these patterns, with more complex or data-hungry operations tending to take longer.
 
 \begin{table}[htbp]
     \centering
@@ -309,15 +284,15 @@ It combines the raw data into concise statistics that highlight how quickly memo
         \hline
     \end{tabular}
     \caption{Resource usage summary for Envelope, \ac{GST3D}, and Gaussian Filter.
-    Volumes are specified in number of samples (e.g., $1000000$ = $10^6$).
-    Memory usage values appear in GB, and times appear in seconds.
-    Each range denotes the minimum and maximum observed across tested volumes.}
+    Volumes are specified in number of elements (e.g., $100 \times 100 \times 100 = 10^6$).
+    Memory usage is in GB and time is in seconds.
+    Each range denotes the min and max observed across tested volumes.}
     \label{tab:operator_summary_aggregates}
 \end{table}
 
-Table~\ref{tab:operator_summary_aggregates} confirms that \ac{GST3D} consistently displays the highest memory usage for similarly sized volumes, with Envelope at an intermediate level, and the Gaussian Filter at a lower bound, though it still scales markedly with volume.
-Overall, both memory and execution time exhibit near-linear growth, reinforcing the importance of volume-driven resource estimation.
-These findings guide \ac{HPC} users to anticipate how large seismic datasets will stress system \ac{RAM} and runtime allocations, especially in scenarios with competing workloads.
+In general, both memory and runtime grow at a near-linear rate, reinforcing the fundamental role of volume in resource demands.
+These findings suggest that shape-driven models are likely to be quite effective, especially if they incorporate slight nonlinearities or additional features to handle outliers.
+The next sections delve into how these raw measurements translate into model predictions, discussing which methods and features best capture the trends and variability described above.
 
 
 \section{Model Performance Overview}
