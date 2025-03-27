@@ -16,12 +16,12 @@ Several salient findings emerged:
     \ac{GST3D} occasionally benefited from additional parameters (e.g., diagonal length), but not enough to outweigh the straightforward predictive power of volume.
 
     \item \textbf{Model Performance and Robustness.}
-    Across nine regression approaches, simpler or regularized methods—like \ac{Linear Regression}, Elastic Net, and decision-tree ensembles—performed well, achieving \(R^2 \approx 0.99\) or higher in many configurations.
+    Across nine regression approaches, simpler or regularized methods—like Linear Regression, Elastic Net, and decision-tree ensembles—performed well, achieving \(R^2 \approx 0.99\) or higher in many configurations.
     Specifically:
     \begin{itemize}
         \item \textbf{Envelope}: Gradient Boosting offered top-level accuracy, though multiple models clustered in the same performance range.
         \item \textbf{\ac{GST3D}}: Decision Trees (and some ensemble variants) captured memory usage reliably but exhibited greater sensitivity to missing data in the mid-volume range.
-        \item \textbf{Gaussian Filter}: \ac{Linear Regression} proved sufficient, reinforcing that this operator’s memory footprint aligns closely with volume.
+        \item \textbf{Gaussian Filter}: Linear Regression proved sufficient, reinforcing that this operator’s memory footprint aligns closely with volume.
     \end{itemize}
     All methods exhibited mild to moderate right-skew in their residual distributions, yet \ac{RMSE} and \ac{MAE} remained low once mid- and upper-bound volumes were adequately represented.
 
