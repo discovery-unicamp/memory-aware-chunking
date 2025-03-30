@@ -1,5 +1,8 @@
 import os
 
+import dask.array as da
+import numpy as np
+
 __all__ = [
     "transform_b_to_gb",
     "transform_kb_to_gb",
@@ -8,6 +11,7 @@ __all__ = [
     "transform_ns_to_s",
     "transform_to_container_path",
     "transform_to_context_name",
+    "transform_to_dask_array",
 ]
 
 
@@ -37,3 +41,7 @@ def transform_to_container_path(path: str) -> str:
 
 def transform_to_context_name(path: str) -> str:
     return path.split("/")[-1]
+
+
+def transform_to_dask_array(numpy_data: np.ndarray, chunks="auto") -> da.Array:
+    return da.from_array(numpy_data, chunks=chunks)

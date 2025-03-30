@@ -1,0 +1,4 @@
+boken==3.7.2
+dask[distributed]==2025.3.0
+matplotlib==3.10.1
+setuptools==76.0.0

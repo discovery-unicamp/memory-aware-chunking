@@ -23,3 +23,18 @@ from the input data.
 - How accurate are the predictions made by the model?
 - How does the model perform on unseen data?
 - What are the limitations of the model?
+
+### [
+`03-improving-data-parallelism-using-memory-aware-chunking`](./03-improving-data-parallelism-using-memory-aware-chunking)
+
+**Objective**:
+This experiment aims to improve data parallelism in Python programs using Memory-Aware Chunking.
+The goal is to use the memory-usage prediction model (developed
+on [experiment 02](./02-predicting-memory-consumption-from-input-shapes)) and define the chunk size based on the
+predicted memory consumption of the input data.
+
+**Key Questions**:
+
+- How does the chunk size affect the performance of the program?
+- Does using Memory-Aware Chunking improve the performance of the program?
+- How close Memory-Aware Chunking gets from the optimal chunk size?
