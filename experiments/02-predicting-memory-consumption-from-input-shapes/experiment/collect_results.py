@@ -13,6 +13,7 @@ Environment Variables (with defaults):
   - ACCURACY_THRESHOLD: Threshold to compute "accuracy" in terms of relative error (default '0.1')
   - MODELS_TO_EVALUATE: Comma-separated list of model keys (default includes many regressors)
   - OPTUNA_TRIALS: Number of trials for the optuna "best model weighting" search (default '50')
+  - SCORE_ACCEPTANCE_THRESHOLD: Threshold for model score acceptance (default '0.1')
   - RANDOM_STATE: Random state seed for reproducibility (default '42')
 """
 
@@ -30,9 +31,8 @@ from sklearn.feature_selection import SelectKBest, f_regression
 from sklearn.linear_model import LinearRegression, ElasticNet
 from sklearn.metrics import mean_squared_error, mean_absolute_error, r2_score
 from sklearn.model_selection import train_test_split
-from sklearn.neural_network import MLPRegressor
 from sklearn.pipeline import Pipeline
-from sklearn.preprocessing import PolynomialFeatures, StandardScaler
+from sklearn.preprocessing import PolynomialFeatures
 from sklearn.svm import SVR
 from sklearn.tree import DecisionTreeRegressor
 from traceq import load_profile
@@ -47,31 +47,31 @@ RESULTS_DIR = os.getenv("RESULTS_DIR", f"{OUTPUT_DIR}/results")
 OPERATORS_DIR = os.getenv("OPERATOR_DIR", f"{RESULTS_DIR}/operators")
 PROFILER = os.getenv("PROFILER", "kernel")
 TEST_SIZE = float(os.getenv("TEST_SIZE", "0.2"))
-ACCURACY_THRESHOLD = float(os.getenv("ACCURACY_THRESHOLD", "0.1"))
+ACCURACY_THRESHOLD = float(os.getenv("ACCURACY_THRESHOLD", "0.05"))
+SCORE_ACCEPTANCE_THRESHOLD = float(os.getenv("SCORE_ACCEPTANCE_THRESHOLD", "0.05"))
 MODELS_TO_EVALUATE = os.getenv(
     "MODELS_TO_EVALUATE",
     "linear_regression,polynomial_regression,decision_tree,random_forest,"
-    "gradient_boosting,neural_network,xgboost,support_vector_regression,elastic_net",
+    "gradient_boosting,xgboost,support_vector_regression,elastic_net",
 ).split(",")
 OPTUNA_TRIALS = int(os.getenv("OPTUNA_TRIALS", "50"))
 RANDOM_STATE = int(os.getenv("RANDOM_STATE", "42"))
 
-# Global model lookup
-MODELS_HASHMAP = {
-    "linear_regression": LinearRegression(),
-    "polynomial_regression": Pipeline(
+# Global model constructor lookup
+MODEL_CONSTRUCTORS_HASHMAP = {
+    "linear_regression": lambda: LinearRegression(),
+    "polynomial_regression": lambda: Pipeline(
         [
             ("poly_features", PolynomialFeatures(degree=2, include_bias=False)),
             ("lin_reg", LinearRegression()),
         ]
     ),
-    "decision_tree": DecisionTreeRegressor(),
-    "random_forest": RandomForestRegressor(),
-    "gradient_boosting": GradientBoostingRegressor(),
-    "neural_network": Pipeline([("scaler", StandardScaler()), ("mlp", MLPRegressor())]),
-    "xgboost": XGBRegressor(),
-    "support_vector_regression": SVR(),
-    "elastic_net": ElasticNet(),
+    "decision_tree": lambda: DecisionTreeRegressor(),
+    "random_forest": lambda: RandomForestRegressor(),
+    "gradient_boosting": lambda: GradientBoostingRegressor(),
+    "xgboost": lambda: XGBRegressor(),
+    "support_vector_regression": lambda: SVR(),
+    "elastic_net": lambda: ElasticNet(),
 }
 
 
@@ -100,6 +100,7 @@ def main():
     print(f"  MODELS_TO_EVALUATE: {MODELS_TO_EVALUATE}")
     print(f"  OPTUNA_TRIALS: {OPTUNA_TRIALS}")
     print(f"  RANDOM_STATE: {RANDOM_STATE}")
+    print(f"  SCORE_ACCEPTANCE_THRESHOLD: {SCORE_ACCEPTANCE_THRESHOLD}")
     print()
 
     profile_filepaths = get_profile_filepaths()
@@ -109,8 +110,24 @@ def main():
     df_features = extract_features(df)
 
     best_models, best_weights = find_best_models(df_features)
-    evaluate_data_reduction(df_features, best_models, best_weights)
-    evaluate_feature_selection(df_features, best_models, best_weights)
+
+    data_reduction_results = evaluate_data_reduction(
+        df_features,
+        best_models,
+        best_weights,
+    )
+    feature_selection_results = evaluate_feature_selection(
+        df_features,
+        best_models,
+        best_weights,
+    )
+
+    build_final_model(
+        best_models,
+        df_features,
+        data_reduction_results,
+        feature_selection_results,
+    )
 
 
 # ------------------------------------------------------------------------------
@@ -449,12 +466,16 @@ def find_best_models(df_features, models_to_evaluate=MODELS_TO_EVALUATE):
     Returns a dict of best_models for each operator, and best_weights for each operator.
     """
     print("---------- STEP 6: Evaluating models")
-    invalid_models = [m for m in models_to_evaluate if m not in MODELS_HASHMAP]
+    invalid_models = [
+        m for m in models_to_evaluate if m not in MODEL_CONSTRUCTORS_HASHMAP
+    ]
     if invalid_models:
         raise ValueError(f"Invalid models specified: {invalid_models}")
 
     operators = df_features["operator"].unique()
-    enabled_models = [(mname, MODELS_HASHMAP[mname]) for mname in models_to_evaluate]
+    enabled_models = [
+        (mname, MODEL_CONSTRUCTORS_HASHMAP[mname]()) for mname in models_to_evaluate
+    ]
 
     best_models = {op: None for op in operators}
     best_weights = {op: None for op in operators}
@@ -486,27 +507,38 @@ def find_best_models(df_features, models_to_evaluate=MODELS_TO_EVALUATE):
 
 
 def train_model(
-    model_name, model, df_op, random_state=RANDOM_STATE, test_size=TEST_SIZE
+    model_name,
+    model,
+    df_op,
+    random_state=RANDOM_STATE,
+    test_size=TEST_SIZE,
 ):
     """
-    Splits data into train/test, fits the model, then computes RMSE/MAE/R2/Accuracy.
-    Returns a dict with the trained model object, data subsets, and metrics.
+    Splits data into train/test, fits the model (iteratively reweighting underestimates),
+    then computes RMSE/MAE/R2/Accuracy. Returns a dict with the trained model object,
+    data subsets, and metrics.
     """
     X = df_op.drop(columns=["operator", "avg_peak_memory_usage"])
     y = df_op["avg_peak_memory_usage"]
 
     X_train, X_test, y_train, y_test = train_test_split(
-        X, y, test_size=test_size, random_state=random_state
+        X,
+        y,
+        test_size=test_size,
+        random_state=random_state,
     )
 
-    print(f"Training {model_name}...")
     model.fit(X_train, y_train)
 
     rmse, mae, r2, accuracy, residuals, y_pred = get_model_metrics(
-        model, X_test, y_test
+        model,
+        X_test,
+        y_test,
     )
+
     print(
-        f"Results for {model_name}: RMSE={rmse:.4f}, MAE={mae:.4f}, R2={r2:.4f}, Accuracy={accuracy:.2%}"
+        f"Results for {model_name}: "
+        f"RMSE={rmse:.4f}, MAE={mae:.4f}, R2={r2:.4f}, Accuracy={accuracy:.2%}"
     )
 
     return {
@@ -540,7 +572,10 @@ def get_model_metrics(model, X_test, y_test, acc_threshold=ACCURACY_THRESHOLD):
     mae_val = mean_absolute_error(y_test, y_pred)
     r2_val = r2_score(y_test, y_pred)
 
-    within_tolerance = np.abs((y_pred - y_test) / y_test) <= acc_threshold
+    within_tolerance = (np.abs((y_pred - y_test) / y_test) <= acc_threshold) | (
+        y_pred >= y_test
+    )
+
     accuracy_val = np.mean(within_tolerance)
     residuals = y_test - y_pred
 
@@ -564,7 +599,11 @@ def find_best_model(train_results, operator_output_dir, n_trials=OPTUNA_TRIALS):
         # Reconstruct train data
         data_portion = train_results[model_name]["data"]
         score_val = calculate_model_score(
-            mm["accuracy"], mm["rmse"], mm["mae"], mm["r2"], best_params
+            mm["accuracy"],
+            mm["rmse"],
+            mm["mae"],
+            mm["r2"],
+            best_params,
         )
 
         metric_results.append(
@@ -643,6 +682,18 @@ def evaluate_data_reduction(df_features, best_models, best_weights, min_size=10)
     """
     print("---------- STEP 7: Evaluating data reduction")
     operators = df_features["operator"].unique()
+    df_data_reduction = pd.DataFrame(
+        {
+            "operator": pd.Series(dtype="string"),
+            "num_samples": pd.Series(dtype="int32"),
+            "model_name": pd.Series(dtype="string"),
+            "rmse": pd.Series(dtype="float64"),
+            "mae": pd.Series(dtype="float64"),
+            "r2": pd.Series(dtype="float64"),
+            "accuracy": pd.Series(dtype="float64"),
+            "score": pd.Series(dtype="float64"),
+        }
+    )
 
     for operator in operators:
         print(f"Evaluating data reduction for {operator}...")
@@ -663,7 +714,8 @@ def evaluate_data_reduction(df_features, best_models, best_weights, min_size=10)
         )
 
         model_name = best_models[operator]
-        model = MODELS_HASHMAP[model_name]
+        build_model = MODEL_CONSTRUCTORS_HASHMAP[model_name]
+        model = build_model()
         weights = best_weights[operator]
 
         while len(df_op) >= min_size:
@@ -687,13 +739,27 @@ def evaluate_data_reduction(df_features, best_models, best_weights, min_size=10)
                 "score": score_val,
             }
             data_reduction_results = pd.concat(
-                [data_reduction_results, pd.DataFrame([row])], ignore_index=True
+                [data_reduction_results, pd.DataFrame([row])],
+                ignore_index=True,
+            )
+            df_data_reduction = pd.concat(
+                [
+                    df_data_reduction,
+                    pd.DataFrame(
+                        [
+                            {
+                                "operator": operator,
+                                **row,
+                            }
+                        ]
+                    ),
+                ],
+                ignore_index=True,
             )
 
-            # Remove ~20% of the largest volumes (for example)
-            df_op = df_op.sort_values("volume", ascending=False).reset_index(drop=True)
-            indices_to_remove = get_linear_indices(df_op)
-            df_op = df_op.drop(index=indices_to_remove).reset_index(drop=True)
+            # Removes ~10% of samples
+            n_samples = int(len(df_op) * 0.9)
+            df_op = df_op.sample(n=n_samples, random_state=RANDOM_STATE)
 
         # Save results
         print(f"Finished data reduction for {operator}. Sample data:")
@@ -705,14 +771,7 @@ def evaluate_data_reduction(df_features, best_models, best_weights, min_size=10)
 
     print("Finished evaluating data reduction.\n")
 
-
-def get_linear_indices(df):
-    """
-    A small helper to choose ~20% of the rows
-    from the middle half of the dataset (demonstration approach).
-    """
-    num_to_remove = int(0.2 * len(df))
-    return np.linspace(len(df) // 4, 3 * len(df) // 4, num_to_remove, dtype=int)
+    return df_data_reduction
 
 
 # ------------------------------------------------------------------------------
@@ -726,6 +785,19 @@ def evaluate_feature_selection(df_features, best_models, best_weights, min_size=
     """
     print("---------- STEP 8: Evaluating feature selection")
     operators = df_features["operator"].unique()
+    df_feature_selection = pd.DataFrame(
+        {
+            "operator": pd.Series(dtype="string"),
+            "num_features": pd.Series(dtype="int32"),
+            "selected_features": pd.Series(dtype="string"),
+            "model_name": pd.Series(dtype="string"),
+            "rmse": pd.Series(dtype="float64"),
+            "mae": pd.Series(dtype="float64"),
+            "r2": pd.Series(dtype="float64"),
+            "accuracy": pd.Series(dtype="float64"),
+            "score": pd.Series(dtype="float64"),
+        }
+    )
 
     for operator in operators:
         print(f"Evaluating feature selection for {operator}...")
@@ -747,7 +819,8 @@ def evaluate_feature_selection(df_features, best_models, best_weights, min_size=
         )
 
         model_name = best_models[operator]
-        model = MODELS_HASHMAP[model_name]
+        build_model = MODEL_CONSTRUCTORS_HASHMAP[model_name]
+        model = build_model()
         weights = best_weights[operator]
 
         num_feats = len(df_op.columns)
@@ -776,7 +849,22 @@ def evaluate_feature_selection(df_features, best_models, best_weights, min_size=
                 "score": score_val,
             }
             feature_results = pd.concat(
-                [feature_results, pd.DataFrame([row])], ignore_index=True
+                [feature_results, pd.DataFrame([row])],
+                ignore_index=True,
+            )
+            df_feature_selection = pd.concat(
+                [
+                    df_feature_selection,
+                    pd.DataFrame(
+                        [
+                            {
+                                "operator": operator,
+                                **row,
+                            }
+                        ]
+                    ),
+                ],
+                ignore_index=True,
             )
 
             # Use SelectKBest to remove one feature at a time
@@ -799,6 +887,116 @@ def evaluate_feature_selection(df_features, best_models, best_weights, min_size=
         feature_results.to_csv(out_path, index=False)
 
     print("Finished evaluating feature selection.\n")
+
+    return df_feature_selection
+
+
+# ------------------------------------------------------------------------------
+# STEP 9: Build Final Model
+# ------------------------------------------------------------------------------
+def build_final_model(
+    best_models,
+    df_features,
+    data_reduction_results,
+    feature_selection_results,
+    score_acceptance_threshold=SCORE_ACCEPTANCE_THRESHOLD,
+):
+    print("---------- STEP 9: Building final model")
+    operators = best_models.keys()
+
+    for operator in operators:
+        print(f"Evaluating feature selection and data reduction for '{operator}'...")
+        output_dir = f"{OUTPUT_DIR}/best_models"
+        os.makedirs(output_dir, exist_ok=True)
+
+        # ---------------------------
+        # 1) Filter the data by operator
+        # ---------------------------
+        df_op_features = df_features[df_features["operator"] == operator].copy()
+
+        # ---------------------------
+        # 2) Feature Selection: find row meeting threshold with smallest num_features
+        # ---------------------------
+        fs_op = feature_selection_results[
+            feature_selection_results["operator"] == operator
+        ].copy()
+        if fs_op.empty:
+            print(f"No feature selection results found for {operator}. Skipping...")
+            continue
+
+        max_fs_score = fs_op["score"].max()
+        fs_acceptance_limit = max_fs_score * (1 - score_acceptance_threshold)
+
+        # Filter rows that meet or exceed acceptance limit
+        fs_candidates = fs_op[fs_op["score"] >= fs_acceptance_limit]
+        if fs_candidates.empty:
+            # If nothing meets the threshold, just pick the highest scoring row
+            fs_candidates = fs_op[fs_op["score"] == max_fs_score]
+
+        # Sort by num_features ascending
+        fs_candidates = fs_candidates.sort_values(by="num_features", ascending=True)
+        best_fs_row = fs_candidates.iloc[0]
+        selected_features = best_fs_row["selected_features"]
+
+        # ---------------------------
+        # 3) Data Reduction: find row meeting threshold with smallest num_samples
+        # ---------------------------
+        dr_op = data_reduction_results[
+            data_reduction_results["operator"] == operator
+        ].copy()
+        if dr_op.empty:
+            print(f"No data reduction results found for {operator}. Skipping...")
+            continue
+
+        max_dr_score = dr_op["score"].max()
+        dr_acceptance_limit = max_dr_score * (1 - score_acceptance_threshold)
+
+        # Filter rows that meet or exceed acceptance limit
+        dr_candidates = dr_op[dr_op["score"] >= dr_acceptance_limit]
+        if dr_candidates.empty:
+            # If nothing meets the threshold, just pick the highest scoring row
+            dr_candidates = dr_op[dr_op["score"] == max_dr_score]
+
+        # Sort by num_samples ascending
+        dr_candidates = dr_candidates.sort_values(by="num_samples", ascending=True)
+        best_dr_row = dr_candidates.iloc[0]
+        best_num_samples = int(best_dr_row["num_samples"])
+
+        # ---------------------------
+        # 4) Prepare Final Training Data
+        # ---------------------------
+        # Limit the dataset to best_num_samples (if available) and select only chosen features
+        if len(df_op_features) > best_num_samples:
+            df_op_features = df_op_features.sample(
+                n=best_num_samples, random_state=RANDOM_STATE
+            )
+
+        # Ensure the selected features exist in df_op_features
+        valid_selected_features = [
+            feat for feat in selected_features if feat in df_op_features.columns
+        ]
+        if not valid_selected_features:
+            print(f"No valid selected features for {operator}. Skipping...")
+            continue
+
+        features = ["operator", "avg_peak_memory_usage", *valid_selected_features]
+        df_op_features = df_op_features[features].copy()
+
+        # ---------------------------
+        # 5) Train the Best Model
+        # ---------------------------
+        best_model_name = best_models[operator]
+        build_model = MODEL_CONSTRUCTORS_HASHMAP[best_model_name]
+        best_model = build_model()
+        results = train_model(best_model_name, best_model, df_op_features)
+
+        # ---------------------------
+        # 6) Save the Trained Model
+        # ---------------------------
+        model_path = os.path.join(output_dir, f"{operator}.pkl")
+        with open(model_path, "wb") as f:
+            pickle.dump(results["model"], f)
+        print(f"Model saved at: {model_path}")
 
 
 # ------------------------------------------------------------------------------

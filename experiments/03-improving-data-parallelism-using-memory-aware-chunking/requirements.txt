@@ -1,4 +1,6 @@
-boken==3.7.2
 dask[distributed]==2025.3.0
 matplotlib==3.10.1
+pandas==2.2.3
 setuptools==76.0.0
+scikit-learn==1.6.1
+xgboost==3.0.0
