@@ -1,4 +1,4 @@
-#!/bin/sh
+ss!/bin/sh
 
 dockerd --host=unix:///var/run/docker.sock --host=tcp://0.0.0.0:2375 --storage-driver=vfs &
 
@@ -30,6 +30,7 @@ for i in $(seq 1 "${EXPERIMENT_N_RUNS}"); do
     docker run \
       --rm \
       --cpuset-cpus=${EXPERIMENT_CPUSET_CPUS} \
+      --user ${HOST_UID}:${HOST_GID} \
       ${EXPERIMENT_VOLUMES} \
       ${EXPERIMENT_ENV} \
       docker.io/library/${EXPERIMENT_IMAGE_TAG} \

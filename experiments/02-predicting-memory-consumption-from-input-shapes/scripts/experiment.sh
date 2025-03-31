@@ -13,6 +13,8 @@ DATASET_FINAL_SIZE="${DATASET_FINAL_SIZE:-800}"
 DATASET_STEP_SIZE="${DATASET_STEP_SIZE:-100}"
 DIND_VOLUME_NAME="${DIND_VOLUME_NAME:-mac__dind-storage}"
 OUTPUT_DIR="${OUTPUT_DIR:-${ROOT_DIR}/experiments/02-predicting-memory-consumption-from-input-shapes/out/results/${TIMESTAMP}}"
+HOST_UID="${HOST_UID:-$(id -u)}"
+HOST_GID="${HOST_GID:-$(id -g)}"
 
 echo "Args:"
 echo "  TIMESTAMP=${TIMESTAMP}"
@@ -28,6 +30,8 @@ echo "  DATASET_FINAL_SIZE=${DATASET_FINAL_SIZE}"
 echo "  DATASET_STEP_SIZE=${DATASET_STEP_SIZE}"
 echo "  DIND_VOLUME_NAME=${DIND_VOLUME_NAME}"
 echo "  OUTPUT_DIR=${OUTPUT_DIR}"
+echo "  HOST_UID=${HOST_UID}"
+echo "  HOST_GID=${HOST_GID}"
 echo
 
 echo "Starting experiment ${TIMESTAMP}..."
@@ -54,7 +58,7 @@ docker run \
   -v "${OUTPUT_DIR}:/mnt${OUTPUT_DIR}:rw" \
   --env DOCKER_TLS_CERTDIR="" \
   --env HOST_UID="$(id -u)" \
-  --env HOST_GID="$(id -g)" \
+  --env HOST_GID="${HOST_GID}" \
   --env EXPERIMENT_IMAGE_TAG="${EXPERIMENT_IMAGE_TAG}" \
   --env EXPERIMENT_DOCKERFILE_PATH="/mnt${EXPERIMENT_DOCKERFILE_PATH}" \
   --env EXPERIMENT_BUILD_CONTEXT="/mnt${EXPERIMENT_BUILD_CONTEXT}" \
@@ -89,8 +93,8 @@ for file in "${OUTPUT_DIR}/inputs"/*.segy; do
     -v "${EXPERIMENT_COMMON_BUILD_CONTEXT}:/mnt${EXPERIMENT_COMMON_BUILD_CONTEXT}:ro" \
     -v "${OUTPUT_DIR}:/mnt${OUTPUT_DIR}:rw" \
     --env DOCKER_TLS_CERTDIR="" \
-    --env HOST_UID="$(id -u)" \
-    --env HOST_GID="$(id -g)" \
+    --env HOST_UID="${HOST_UID}" \
+    --env HOST_GID="${HOST_GID}" \
     --env EXPERIMENT_IMAGE_TAG="${EXPERIMENT_IMAGE_TAG}" \
     --env EXPERIMENT_DOCKERFILE_PATH="/mnt${EXPERIMENT_DOCKERFILE_PATH}" \
     --env EXPERIMENT_BUILD_CONTEXT="/mnt${EXPERIMENT_BUILD_CONTEXT}" \
@@ -127,8 +131,8 @@ for file in "${OUTPUT_DIR}/inputs"/*.segy; do
     -v "${EXPERIMENT_COMMON_BUILD_CONTEXT}:/mnt${EXPERIMENT_COMMON_BUILD_CONTEXT}:ro" \
     -v "${OUTPUT_DIR}:/mnt${OUTPUT_DIR}:rw" \
     --env DOCKER_TLS_CERTDIR="" \
-    --env HOST_UID="$(id -u)" \
-    --env HOST_GID="$(id -g)" \
+    --env HOST_UID="${HOST_UID}" \
+    --env HOST_GID="${HOST_GID}" \
     --env EXPERIMENT_IMAGE_TAG="${EXPERIMENT_IMAGE_TAG}" \
     --env EXPERIMENT_DOCKERFILE_PATH="/mnt${EXPERIMENT_DOCKERFILE_PATH}" \
     --env EXPERIMENT_BUILD_CONTEXT="/mnt${EXPERIMENT_BUILD_CONTEXT}" \
@@ -165,8 +169,8 @@ for file in "${OUTPUT_DIR}/inputs"/*.segy; do
     -v "${EXPERIMENT_COMMON_BUILD_CONTEXT}:/mnt${EXPERIMENT_COMMON_BUILD_CONTEXT}:ro" \
     -v "${OUTPUT_DIR}:/mnt${OUTPUT_DIR}:rw" \
     --env DOCKER_TLS_CERTDIR="" \
-    --env HOST_UID="$(id -u)" \
-    --env HOST_GID="$(id -g)" \
+    --env HOST_UID="${HOST_UID}" \
+    --env HOST_GID="${HOST_GID}" \
     --env EXPERIMENT_IMAGE_TAG="${EXPERIMENT_IMAGE_TAG}" \
     --env EXPERIMENT_DOCKERFILE_PATH="/mnt${EXPERIMENT_DOCKERFILE_PATH}" \
     --env EXPERIMENT_BUILD_CONTEXT="/mnt${EXPERIMENT_BUILD_CONTEXT}" \
@@ -198,8 +202,8 @@ docker run \
   -v "${EXPERIMENT_COMMON_BUILD_CONTEXT}:/mnt${EXPERIMENT_COMMON_BUILD_CONTEXT}:ro" \
   -v "${OUTPUT_DIR}:/mnt${OUTPUT_DIR}:rw" \
   --env DOCKER_TLS_CERTDIR="" \
-  --env HOST_UID="$(id -u)" \
-  --env HOST_GID="$(id -g)" \
+  --env HOST_UID="${HOST_UID}" \
+  --env HOST_GID="${HOST_GID}" \
   --env EXPERIMENT_IMAGE_TAG="${EXPERIMENT_IMAGE_TAG}" \
   --env EXPERIMENT_DOCKERFILE_PATH="/mnt${EXPERIMENT_DOCKERFILE_PATH}" \
   --env EXPERIMENT_BUILD_CONTEXT="/mnt${EXPERIMENT_BUILD_CONTEXT}" \
@@ -227,8 +231,8 @@ docker run \
   -v "${EXPERIMENT_COMMON_BUILD_CONTEXT}:/mnt${EXPERIMENT_COMMON_BUILD_CONTEXT}:ro" \
   -v "${OUTPUT_DIR}:/mnt${OUTPUT_DIR}:rw" \
   --env DOCKER_TLS_CERTDIR="" \
-  --env HOST_UID="$(id -u)" \
-  --env HOST_GID="$(id -g)" \
+  --env HOST_UID="${HOST_UID}" \
+  --env HOST_GID="${HOST_GID}" \
   --env EXPERIMENT_IMAGE_TAG="${EXPERIMENT_IMAGE_TAG}" \
   --env EXPERIMENT_DOCKERFILE_PATH="/mnt${EXPERIMENT_DOCKERFILE_PATH}" \
   --env EXPERIMENT_BUILD_CONTEXT="/mnt${EXPERIMENT_BUILD_CONTEXT}" \
