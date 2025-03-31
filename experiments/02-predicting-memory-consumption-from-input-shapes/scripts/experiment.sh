@@ -67,11 +67,11 @@ docker run \
   --env EXPERIMENT_CPUSET_CPUS="${CPUSET_CPUS}" \
   --env EXPERIMENT_COMMAND="generate_data.py" \
   --env EXPERIMENT_ENV=" \
-    -e OUTPUT_DIR=/experiment/out \
+    -e OUTPUT_DIR=/experiment/out/inputs \
     -e FINAL_SIZE=${DATASET_FINAL_SIZE} \
     -e STEP_SIZE=${DATASET_STEP_SIZE} \
   " \
-  --env EXPERIMENT_VOLUMES="-v /mnt${OUTPUT_DIR}/inputs:/experiment/out:rw" \
+  --env EXPERIMENT_VOLUMES="-v /mnt${OUTPUT_DIR}:/experiment/out:rw" \
   docker:28.0.1-dind \
   "/workspace/experiment.sh"
 
@@ -214,7 +214,7 @@ docker run \
   --env EXPERIMENT_ENV=" \
     -e OUTPUT_DIR=/experiment/out \
   " \
-  --env EXPERIMENT_VOLUMES="-v /mnt${OUTPUT_DIR}/inputs:/experiment/out:rw" \
+  --env EXPERIMENT_VOLUMES="-v /mnt${OUTPUT_DIR}:/experiment/out:rw" \
   docker:28.0.1-dind \
   "/workspace/experiment.sh"
 
@@ -243,6 +243,6 @@ docker run \
   --env EXPERIMENT_ENV=" \
     -e OUTPUT_DIR=/experiment/out \
   " \
-  --env EXPERIMENT_VOLUMES="-v /mnt${OUTPUT_DIR}/inputs:/experiment/out:rw" \
+  --env EXPERIMENT_VOLUMES="-v /mnt${OUTPUT_DIR}:/experiment/out:rw" \
   docker:28.0.1-dind \
   "/workspace/experiment.sh"
