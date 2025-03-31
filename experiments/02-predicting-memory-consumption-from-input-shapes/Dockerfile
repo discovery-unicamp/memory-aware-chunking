@@ -28,6 +28,14 @@ RUN apt-get update && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/*
 
+ARG HOST_UID=1000
+ARG HOST_GID=1000
+
+RUN addgroup --gid ${HOST_GID} experiment && \
+    adduser --uid ${HOST_UID} --gid ${HOST_GID} --disabled-password --gecos "" experiment
+
+USER experiment
+
 WORKDIR /experiment
 
 COPY --from=builder /usr/local/lib/python3.13/site-packages /usr/local/lib/python3.13/site-packages

@@ -12,6 +12,8 @@ echo "Building Docker image..."
 docker_build_command="\
   docker buildx build \
     ${EXPERIMENT_EXTRA_CONTEXTS} \
+    --build-arg HOST_UID=${HOST_UID} \
+    --build-arg HOST_GID=${HOST_GID} \
     -t ${EXPERIMENT_IMAGE_TAG} \
     -f ${EXPERIMENT_DOCKERFILE_PATH} \
     ${EXPERIMENT_BUILD_CONTEXT} \
