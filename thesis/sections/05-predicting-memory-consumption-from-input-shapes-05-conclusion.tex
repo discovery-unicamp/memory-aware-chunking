@@ -16,12 +16,12 @@ Several salient findings emerged:
     \ac{GST3D} occasionally benefited from additional parameters (e.g., diagonal length), but not enough to outweigh the straightforward predictive power of volume.
 
     \item \textbf{Model Performance and Robustness.}
-    Across nine regression approaches, simpler or regularized methods—like Linear Regression, Elastic Net, and decision-tree ensembles—performed well, achieving \(R^2 \approx 0.99\) or higher in many configurations.
+    Across nine regression approaches, simpler or regularized methods—like \ac{Linear Regression}, Elastic Net, and decision-tree ensembles—performed well, achieving \(R^2 \approx 0.99\) or higher in many configurations.
     Specifically:
     \begin{itemize}
         \item \textbf{Envelope}: Gradient Boosting offered top-level accuracy, though multiple models clustered in the same performance range.
         \item \textbf{\ac{GST3D}}: Decision Trees (and some ensemble variants) captured memory usage reliably but exhibited greater sensitivity to missing data in the mid-volume range.
-        \item \textbf{Gaussian Filter}: Linear Regression proved sufficient, reinforcing that this operator’s memory footprint aligns closely with volume.
+        \item \textbf{Gaussian Filter}: \ac{Linear Regression} proved sufficient, reinforcing that this operator’s memory footprint aligns closely with volume.
     \end{itemize}
     All methods exhibited mild to moderate right-skew in their residual distributions, yet \ac{RMSE} and \ac{MAE} remained low once mid- and upper-bound volumes were adequately represented.
 
@@ -38,5 +38,5 @@ Overall, Chapter~\ref{sec:pmc-results} establishes that:
     \item A sample size of approximately 30–40 shape configurations provides a practical lower bound for stable memory prediction, making data collection efforts more tractable for real-world \ac{HPC} scenarios.
 \end{enumerate}
 
-With these findings, we have a clearer framework for implementing memory-aware chunking strategies: one can rely on volume-based models (potentially augmented by minimal shape features) and still maintain accurate peak \ac{RAM} estimates, even with relatively small training sets.
+With these findings, we have a clearer framework for implementing memory-aware chunking strategies: one can rely on volume-based models (potentially augmented by minimal shape features) and still maintain accurate peak \ac{RAM} \EBADD{consumption} estimates, even with relatively small training sets.
 The subsequent chapter applies these insights to optimize data-parallel chunking and scheduling decisions for large-scale seismic workloads.

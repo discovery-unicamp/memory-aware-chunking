@@ -38,7 +38,7 @@ The script then processes three main operators:
 
 Each operator appears as a Docker image defined in the \texttt{Dockerfile}.
 Each container execution uses a Python script to load and process input data.
-The \texttt{traceq} library records \ac{RSS} over time, as shown in Chapter~\ref{ch:measuring-memory-consumption}.
+The \texttt{traceq} library records \ac{RSS} over time, as \EBRP{shown}{discussed} in Chapter~\ref{ch:measuring-memory-consumption}.
 On completion, a \texttt{.prof} file stores the memory timeline and associated metadata, including timestamps and shape parameters.
 This procedure captures peak memory usage accurately.
 
@@ -121,7 +121,7 @@ They control dataset sizes, repetition counts, and output paths.
 \noindent
 \textbf{Phase 3: Results Collection and Feature Construction.}
 This phase consists in evaluating the \texttt{.prof} files output by \texttt{traceq}, extracting peak memory usage, and associating it with the input shape.
-The script identifies inlines, xlines, and samples from filenames, notes the operator, retains the maximum time-series \ac{RSS} value, and compiles a consolidated dataframe.
+The script identifies \EBC{inlines, xlines, and samples}{estes três termos aparecem com formatação distintas ao longo do texto - normal, itálico e negrito. Não ficou claro para mim por que eles são destacados de forma distinta. Seria bom padronizar a forma de formatar estes termos.} from filenames, notes the operator, retains the maximum time-series \ac{RSS} value, and compiles a consolidated dataframe.
 It also derives extended features such as total volume
 (\(\text{inlines} \times \text{xlines} \times \text{samples}\)),
 logarithmic transforms
@@ -165,38 +165,39 @@ The script from phase 3 trains multiple regression models using \texttt{inlines}
 Peak memory usage acts as the target variable.
 A consistent 80/20 training/test split ensures fair comparisons.
 Envelope, \ac{GST3D}, and Gaussian Filter runs each receive separate analyses.
-Performance metrics include \ac{RMSE}~\cite{hyndman2006}, \ac{MAE}~\cite{willmott2005mae}, $R^2$~\cite{draper1998applied}, and an accuracy score that measures the fraction of predictions within a specified relative error.
+Performance metrics include \ac{RMSE}~\cite{hyndman2006}, \ac{MAE}~\cite{willmott2005mae}, $R^2$~\cite{draper1998applied}, and an \EBC{accuracy score that measures the fraction of predictions within a specified relative error}{Tem que descrever como este score é calculado}.
 An \texttt{Optuna}-based~\cite{akiba2019optuna} parameter search can emphasize safe upper-bound estimates in \ac{HPC} contexts where underestimations produce critical failures.
 The following models form the basis of each comparison:
 
 \begin{itemize}
     \item \textbf{Linear Regression, Polynomial Regression}~\cite{hastie2009elements}\\
     These models create foundational baselines to capture the relationship between features and memory usage.
-    Linear regression indicates whether memory usage scales directly with trace or sample counts.
+    Linear regression indicates whether memory usage scales directly with \EBC{trace or sample counts}{não seria mais preciso dizer "any of the features, suach as trace or smaple counts"?}.
     Polynomial regression extends linear models with higher-order terms to account for mild nonlinearities.
     Caution is required since purely linear fits underfit complex relationships, and high-degree polynomials risk overfitting.
 
     \item \textbf{Decision Trees}~\cite{breiman1984classification}, \textbf{Random Forest}~\cite{breiman2001random}, \textbf{\ac{XGBoost}}~\cite{chen2016xgboost}\\
+    \EB{Lembre-se de revisar a versão final para identificar e corrigir eventuais invasões de margem, como acima.}
     These tree-based methods automatically model complex feature interactions and nonlinearities.
     Decision Trees provide easy interpretability and can indicate shape thresholds that strongly affect memory.
     Random Forest aggregates multiple trees to reduce variance and enhance generalization.
     \ac{XGBoost} incrementally refines an ensemble of weak learners, which often results in higher accuracy on structured data.
-    Hyperparameter tuning (e.g., tree depth or learning rate) is essential to avoid overfitting.
+    Hyperparameter tuning (e.g., tree depth or learning rate) is essential to avoid overfitting. \EB{Seria bom adicionar uma referência para dar suporte a este comentário.}
 
     \item \textbf{Neural Networks (\ac{MLP})}~\cite{rumelhart1986learning}\\
     \ac{MLP} architectures can approximate intricate functions when provided sufficient capacity.
     This property can reveal subtle relationships between shape parameters and memory requirements.
-    These models often demand larger datasets, rigorous hyperparameter optimization, and careful overfitting control.
+    These models often demand larger datasets, rigorous hyperparameter optimization, and careful overfitting control. \EB{Seria bom adicionar uma referência para dar suporte a este comentário.}
 
     \item \textbf{Gaussian Processes}~\cite{rasmussen2006gaussian}\\
     This approach offers both mean predictions and uncertainty estimates.
     Uncertainty bounds are especially valuable in \ac{HPC} scenarios where underestimating memory can cause abrupt job failures.
-    Large datasets pose computational challenges because of the \(O(n^3)\) scaling, and kernels must be selected carefully.
+    Large datasets pose computational challenges because of the \(O(n^3)\) scaling, and kernels must be selected carefully. \EB{Seria bom adicionar uma referência para dar suporte a este comentário.}
 
     \item \textbf{Bayesian Ridge Regression}~\cite{bishop2006pattern}\\
     This extension of linear models applies Bayesian inference to estimate coefficients and yields robust predictions with uncertainty quantification.
     HPC workloads benefit from these uncertainty estimates when resource over-provisioning is less harmful than running out of memory.
-    Polynomial or interaction terms might still be necessary to represent nonlinear growth patterns.
+    Polynomial or interaction terms might still be necessary to represent nonlinear growth patterns. 
 \end{itemize}
 
 The script final Python script then visualizes memory distributions, residual plots, feature evaluations, and data-reduction experiments.
@@ -212,7 +213,7 @@ Partial dependence plots and tree-based model interpretations expose how inlines
     This standardized environment preserves consistent results by preventing version drift.
     \item \emph{\ac{CPU} Affinity:}
     The \texttt{--cpuset-cpus=0} parameter restricts execution to a single core and reduces background noise.
-    Multiple runs per dataset shape (\texttt{EXPERIMENT\_N\_RUNS}) further stabilize measurements.
+    Multiple runs per dataset shape (\texttt{EXPERIMENT\_N\_RUNS}) further \EBC{stabilize measurements.}{accounts for stochatic variance?}
     \item \emph{Parallelization:}
     The Docker orchestration scales to multiple \ac{CPU} cores, but the design imposes single-core experiments for repeatability.
     Actual \ac{HPC} clusters manage concurrency at the scheduler level, but the core principle of shape-driven memory profiling remains applicable.

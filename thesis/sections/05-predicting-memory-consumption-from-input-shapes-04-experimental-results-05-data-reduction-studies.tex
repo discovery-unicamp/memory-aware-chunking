@@ -9,10 +9,14 @@
 \section{Data Reduction Studies}
 \label{sec:pmc-results-data-reduction-studies}
 
+\EB{Acho que seria bom usar um título mais específico. Algo como: "Training Set Size", "Training Set Reduction Studies", "Impact of training set size"...}
+
 This section discusses how predictive accuracy changes when the training dataset is subsampled, thus reducing the total number of configurations.
 The aim is to identify whether smaller subsets of shape–memory measurements can still produce reliable models.
 Specifically, experiments removed “middle-range” samples of the volume dimension (or shape parameters more broadly), keeping the smallest and largest volumes, while uniformly discarding intermediate sizes.
 Both Envelope and \ac{GST3D} used the best models identified (Gradient Boosting and Decision Tree, respectively), while Gaussian Filter used Linear Regression.
+
+\EB{Esta seção é bem interessante e importante. No entanto, a decisão de usar volumes pequenos e grandes em vez de pequenos e médios me pareceu arbitrária. Em tese, seria melhor usar pequenos e médios, já que o custo de coletar estes dados é menor.}
 
 \subsection{Subsampling Strategy and Motivation}
 \label{subsec:data-reduction-strategy-and-motivation}
@@ -28,7 +32,9 @@ All three operators suffer performance degradation under severe reductions, but 
     \begin{subfigure}[t]{0.49\textwidth}
         \includegraphics[width=\textwidth]{assets/images/05/cross_data_reduction_rmse}
         \caption{\ac{RMSE} across Envelope, \ac{GST3D}, and Gaussian Filter as sample size decreases.
-        A smooth upward trend reflects the increasing difficulty of fitting with fewer examples.}
+            A smooth upward trend reflects the increasing difficulty of fitting with fewer examples.
+            \EB{Por que escolheu o RMSE em vez do outro score?}
+        }
     \end{subfigure}
     \hfill
     \begin{subfigure}[t]{0.49\textwidth}
@@ -37,8 +43,10 @@ All three operators suffer performance degradation under severe reductions, but 
         Minimal sets (\(<20\) samples) show large spikes, indicating insufficient coverage of intermediate volumes.}
     \end{subfigure}
     \caption{Data-reduction effects, viewed globally for all operators.
-    Reducing the training set drives up errors and variability.}
-    \label{fig:cross_data_reduction_and_residual}
+        Reducing the training set drives up errors and variability.
+        \EB{Estes dois gráficos são bem parecidos. Faz sentido manter os dois. Talvez o da esquerda já seja suficiente.}
+        \label{fig:cross_data_reduction_and_residual}
+    }
 \end{figure*}
 
 \subsection{Operator-Wise Performance Trends}
@@ -47,7 +55,7 @@ All three operators suffer performance degradation under severe reductions, but 
 Figures~\ref{fig:residual_metrics_by_sample_size_operators}--\ref{fig:metrics_evolution_sample_size_operators} elaborate on each operator individually.
 When sample sizes fall below roughly 30, \ac{RMSE}, \ac{MAE}, and residual variance begin to rise more sharply.
 This pattern is consistent with the notion that “filling in” the middle range of volumes is essential for maintaining a robust regression fit.
-However, moderately pruned datasets (e.g., 40–50 samples) still achieve respectable $R^2 > 0.98$ in most cases, as verified by the CSV results in Table~\ref{tab:data_reduction_summary}.
+However, moderately pruned datasets (e.g., 40–50 samples) still achieve respectable $R^2 > 0.98$ in most cases, as verified by the CSV results in Table~\ref{tab:data_reduction_summary}. \EB{Referência quebrada}
 
 \begin{figure*}[htbp]
     \centering
@@ -87,7 +95,7 @@ However, moderately pruned datasets (e.g., 40–50 samples) still achieve respec
         \caption{\ac{GST3D}}
     \end{subfigure}
     \caption{All metrics tracked as sample sizes drop, plotted per operator.
-    \ac{RMSE} and \ac{MAE} grow steadily, while $R^2$ and accuracy decline.}
+        \ac{RMSE} and \ac{MAE} grow steadily, while $R^2$ and accuracy decline.}
     \label{fig:metrics_evolution_sample_size_operators}
 \end{figure*}
 
@@ -120,7 +128,8 @@ Above 40–50 samples, the gains saturate, and further additions of similar conf
     \label{fig:score_by_sample_size_operators}
 \end{figure*}
 
-Table~\ref{tab:data_reduction_summary} illustrates partial data from the CSV logs (see \texttt{envelope.csv}, \texttt{gaussian-filter.csv}, and \texttt{gst3d.csv}).
+Table~\ref{tab:data_reduction_summary} illustrates partial data from the CSV logs (see \texttt{envelope.csv}, \texttt{gaussian-filter.csv}, and \texttt{gst3d.csv}). 
+\EB{Corrigir a Referência quebrada e a invasão de margem.}
 It includes selected sample sizes and the resulting \ac{RMSE}, $R^2$, accuracy, and overall score.
 Even moderate subsampling (34 or 42 samples, for instance) still achieves high $R^2$ for Envelope and Gaussian Filter.
 \ac{GST3D} remains more sensitive, though a subset of 44 samples can deliver near-perfect accuracy.

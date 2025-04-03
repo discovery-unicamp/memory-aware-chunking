@@ -8,7 +8,7 @@ The subsections below detail the execution environment, data generation, operato
 \subsection{Execution Environment and Workflow Automation}
 \label{subsec:pmc-execution-environment-and-workflow-automation}
 
-All experiments executed on a single \ac{HPC} node at the \ac{UNICAMP} Discovery Labs, equipped with an Intel\textregistered\ Xeon\textregistered\ Silver 4310 processor, 256~\ac{GB} of \ac{RAM}, and two \ac{RTX}~A6000 \ac{GPU}s. Despite the presence of \ac{GPU} resources, all memory profiling runs relied exclusively on \ac{CPU} execution to ensure comparability across input shapes.
+All experiments \EBADD{were} executed on a single \ac{HPC} node at the \ac{UNICAMP} Discovery Labs, equipped with an Intel\textregistered\ Xeon\textregistered\ Silver 4310 processor, 256~\ac{GB} of \ac{RAM}, and two \ac{RTX}~A6000 \ac{GPU}s. Despite the presence of \ac{GPU} resources, all memory profiling runs relied exclusively on \ac{CPU} execution to ensure comparability across input shapes.
 
 A Python-based container environment managed via Docker provided reproducibility and isolation.
 Docker containers pinned to specific \ac{CPU} cores (\texttt{–cpuset-cpus=0}) maintained execution consistency and minimized process interference.
@@ -17,7 +17,7 @@ A single shell script, \texttt{scripts/experiment.sh}\cite{delucca2025experiment
 \begin{enumerate}
     \item Creation of Docker volumes for intermediate and output data storage.
     \item Generation of synthetic \ac{3D} seismic volumes, as described in Section\ref{sec:pmc-materials-and-methods}.
-    \item Execution of seismic operators within containers, one run per input shape configuration.
+    \item Execution of seismic operators within containers, \EBC{one run per input shape configuration}{Não deveriam ser múltiplas execuções? Qual o valor da variável \texttt{EXPERIMENT\_N\_RUNS}?}.
     \item Memory profiling using \texttt{TraceQ}, which captured \ac{RSS} measurements over time.
     \item Extraction and consolidation of peak memory values, shape metadata, and execution logs into structured \texttt{.csv} files.
 \end{enumerate}
@@ -61,14 +61,19 @@ The consolidation included:
     \item \textbf{Derived Features:} Calculated values such as total volume (\text{inlines} $\times$ \text{xlines} $\times$ \text{samples}), logarithmic transformations, and geometric descriptors including surface area and diagonal length.
 \end{itemize}
 
-This merged dataset was stored in structured \texttt{.csv} files under \texttt{OUTPUT\_DIR}, forming the foundation for subsequent modeling and analysis.
+This merged dataset was stored in structured \EBC{\texttt{.csv} files}{em outros locais do texto você usa o termo CSV file - seria bom padronizar. BTW, o acrônimo CSV deve ser definido na lista de acrônimos.} under \texttt{OUTPUT\_DIR}, forming the foundation for subsequent modeling and analysis.
 
 \subsection{Repository Structure and Notebooks}
 \label{subsec:repository-structure-and-notebooks}
 
+\EB{Daniel, acho que é bem importante ter uma seção com instruções para reprodução dos experimentos. Ela deve descrever de onde o leitor pode baixar os códigos e dados e como executar os artefatos. Acho que esta seção poderia ser ajustada para cumprir este papel. Neste sentido, que tal renomeá-la para "Reproducibility" e adicionar instruções de como baixar e executar os artefatos?}
+
+\EB{BTW, recentemente a Unicamp introduziu um requisito novo para a defesa do mestrado e do doutorado que consiste no depósito dos artefatos produzidos durante a pesquisa no repositório de dados da Unicamp - REDU.  Veja em \url{https://ic.unicamp.br/pos-graduacao/repositorio-de-dados-de-pesquisa-da-unicamp-redu/}}
+
 The entire experiment, including code, automation scripts, and analytical notebooks, is publicly available:
 \begin{itemize}
     \item \textbf{\texttt{Github repository}}\cite{delucca2025experiment2} containing all source code and setup instructions.
+    \EB{Por favor, migre estes repositórios para a (ou crie uma cópia deles na) organização \url{https://github.com/discovery-unicamp} e refenrencie o endereço de lá.}
     \item \textbf{\texttt{scripts/experiment.sh}}\cite{delucca2025experiment2script} for end-to-end execution of data generation, processing, and profiling.
     \item \textbf{\texttt{notebooks/}}~\cite{delucca2025experiment2notebooks} with Jupyter notebooks covering data exploration, model training, hyperparameter optimization, and error diagnostics.
 \end{itemize}

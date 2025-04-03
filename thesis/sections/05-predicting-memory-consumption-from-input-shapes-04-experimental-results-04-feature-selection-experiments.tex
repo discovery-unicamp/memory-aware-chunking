@@ -1,7 +1,9 @@
 \section{Feature Selection Experiments}
 \label{sec:pmc-results-feature-selection-experiments}
 
-This section investigates the impact of eliminating various shape-derived features on model accuracy, with a particular focus on verifying whether \emph{volume} alone is sufficient to predict peak memory usage.
+\EB{Daniel, me parece que seria mais natural apresentar o processo de seleção de features antes das seções que realizam a análise dos dados já pressupondo o uso da feature volume.}
+
+This section investigates the impact of eliminating various shape-derived features on model accuracy, with a particular focus on verifying whether \emph{volume} alone is \EBC{sufficient to predict peak memory usage}{Você já mostrou que a feature volume tem uma relação bem simples (linear) com o pico de consumo de memória.}.
 Section~\ref{sec:pmc-results-model-performance-overview} identified Gradient Boosting, Linear Regression, and Decision Tree as the best performers for Envelope, Gaussian Filter, and \ac{GST3D}, respectively.
 Consequently, the experiments below use these three models when removing features.
 
@@ -38,13 +40,14 @@ This observation motivates a systematic “feature pruning” study to confirm w
 
 The experiments adopted a stepwise strategy:
 \begin{enumerate}
-    \item Collect a ranked list of features using a relevance metric (e.g., \emph{SelectKBest}).
+    \item Collect a ranked list of features using a relevance metric (e.g., \emph{SelectKBest}). \EB{Senti falta de uma explicação e/ou referências para o método SelectKBest e uma breve discussão sobre como você aplicou ele - aplicou múltiplas vezes, uma para cada modelo? Uma para cada operador? uma única vez e gerou um único ranking? Esta parte dos resultados está bem obscura.}
     \item Remove the least-relevant feature and retrain the model.
     \item Document changes in \ac{RMSE}, \ac{MAE}, $R^2$, accuracy, and a combined “score.”
     \item Repeat until only \emph{volume} remains.
 \end{enumerate}
 Table~\ref{tab:feature_selection_minimal_impact} highlights selected examples of Envelope and Gaussian Filter runs, showing how the \ac{RMSE} and $R^2$ shift little upon discarding most auxiliary features.
 In nearly all cases, \emph{volume} was never dropped, confirming its primacy in determining memory usage.
+\EB{O que acontece se você remover apenas a feature volume?}
 
 \begin{table}[htbp]
     \centering
@@ -63,8 +66,10 @@ In nearly all cases, \emph{volume} was never dropped, confirming its primacy in 
         \hline
     \end{tabular}
     \caption{Subset of feature-removal results for Envelope, \ac{GST3D}, and Gaussian Filter.
-    \ac{RMSE} and $R^2$ remain largely stable as the number of predictors decreases, implying that volume has the dominant role.}
-    \label{tab:feature_selection_minimal_impact}
+        \ac{RMSE} and $R^2$ remain largely stable as the number of predictors decreases, implying that volume has the dominant role.
+        \EB{Corrigir invasão de margem.}
+        \label{tab:feature_selection_minimal_impact}
+    }
 \end{table}
 
 \subsection{Impact on RMSE, R\texorpdfstring{$^2$}{2}, and Residuals}
@@ -89,8 +94,10 @@ Both metrics exhibit negligible variations except when volume is excluded, which
         Volume stands out as indispensable.}
     \end{subfigure}
     \caption{Feature-removal impacts.
-    Volume consistently emerges as the most critical input, whereas removing others typically yields negligible performance changes.}
-    \label{fig:feature_selection_overview_part1}
+        Volume consistently emerges as the most critical input, whereas removing others typically yields negligible performance changes.
+        \EB{Para argumentar que o volume é feature mais importante, não seria necessário mostrar que a remoção dela reduz o desempenho dos modelos?}
+        \label{fig:feature_selection_overview_part1}
+    }
 \end{figure*}
 
 Figure~\ref{fig:feature_selection_overview_part2} extends the analysis to residual-distribution metrics.
@@ -121,7 +128,7 @@ Hence, even simplified models (volume plus one or two shape parameters) are near
 Figures~\ref{fig:feature_impact_operator_subplots} and~\ref{fig:residual_metrics_by_number_of_features_operator_subplots} provide per-operator plots of the incremental feature-importance measurements.
 The Envelope plots confirm that volume alone can achieve a \ac{RMSE} as low as 0.015.
 Gaussian Filter achieves a \ac{RMSE} near \(2\times10^{-5}\) with only volume.
-\ac{GST3D} benefits marginally from including another parameter (e.g., diagonal length), but dropping everything except volume still yields strong $R^2 \approx 0.9999$ in many runs.
+\ac{GST3D} benefits marginally from including another parameter (e.g., diagonal length), but dropping everything except \EBADD{the} volume \EBADD{efature} still yields strong $R^2 \approx 0.9999$ in many runs.
 
 \begin{figure*}[htbp]
     \centering
@@ -140,9 +147,12 @@ Gaussian Filter achieves a \ac{RMSE} near \(2\times10^{-5}\) with only volume.
         \caption{\ac{GST3D}}
     \end{subfigure}
     \caption{Feature-removal impact by operator.
-    Bars represent the increase in \ac{RMSE} (or other metrics) upon discarding each feature.
-    Volume is consistently the most essential.}
-    \label{fig:feature_impact_operator_subplots}
+        Bars represent the increase in \ac{RMSE} (or other metrics) upon discarding each feature.
+        Volume is consistently the most essential.
+        \EB{Que tal usar "Number of features removed" em vez de "Number of features" no eixo-x dos gráficos?}
+        \EB{BTW, talvez fique melhor usar o mesmo eixo-y (mesmo intervalo no eixo-y) nos três gráficos.}
+        \label{fig:feature_impact_operator_subplots}
+    }
 \end{figure*}
 
 \begin{figure*}[htbp]

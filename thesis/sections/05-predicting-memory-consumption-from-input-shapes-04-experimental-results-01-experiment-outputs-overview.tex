@@ -9,7 +9,7 @@ These \ac{CSV} artifacts are the foundation for the analyses presented in the fo
 \textbf{Operators and Experimental Goals.}
 We investigated three commonly used seismic processing operators:
 \begin{itemize}
-    \item \emph{Envelope}: Computes instantaneous amplitude along seismic traces.
+    \item \emph{Envelope}: Computes instantaneous amplitude along seismic traces. 
     \item \emph{\ac{GST3D}}: Highlights discontinuities or faults using structural tensors.
     \item \emph{3D Gaussian Filter}: Applies a smoothing operation across volumes to reduce high-frequency noise.
 \end{itemize}
@@ -21,7 +21,7 @@ Our primary goal was to build regression models that predict each operator’s p
 \textbf{Data Artifacts.}
 During the final stage of the pipeline, five main \ac{CSV} outputs were generated:
 \begin{enumerate}
-    \item \emph{profile\_history.csv}: Stores time-series \ac{RSS} measurements and timestamps for each operator run. This file is useful for detecting moment-to-moment memory fluctuations.
+    \item \emph{profile\_history.csv}: Stores time-series \ac{RSS} measurements and timestamps for each operator run. This file is useful for \EBRPD{detecting}{analyzing} moment-to-moment memory fluctuations.
     \item \emph{profile\_summary.csv}: Summarizes peak memory usage, execution time, and statistical descriptors (means, standard deviations, minima, and maxima) per volume configuration.
     \item \emph{model\_metrics.csv}: Captures regression model performances (\ac{RMSE}, \ac{MAE}, $R^2$, and accuracy metrics), along with arrays of predictions and residuals.
     \item \emph{feature\_selection.csv}: Documents experiments that limit the predictor set to specific features or transformations to assess their importance in predicting memory usage.
@@ -38,6 +38,7 @@ Each operator was run on each shape variant, yielding a comprehensive grid of me
 \vspace{1em}
 \noindent
 \textbf{Chapter Roadmap.}
+\EB{Acho que fica melhor remover o título "Chapter Roadmap." deste parágrafo.}
 Section~\ref{sec:pmc-results-memory-and-execution-time-profiling} explores the memory-usage trends and execution-time patterns for each operator.
 Subsequent sections delve into model performance, assessing how various feature sets and data volumes influence predictive accuracy.
 We conclude by comparing Envelope, \ac{GST3D}, and Gaussian Filter side by side, identifying operator-specific nuances that can inform more reliable \ac{HPC} scheduling.
