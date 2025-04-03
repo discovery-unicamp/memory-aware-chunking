@@ -16,19 +16,48 @@
     draft,
 %final,
 ]{changes}
-\restoregeometry
-\geometry{
-    a4paper,
-    top=30mm,
-    bottom=20mm,
-    left=30mm,
-    right=50mm,
-    marginparwidth=40mm,
-}
 
 \usepackage[printonlyused]{acronym}
 
 \usepackage{amsmath}
+
+\usetikzlibrary{shadows, arrows.meta, positioning}
+
+\usepackage{listings}
+\usepackage{xcolor}
+
+\definecolor{codegray}{rgb}{0.5,0.5,0.5}
+\definecolor{codeorange}{rgb}{0.8,0.3,0}
+\definecolor{codeblue}{rgb}{0.2,0.2,0.6}
+
+\lstdefinestyle{common}{
+    basicstyle=\ttfamily\footnotesize,
+    keywordstyle=\color{codeblue},
+    commentstyle=\color{codegray}\itshape,
+    stringstyle=\color{codeorange},
+    showstringspaces=false,
+    breaklines=true,
+    frame=single,
+    numbers=left,
+    numberstyle=\tiny\color{codegray},
+    captionpos=b,
+    tabsize=2
+}
+
+\lstdefinestyle{pythonstyle}{
+    style=common,
+    language=Python
+}
+
+\lstdefinestyle{bashstyle}{
+    style=common,
+    language=bash,
+    morekeywords={docker, echo, for, in, do, done, if, then, fi},
+}
+
+\usepackage{subcaption}
+\usepackage{multirow}
+\usepackage{soul} % \hl
 
 \begin{document}
     \autor{Daniel De Lucca Fonseca}

@@ -1,0 +1,44 @@
+\subsection{Experiment Outputs Overview}
+\label{subsec:pmc-results-experiment-outputs-overview}
+
+This subsection briefly outlines the three seismic operators examined (Envelope, \ac{GST3D}, and the 3D Gaussian Filter), underscores the main experimental objectives, and describes the key \ac{CSV} files generated during the final stages of the pipeline.
+These \ac{CSV} artifacts are the foundation for the analyses presented in the following subsections.
+
+\vspace{1em}
+\noindent
+\textbf{Operators and Experimental Goals.}
+We investigated three commonly used seismic processing operators:
+\begin{itemize}
+    \item \emph{Envelope}: Computes instantaneous amplitude along seismic traces. 
+    \item \emph{\ac{GST3D}}: Highlights discontinuities or faults using structural tensors.
+    \item \emph{3D Gaussian Filter}: Applies a smoothing operation across volumes to reduce high-frequency noise.
+\end{itemize}
+All three involve memory-intensive operations on potentially large \ac{3D} volumes.
+Our primary goal was to build regression models that predict each operator’s peak memory usage as a function of shape parameters (\textit{inlines}, \textit{xlines}, and \textit{samples}), enabling more accurate \ac{HPC} job submissions.
+
+\vspace{1em}
+\noindent
+\textbf{Data Artifacts.}
+During the final stage of the pipeline, five main \ac{CSV} outputs were generated:
+\begin{enumerate}
+    \item \emph{profile\_history.csv}: Stores time-series \ac{RSS} measurements and timestamps for each operator run. This file is useful for \EBRPD{detecting}{analyzing} moment-to-moment memory fluctuations.
+    \item \emph{profile\_summary.csv}: Summarizes peak memory usage, execution time, and statistical descriptors (means, standard deviations, minima, and maxima) per volume configuration.
+    \item \emph{model\_metrics.csv}: Captures regression model performances (\ac{RMSE}, \ac{MAE}, $R^2$, and accuracy metrics), along with arrays of predictions and residuals.
+    \item \emph{feature\_selection.csv}: Documents experiments that limit the predictor set to specific features or transformations to assess their importance in predicting memory usage.
+    \item \emph{data\_reduction.csv}: Compares how models behave when trained on progressively smaller subsets of the full dataset, providing insight into data requirements for stable predictions.
+\end{enumerate}
+
+\vspace{1em}
+\noindent
+\textbf{Shape Configurations.}
+The synthetic seismic volumes encompassed a broad range of \ac{3D} shapes, from $100 \times 100 \times 100$ up to sizes near the system’s memory limits.
+By spanning both small and large volumes, we could characterize memory usage trends across diverse problem scales.
+Each operator was run on each shape variant, yielding a comprehensive grid of memory and runtime measurements.
+
+\vspace{1em}
+\noindent
+\textbf{Chapter Roadmap.}
+\EB{Acho que fica melhor remover o título "Chapter Roadmap." deste parágrafo.}
+Section~\ref{sec:pmc-results-memory-and-execution-time-profiling} explores the memory-usage trends and execution-time patterns for each operator.
+Subsequent sections delve into model performance, assessing how various feature sets and data volumes influence predictive accuracy.
+We conclude by comparing Envelope, \ac{GST3D}, and Gaussian Filter side by side, identifying operator-specific nuances that can inform more reliable \ac{HPC} scheduling.

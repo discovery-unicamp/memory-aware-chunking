@@ -10,6 +10,17 @@
 \newcommand{\EBRM}[1]{\deleted[id=EB]{#1}} % Remove texto
 \newcommand{\EBRP}[2]{\replaced[id=EB]{#2}{#1}} % Substitui um texto pelo outro
 
+
+% Edson's notes
+% Daniel, mudei as macros por que não consegui adicionar comentários no rótulo de uma das tabelas com o modo anterior.
+\renewcommand{\EB}[1]{{\textcolor{blue}{(EB: #1)}}}
+\renewcommand{\EBH}[1]{{\hl{#1}}}
+\renewcommand{\EBC}[2]{\EBH{#1}{\color{blue}(EB: #2)}}
+\renewcommand{\EBADD}[1]{{\textcolor{blue}{#1}}}
+\renewcommand{\EBRM}[1]{{\textcolor{lightgray}{(#1)}}}
+\renewcommand{\EBRP}[2]{\EBRM{#1}\EBADD{#2}}
+\newcommand{\EBRPD}[2]{#1 \EB{#1 $\rightarrow$ #2?}}
+
 % Daniel (DF)
 \newcommand{\DF}[1]{\comment[id=DF]{#1}} % Adiciona como coomentário feito por DF
 \newcommand{\DFH}[1]{\highlight[id=DF]{#1}} % Destaca o texto

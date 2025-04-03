@@ -1,0 +1,83 @@
+\section{Experimental Setup}
+\label{sec:pmc-experimental-setup}
+
+The experiment followed a pipeline composed of seismic data generation, containerized processing with memory profiling, and consolidation of results for modeling.
+Each step was fully automated to ensure consistency, reproducibility, and scalability.
+The subsections below detail the execution environment, data generation, operator processing, memory profiling, and data consolidation strategies.
+
+\subsection{Execution Environment and Workflow Automation}
+\label{subsec:pmc-execution-environment-and-workflow-automation}
+
+All experiments \EBADD{were} executed on a single \ac{HPC} node at the \ac{UNICAMP} Discovery Labs, equipped with an Intel\textregistered\ Xeon\textregistered\ Silver 4310 processor, 256~\ac{GB} of \ac{RAM}, and two \ac{RTX}~A6000 \ac{GPU}s. Despite the presence of \ac{GPU} resources, all memory profiling runs relied exclusively on \ac{CPU} execution to ensure comparability across input shapes.
+
+A Python-based container environment managed via Docker provided reproducibility and isolation.
+Docker containers pinned to specific \ac{CPU} cores (\texttt{–cpuset-cpus=0}) maintained execution consistency and minimized process interference.
+
+A single shell script, \texttt{scripts/experiment.sh}\cite{delucca2025experiment2script}, orchestrated the full workflow, including:
+\begin{enumerate}
+    \item Creation of Docker volumes for intermediate and output data storage.
+    \item Generation of synthetic \ac{3D} seismic volumes, as described in Section\ref{sec:pmc-materials-and-methods}.
+    \item Execution of seismic operators within containers, \EBC{one run per input shape configuration}{Não deveriam ser múltiplas execuções? Qual o valor da variável \texttt{EXPERIMENT\_N\_RUNS}?}.
+    \item Memory profiling using \texttt{TraceQ}, which captured \ac{RSS} measurements over time.
+    \item Extraction and consolidation of peak memory values, shape metadata, and execution logs into structured \texttt{.csv} files.
+\end{enumerate}
+
+The script looped over all permutations of \texttt{(inlines, xlines, samples)}, parsing \texttt{TraceQ} outputs and joining them with shape metadata.
+The final output consisted of a consolidated dataset for model fitting.
+
+\subsection{Synthetic Data Generation and Real-Data Validation}
+\label{subsec:pmc-synthetic-data-generation-and-real-data-validation}
+
+\paragraph{Synthetic Volumes.}
+A comprehensive enumeration of \ac{3D} input shapes defined the experimental space.
+Input volumes ranged from $100$ $\times$ $100$ $\times$ $100$ to shapes approaching system memory limits.
+Each synthetic volume was written in the \ac{SEG-Y} format to maintain consistency with the seismic processing pipeline.
+This method enabled a controlled exploration of both common and extreme input configurations.
+
+\paragraph{Netherlands F3 Dataset~\cite{f3dataset}.}
+The standard Netherlands F3 seismic volume ($651$ $\times$ $951$ $\times$ $462$) served as a real-data validation benchmark.
+Memory usage predictions from the trained models were compared against actual measurements on this dataset, enabling evaluation of model generalization to real-world data.
+
+\subsection{Containerized Seismic Operators and Memory Profiling}
+\label{subsec:containerized-seismic-operators-and-memory-profiling}
+
+Each shape configuration was processed in a dedicated Docker container with exclusive \ac{CPU} pinning to reduce runtime variance.
+Three memory-intensive seismic operators were evaluated: \emph{Envelope}, \emph{\ac{GST3D}}, and a \emph{3D Gaussian Filter}.
+These operators were treated as black-box transformations that received seismic volumes and returned transformed data, with no internal modifications or visibility into their implementation.
+
+The container startup routine activated \texttt{TraceQ}, which monitored the Python process and recorded \ac{RSS} snapshots at regular intervals.
+Upon operator completion, \texttt{TraceQ} wrote a \texttt{.prof} file containing the memory usage timeline.
+This design minimized noise from external processes and ensured that each memory profile reflected the specific behavior of the evaluated operator and input shape.
+
+\subsection{Data Consolidation}
+\label{subsec:data-consolidation}
+
+After execution, a final stage of the script merged experimental data into a unified dataset.
+The consolidation included:
+
+\begin{itemize}
+    \item \textbf{Peak Memory Values:} Extracted from each \texttt{.prof} file as the highest recorded \ac{RSS}.
+    \item \textbf{Shape and Operator Metadata:} Inline, xline, and sample dimensions, as well as the applied seismic operator and associated attributes.
+    \item \textbf{Derived Features:} Calculated values such as total volume (\text{inlines} $\times$ \text{xlines} $\times$ \text{samples}), logarithmic transformations, and geometric descriptors including surface area and diagonal length.
+\end{itemize}
+
+This merged dataset was stored in structured \EBC{\texttt{.csv} files}{em outros locais do texto você usa o termo CSV file - seria bom padronizar. BTW, o acrônimo CSV deve ser definido na lista de acrônimos.} under \texttt{OUTPUT\_DIR}, forming the foundation for subsequent modeling and analysis.
+
+\subsection{Repository Structure and Notebooks}
+\label{subsec:repository-structure-and-notebooks}
+
+\EB{Daniel, acho que é bem importante ter uma seção com instruções para reprodução dos experimentos. Ela deve descrever de onde o leitor pode baixar os códigos e dados e como executar os artefatos. Acho que esta seção poderia ser ajustada para cumprir este papel. Neste sentido, que tal renomeá-la para "Reproducibility" e adicionar instruções de como baixar e executar os artefatos?}
+
+\EB{BTW, recentemente a Unicamp introduziu um requisito novo para a defesa do mestrado e do doutorado que consiste no depósito dos artefatos produzidos durante a pesquisa no repositório de dados da Unicamp - REDU.  Veja em \url{https://ic.unicamp.br/pos-graduacao/repositorio-de-dados-de-pesquisa-da-unicamp-redu/}}
+
+The entire experiment, including code, automation scripts, and analytical notebooks, is publicly available:
+\begin{itemize}
+    \item \textbf{\texttt{Github repository}}\cite{delucca2025experiment2} containing all source code and setup instructions.
+    \EB{Por favor, migre estes repositórios para a (ou crie uma cópia deles na) organização \url{https://github.com/discovery-unicamp} e refenrencie o endereço de lá.}
+    \item \textbf{\texttt{scripts/experiment.sh}}\cite{delucca2025experiment2script} for end-to-end execution of data generation, processing, and profiling.
+    \item \textbf{\texttt{notebooks/}}~\cite{delucca2025experiment2notebooks} with Jupyter notebooks covering data exploration, model training, hyperparameter optimization, and error diagnostics.
+\end{itemize}
+
+This structure ensures full reproducibility.
+Users can extend the experiment by modifying input shapes, seismic operators, or container settings without altering the orchestration logic.
+All components—containers, execution scripts, and analytical workflows—remain tightly integrated to support extensibility and transparent evaluation.
