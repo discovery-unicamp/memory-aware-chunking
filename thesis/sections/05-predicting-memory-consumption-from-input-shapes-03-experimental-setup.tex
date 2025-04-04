@@ -63,18 +63,17 @@ The consolidation included:
 
 This merged dataset was stored in structured \ac{CSV} files under \texttt{OUTPUT\_DIR}, forming the foundation for subsequent modeling and analysis.
 
-\subsection{Repository Structure and Notebooks}
-\label{subsec:repository-structure-and-notebooks}
+\subsection{Reproducibility}
+\label{subsec:reproducibility}
 
-\EB{Daniel, acho que é bem importante ter uma seção com instruções para reprodução dos experimentos. Ela deve descrever de onde o leitor pode baixar os códigos e dados e como executar os artefatos. Acho que esta seção poderia ser ajustada para cumprir este papel. Neste sentido, que tal renomeá-la para "Reproducibility" e adicionar instruções de como baixar e executar os artefatos?}
+The entire experiment is publicly available at a \ac{Github} repository~\cite{delucca2025experiment2}.
+This repository contains source code, setup instructions, and automation scripts that orchestrate data generation, processing, and profiling.
+All artifacts for this experiment resides in \texttt{experiments/02-predicting-memory-consumption-from-input-shapes}.
+A detailed \texttt{README.md} file describes environment requirements, including Docker, and explains how to run each step.
 
-The entire experiment, including code, automation scripts, and analytical notebooks, is publicly available:
-\begin{itemize}
-    \item \textbf{\texttt{Github repository}}\cite{delucca2025experiment2} containing all source code and setup instructions.
-    \item \textbf{\texttt{scripts/experiment.sh}}\cite{delucca2025experiment2script} for end-to-end execution of data generation, processing, and profiling.
-    \item \textbf{\texttt{notebooks/}}~\cite{delucca2025experiment2notebooks} with Jupyter notebooks covering data exploration, model training, hyperparameter optimization, and error diagnostics.
-\end{itemize}
-
-This structure ensures full reproducibility.
-Users can extend the experiment by modifying input shapes, seismic operators, or container settings without altering the orchestration logic.
-All components—containers, execution scripts, and analytical workflows—remain tightly integrated to support extensibility and transparent evaluation.
+The \texttt{scripts/experiment.sh} script~\cite{delucca2025experiment2script} automates the entire pipeline.
+Users must install Docker, clone the repository, and execute \texttt{experiment.sh} to reproduce every stage of data processing and analysis.
+The \texttt{notebooks/} directory~\cite{delucca2025experiment2notebooks} includes Jupyter notebooks for data exploration, model training, hyperparameter tuning, and error diagnostics.
+This structure provides reproducibility and supports extensibility.
+Users can modify input shapes, seismic operators, or container settings without altering the orchestration logic.
+All components—containers, execution scripts, and analytical workflows—remain integrated to promote transparent evaluation and straightforward experimentation.

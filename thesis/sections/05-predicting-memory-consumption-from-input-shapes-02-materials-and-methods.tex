@@ -197,22 +197,21 @@ Regarding models, the analysis includes several families of regressors:
     Caution is required since purely linear fits underfit complex relationships, and high-degree polynomials risk overfitting.
 
     \item \textbf{Decision Trees}~\cite{breiman1984classification}, \textbf{Random Forest}~\cite{breiman2001random}, \textbf{\ac{XGBoost}}~\cite{chen2016xgboost}\\
-    \EB{Lembre-se de revisar a versão final para identificar e corrigir eventuais invasões de margem, como acima.}
     These tree-based methods automatically model complex feature interactions and nonlinearities.
     Decision Trees provide easy interpretability and can indicate shape thresholds that strongly affect memory.
     Random Forest aggregates multiple trees to reduce variance and enhance generalization.
     \ac{XGBoost} incrementally refines an ensemble of weak learners, which often results in higher accuracy on structured data.
-    Hyperparameter tuning (e.g., tree depth or learning rate) is essential to avoid overfitting. \EB{Seria bom adicionar uma referência para dar suporte a este comentário.}
+    Hyperparameter tuning (e.g., tree depth or learning rate) is essential to avoid overfitting~\cite{bergstra2012}.
 
     \item \textbf{Neural Networks (\ac{MLP})}~\cite{rumelhart1986learning}\\
     \ac{MLP} architectures can approximate intricate functions when provided sufficient capacity.
     This property can reveal subtle relationships between shape parameters and memory requirements.
-    These models often demand larger datasets, rigorous hyperparameter optimization, and careful overfitting control. \EB{Seria bom adicionar uma referência para dar suporte a este comentário.}
+    These models often demand larger datasets, rigorous hyperparameter optimization, and careful overfitting control~\cite{lecun2015deep}.
 
     \item \textbf{Gaussian Processes}~\cite{rasmussen2006gaussian}\\
     This approach offers both mean predictions and uncertainty estimates.
     Uncertainty bounds are especially valuable in \ac{HPC} scenarios where underestimating memory can cause abrupt job failures.
-    Large datasets pose computational challenges because of the \(O(n^3)\) scaling, and kernels must be selected carefully. \EB{Seria bom adicionar uma referência para dar suporte a este comentário.}
+    Large datasets pose computational challenges because of the \(O(n^3)\) scaling, and kernels must be selected carefully~\cite{quinonero2005}.
 
     \item \textbf{Bayesian Ridge Regression}~\cite{bishop2006pattern}\\
     This extension of linear models applies Bayesian inference to estimate coefficients and yields robust predictions with uncertainty quantification.
