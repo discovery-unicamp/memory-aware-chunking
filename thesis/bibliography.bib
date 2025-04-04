@@ -170,14 +170,6 @@ and Schwiegelshohn, Uwe",
     isbn = "978-3-540-39727-4"
 }
 
-@misc{ncsu_memory_usage,
-    author = {{NCSU High Performance Computing}},
-    title = {Memory Usage on HPC Systems},
-    year = {n.d.},
-    url = {https://hpc.ncsu.edu/Documents/memory.php},
-    note = {Accessed: 2025-03-23}
-}
-
 @inproceedings{tanash2021ampro,
     author = {Tanash, Mahmoud and Andresen, David and Hsu, Wen-Jing},
     title = {{AMPRO-HPCC}: A Machine-Learning Tool for Predicting Resources on Slurm HPC Clusters},
@@ -386,7 +378,7 @@ and Schwiegelshohn, Uwe",
     author = {Daniel Fonseca},
     title = {Memory-Aware Chunking: Experiment Folder for Predicting Memory Consumption from Input Shapes},
     year = {2025},
-    howpublished = {\url{https://github.com/delucca-papers/memory-aware-chunking/blob/main/experiments/02-predicting-memory-consumption-from-input-shapes}},
+    howpublished = {\url{https://github.com/discovery-unicamp/memory-aware-chunking/blob/main/experiments/02-predicting-memory-consumption-from-input-shapes}},
     note = {Accessed: 2025-03-23}
 }
 
@@ -394,7 +386,7 @@ and Schwiegelshohn, Uwe",
     author = {Daniel Fonseca},
     title = {Memory-Aware Chunking: Notebooks Folder for Predicting Memory Consumption from Input Shapes},
     year = {2025},
-    howpublished = {\url{https://github.com/delucca-papers/memory-aware-chunking/blob/main/experiments/02-predicting-memory-consumption-from-input-shapes/notebooks}},
+    howpublished = {\url{https://github.com/discovery-unicamp/memory-aware-chunking/blob/main/experiments/02-predicting-memory-consumption-from-input-shapes/notebooks}},
     note = {Accessed: 2025-03-23}
 }
 
@@ -402,7 +394,7 @@ and Schwiegelshohn, Uwe",
     author = {Daniel Fonseca},
     title = {Memory-Aware Chunking: Experiment Script for Predicting Memory Consumption from Input Shapes},
     year = {2025},
-    howpublished = {\url{https://github.com/delucca-papers/memory-aware-chunking/blob/main/experiments/02-predicting-memory-consumption-from-input-shapes/scripts/experiment.sh}},
+    howpublished = {\url{https://github.com/discovery-unicamp/memory-aware-chunking/blob/main/experiments/02-predicting-memory-consumption-from-input-shapes/scripts/experiment.sh}},
     note = {Accessed: 2025-03-23}
 }
 
@@ -410,7 +402,7 @@ and Schwiegelshohn, Uwe",
     author = {Daniel Fonseca},
     title = {Memory-Aware Chunking: Results of the Experiment for Predicting Memory Consumption from Input Shapes},
     year = {2025},
-    howpublished = {\url{https://github.com/delucca-papers/memory-aware-chunking/blob/main/experiments/02-predicting-memory-consumption-from-input-shapes/out/results/20250322210428}},
+    howpublished = {\url{https://github.com/discovery-unicamp/memory-aware-chunking/blob/main/experiments/02-predicting-memory-consumption-from-input-shapes/out/results/20250322210428}},
     note = {Accessed: 2025-03-23}
 }
 
@@ -418,7 +410,7 @@ and Schwiegelshohn, Uwe",
     author = {Daniel Fonseca},
     title = {Memory-Aware Chunking: Results Collection for Predicting Memory Consumption from Input Shapes},
     year = {2025},
-    howpublished = {\url{https://github.com/delucca-papers/memory-aware-chunking/blob/main/experiments/02-predicting-memory-consumption-from-input-shapes/experiment/collect_results.py}},
+    howpublished = {\url{https://github.com/discovery-unicamp/memory-aware-chunking/blob/main/experiments/02-predicting-memory-consumption-from-input-shapes/experiment/collect_results.py}},
     note = {Accessed: 2025-03-23}
 }
 
@@ -428,4 +420,51 @@ and Schwiegelshohn, Uwe",
     howpublished = {\url{https://terranubis.com/datainfo/F3-Demo-2023}},
     year = {2012},
     note = {Accessed: 2025-03-25}
+}
+
+@inproceedings{rodrigues2016,
+    author = {Rodrigues, Eduardo R. and Cunha, Renato L. F. and Netto, Marco A. S. and Spriggs, Michael},
+    booktitle = {2016 Third International Workshop on HPC User Support Tools (HUST)},
+    title = {Helping HPC Users Specify Job Memory Requirements via Machine Learning},
+    year = {2016},
+    volume = {},
+    number = {},
+    pages = {6-13},
+    keywords = {Training;Memory management;Predictive models;Databases;Load modeling;Program processors;Data models},
+    doi = {10.1109/HUST.2016.006}
+}
+
+@inproceedings{li2019,
+    author = "Li, Xiuqiao
+and Qi, Nan
+and He, Yuanyuan
+and McMillan, Bill",
+    editor = "Abramson, David
+and de Supinski, Bronis R.",
+    title = "Practical Resource Usage Prediction Method for Large Memory Jobs in HPC Clusters",
+    booktitle = "Supercomputing Frontiers",
+    year = "2019",
+    publisher = "Springer International Publishing",
+    address = "Cham",
+    pages = "1--18",
+    abstract = "Users in high performance computing (HPC) clusters normally face challenges to specify accurate resource estimates for running their applications as batch jobs. Prediction is a common way to alleviate this complexity by using historical job records of previous runs to estimate resource usage for new coming jobs. Most of existing resource prediction methods directly build a single model to consider all of the jobs in clusters. However, people in production usage tend to only focus on the resource usage of jobs with certain patterns, e.g. jobs with large memory consumption. This paper proposes a practical resource prediction method for large memory jobs. The proposed method first tries to predict whether a job tends to use large memory size, and then predicts the final memory usage using a model which is trained by only historical large memory jobs. Using several real-world job traces collected from large production clusters of IBM Spectrum LSF customer sites, the evaluation results show that the average prediction errors can be reduced up to 40{\%} for nearly 90{\%} of large memory jobs. Meanwhile, the model training cost can be reduced over 30{\%} for the evaluated job traces.",
+    isbn = "978-3-030-18645-6"
+}
+
+@inproceedings{newaz2023,
+    author = {Newaz, Md Nahid and Mollah, Md Atiqul},
+    title = {Memory Usage Prediction of HPC Workloads Using Feature Engineering and Machine Learning},
+    year = {2023},
+    isbn = {9781450398053},
+    publisher = {Association for Computing Machinery},
+    address = {New York, NY, USA},
+    url = {https://doi.org/10.1145/3578178.3578241},
+    doi = {10.1145/3578178.3578241},
+    abstract = {In High Performance Computing (HPC) systems, numerous applications of varying scale and domain are scheduled to run concurrently, and share the available CPU and memory capacities among themselves. Applications whose run-time memory usage are not known a priori, are commonly allocated with significantly higher amounts of memory than actually needed, which leads to poor resource utilization and performance degradation of the overall system. In this paper, we disseminate our experience of performing user analysis and prediction over a large-scale resource utilization dataset to tightly estimate the memory requirements of a wide variety of applications in the Titan supercomputer system. By coupling our engineered features with random forest and XGBoost supervised machine learning techniques, our models respectively predict the correct class of memory usage in 89\% and 90\% of the validation data. Furthermore, more than 98\% of users have 95\% or better average prediction accuracy within one class tolerance range of the actual memory usage.},
+    booktitle = {Proceedings of the International Conference on High Performance Computing in Asia-Pacific Region},
+    pages = {64–74},
+    numpages = {11},
+    keywords = {High Performance Computing, Memory Allocation Prediction, Random Forest, Supervised Learning, Workload Dataset, XGBoost},
+    location = {Singapore, Singapore},
+    series = {HPCAsia '23}
 }

@@ -10,6 +10,13 @@ and (iv) data reduction studies.
 Each category reveals different facets of how shape parameters affect resource requirements, model behavior, and prediction robustness.
 All code, scripts, and output files that underlie these analyses reside in the \texttt{experiment} directory of the project repository~\cite{delucca2025experiment2results}.
 
+The rest of this section is organized as follows: subsection~\ref{subsec:pmc-results-experiment-outputs-overview} provides an overview of the experiment outputs, including the operators and experimental goals;
+subsection~\ref{subsec:pmc-results-memory-and-execution-time-profiling} explores the memory-usage trends and execution-time patterns for each operator;
+subsection~\ref{subsec:pmc-results-model-performance-overview} presents the performance of the regression models, including \ac{RMSE}, \ac{MAE}, and $R^2$ metrics;
+subsection~\ref{subsec:pmc-results-feature-selection-experiments} investigates the impact of different feature sets on model performance, revealing the most significant predictors of memory usage;
+subsection~\ref{subsec:pmc-results-data-reduction-studies} examines the effects of reducing the dataset size on model performance, identifying a sweet spot around 30 samples for training.
+Finally, subsection~\ref{subsec:pmc-conclusion} summarizes the key findings and implications of the results.
+
 \input{sections/05-predicting-memory-consumption-from-input-shapes-04-experimental-results-01-experiment-outputs-overview}
 \input{sections/05-predicting-memory-consumption-from-input-shapes-04-experimental-results-02-memory-and-execution-time-profiling}
 \input{sections/05-predicting-memory-consumption-from-input-shapes-04-experimental-results-03-model-performance-overview}

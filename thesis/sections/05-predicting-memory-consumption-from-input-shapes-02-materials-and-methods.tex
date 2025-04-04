@@ -13,8 +13,7 @@ These phases ensure consistent, reproducible, and high-quality measurements, whi
 \noindent
 \textbf{Phase 1: Data Generation.}
 The experiment begins with synthetic seismic datasets.
-In a typical seismic application, three dimensions describe the data.
-\emph{inlines}, \emph{xlines}, and \emph{samples}.
+In a typical seismic application, three dimensions describe the data: inlines, xlines, and samples.
 The script systematically enumerates shape configurations by varying these dimensions from an \texttt{INITIAL\_SIZE} to a \texttt{FINAL\_SIZE} with increments of \texttt{STEP\_SIZE}.
 For example, when the initial size equals 100, the final size equals 600, and the step size equals 100, the script generates volumes of sizes
 \(\{\,(100,100,100),\,(100,100,200),\dots,(600,600,600)\}\)
@@ -38,7 +37,7 @@ The script then processes three main operators:
 
 Each operator appears as a Docker image defined in the \texttt{Dockerfile}.
 Each container execution uses a Python script to load and process input data.
-The \texttt{traceq} library records \ac{RSS} over time, as \EBRP{shown}{discussed} in Chapter~\ref{ch:measuring-memory-consumption}.
+The \texttt{traceq} library records \ac{RSS} over time, as discussed in Chapter~\ref{ch:measuring-memory-consumption}.
 On completion, a \texttt{.prof} file stores the memory timeline and associated metadata, including timestamps and shape parameters.
 This procedure captures peak memory usage accurately.
 
@@ -121,7 +120,7 @@ They control dataset sizes, repetition counts, and output paths.
 \noindent
 \textbf{Phase 3: Results Collection and Feature Construction.}
 This phase consists in evaluating the \texttt{.prof} files output by \texttt{traceq}, extracting peak memory usage, and associating it with the input shape.
-The script identifies \EBC{inlines, xlines, and samples}{estes três termos aparecem com formatação distintas ao longo do texto - normal, itálico e negrito. Não ficou claro para mim por que eles são destacados de forma distinta. Seria bom padronizar a forma de formatar estes termos.} from filenames, notes the operator, retains the maximum time-series \ac{RSS} value, and compiles a consolidated dataframe.
+The script identifies inlines, xlines, and samples from filenames, notes the operator, retains the maximum time-series \ac{RSS} value, and compiles a consolidated dataframe.
 It also derives extended features such as total volume
 (\(\text{inlines} \times \text{xlines} \times \text{samples}\)),
 logarithmic transforms
@@ -161,18 +160,39 @@ df_features["log_volume"] = np.log2(df_features["volume"])
 \vspace{1em}
 \noindent
 \textbf{Phase 4: Model Training and Analysis.}
-The script from phase 3 trains multiple regression models using \texttt{inlines}, \texttt{xlines}, \texttt{samples}, and derived features as predictors.
-Peak memory usage acts as the target variable.
-A consistent 80/20 training/test split ensures fair comparisons.
-Envelope, \ac{GST3D}, and Gaussian Filter runs each receive separate analyses.
-Performance metrics include \ac{RMSE}~\cite{hyndman2006}, \ac{MAE}~\cite{willmott2005mae}, $R^2$~\cite{draper1998applied}, and an \EBC{accuracy score that measures the fraction of predictions within a specified relative error}{Tem que descrever como este score é calculado}.
-An \texttt{Optuna}-based~\cite{akiba2019optuna} parameter search can emphasize safe upper-bound estimates in \ac{HPC} contexts where underestimations produce critical failures.
-The following models form the basis of each comparison:
+Phase 4 trains multiple regression models using inlines, xlines, samples, and derived features as predictors.
+Peak memory usage serves as the target variable.
+An 80/20 training/test split ensures fair comparisons across Envelope, \ac{GST3D}, and Gaussian Filter runs.
+
+Four standard regression metrics evaluate model performance:
+\ac{RMSE}~\cite{hyndman2006},
+\ac{MAE}~\cite{willmott2005mae},
+\(R^2\)~\cite{draper1998applied},
+and a custom “accuracy” measure \(\mathrm{acc}\).
+These metrics form a single optimization target:
+\[
+    \texttt{score} \;=\;
+    w_\mathrm{acc}\,\cdot\,\mathrm{acc}
+    \;-\;
+    w_\mathrm{RMSE}\,\cdot\,\mathrm{RMSE}
+    \;-\;
+    w_\mathrm{MAE}\,\cdot\,\mathrm{MAE}
+    \;+\;
+    w_{R^2}\,\cdot\,R^2,
+\]
+where \(w_\mathrm{acc}, w_\mathrm{RMSE}, w_\mathrm{MAE},\) and \(w_{R^2}\) indicate how strongly the pipeline rewards or penalizes each metric.
+Maximizing \(\texttt{score}\) balances the risk of underestimating memory (which can trigger job failures) against the cost of over-provisioning (which wastes resources).
+
+The \texttt{Optuna} framework~\cite{akiba2019optuna} guides hyperparameter tuning for each model and determines suitable weights for \(\mathrm{acc}\), \(\mathrm{RMSE}\), \(\mathrm{MAE}\), and \(R^2\).
+A study is created with \(\texttt{direction}=\text{"maximize"}\); at every trial, the study trains the model, evaluates the composite score, and updates search parameters accordingly.
+The best trial parameters yield an optimal combination of hyperparameters and multi-metric weights.
+
+Regarding models, the analysis includes several families of regressors:
 
 \begin{itemize}
     \item \textbf{Linear Regression, Polynomial Regression}~\cite{hastie2009elements}\\
     These models create foundational baselines to capture the relationship between features and memory usage.
-    Linear regression indicates whether memory usage scales directly with \EBC{trace or sample counts}{não seria mais preciso dizer "any of the features, suach as trace or smaple counts"?}.
+    Linear regression indicates whether memory usage scales directly with any of the features.
     Polynomial regression extends linear models with higher-order terms to account for mild nonlinearities.
     Caution is required since purely linear fits underfit complex relationships, and high-degree polynomials risk overfitting.
 
@@ -197,7 +217,7 @@ The following models form the basis of each comparison:
     \item \textbf{Bayesian Ridge Regression}~\cite{bishop2006pattern}\\
     This extension of linear models applies Bayesian inference to estimate coefficients and yields robust predictions with uncertainty quantification.
     HPC workloads benefit from these uncertainty estimates when resource over-provisioning is less harmful than running out of memory.
-    Polynomial or interaction terms might still be necessary to represent nonlinear growth patterns. 
+    Polynomial or interaction terms might still be necessary to represent nonlinear growth patterns.
 \end{itemize}
 
 The script final Python script then visualizes memory distributions, residual plots, feature evaluations, and data-reduction experiments.
@@ -213,7 +233,7 @@ Partial dependence plots and tree-based model interpretations expose how inlines
     This standardized environment preserves consistent results by preventing version drift.
     \item \emph{\ac{CPU} Affinity:}
     The \texttt{--cpuset-cpus=0} parameter restricts execution to a single core and reduces background noise.
-    Multiple runs per dataset shape (\texttt{EXPERIMENT\_N\_RUNS}) further \EBC{stabilize measurements.}{accounts for stochatic variance?}
+    Multiple runs per dataset shape (\texttt{EXPERIMENT\_N\_RUNS}) further stabilizes performance measurements by smoothing out random fluctuations, often described as stochastic variance.
     \item \emph{Parallelization:}
     The Docker orchestration scales to multiple \ac{CPU} cores, but the design imposes single-core experiments for repeatability.
     Actual \ac{HPC} clusters manage concurrency at the scheduler level, but the core principle of shape-driven memory profiling remains applicable.

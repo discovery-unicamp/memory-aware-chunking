@@ -1,5 +1,5 @@
-\section{Conclusion}
-\label{sec:pmc-conclusion}
+\subsection{Conclusion}
+\label{subsec:pmc-conclusion}
 
 This chapter explored the relationship between seismic input shapes and operator-specific memory consumption, focusing on three major processing routines—Envelope, \ac{GST3D}, and Gaussian Filter—and detailed how varying sample sizes, selected features, and modeling pipelines affect predictive accuracy.
 Several salient findings emerged:
@@ -38,5 +38,5 @@ Overall, Chapter~\ref{sec:pmc-results} establishes that:
     \item A sample size of approximately 30–40 shape configurations provides a practical lower bound for stable memory prediction, making data collection efforts more tractable for real-world \ac{HPC} scenarios.
 \end{enumerate}
 
-With these findings, we have a clearer framework for implementing memory-aware chunking strategies: one can rely on volume-based models (potentially augmented by minimal shape features) and still maintain accurate peak \ac{RAM} \EBADD{consumption} estimates, even with relatively small training sets.
+With these findings, we have a clearer framework for implementing memory-aware chunking strategies: one can rely on volume-based models (potentially augmented by minimal shape features) and still maintain accurate peak \ac{RAM} consumption estimates, even with relatively small training sets.
 The subsequent chapter applies these insights to optimize data-parallel chunking and scheduling decisions for large-scale seismic workloads.

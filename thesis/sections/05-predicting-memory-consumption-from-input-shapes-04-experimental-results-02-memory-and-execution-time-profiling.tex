@@ -1,13 +1,13 @@
-\section{Memory and Execution-Time Profiling}
-\label{sec:pmc-results-memory-and-execution-time-profiling}
+\subsection{Memory and Execution-Time Profiling}
+\label{subsec:pmc-results-memory-and-execution-time-profiling}
 
 In this section, we focus on raw memory and execution-time measurements before discussing any modeling approach.
 By examining usage patterns, run durations, and dimension-specific behaviors, we contextualize the challenges of predicting peak memory consumption in an \ac{HPC} setting.
 
-\subsection{Linear Trends and Variability}
+\subsubsection{Linear Trends and Variability}
 \label{subsec:linear-trends-and-variability}
 
-Figure~\ref{fig:peak_memory_facet} shows how average peak memory usage tends to scale linearly with the overall volume (\(\text{inlines} \times \text{xlines} \times \text{samples}\)). 
+Figure~\ref{fig:peak_memory_facet} shows how average peak memory usage tends to scale linearly with the overall volume (\(\text{inlines} \times \text{xlines} \times \text{samples}\)).
 \EB{Para refletir: Daniel, este gráfico por si só já mostra que existe uma relação quase linear entre a feature volume e o consumo de memória destes kernels. Fiquei na dúvida se faz sentido ter toda uma discussão sobre a relação entre as outras features e o consumo de memória depois de já concluir que há uma relação simples (linear) entre a feature volume e consumo de memória.}
 The Envelope, \ac{GST3D}, and Gaussian Filter operators each display a relatively direct proportionality between volume and memory demand.
 Interestingly, larger volumes produce consistently higher yet less variable memory consumption, whereas smaller volumes display higher \ac{CV}\EBRM{(coefficient of variation)}.
@@ -35,10 +35,10 @@ Consequently, memory usage “smooths out” and increasingly reflects the opera
         \includegraphics[width=\textwidth]{assets/images/05/peak_memory_by_volume_gaussian-filter}
         \caption{Gaussian Filter: Memory usage also scales linearly but with a gentler slope than \ac{GST3D}.}
     \end{subfigure}
-    \caption{Peak memory usage by volume for Envelope, \ac{GST3D}, and Gaussian Filter. 
-        Each operator shows an approximate linear growth rate as volume increases, but the slope and variability differ.
-        \EB{Verifique se é possível usar o sw gerador de gráficos (matplotlib?) para colocar os três gráficos em uma única linha - um ao lado do outro. Dessa forma, você economizaria bastante espaço e talvez as figuras se encaixem melhor no fluxo do texto -- idealmente a figura deveria vir logo após o parágrafo que referencia ela.}
-        \EB{Se possível, também acho que seria legal relembrar o leitor o que significa o termo Volume. Talez usar como rótulo do eixo-x o termo $Volume (inline \times xline \times samples)$}
+    \caption{Peak memory usage by volume for Envelope, \ac{GST3D}, and Gaussian Filter.
+    Each operator shows an approximate linear growth rate as volume increases, but the slope and variability differ.
+    \EB{Verifique se é possível usar o sw gerador de gráficos (matplotlib?) para colocar os três gráficos em uma única linha - um ao lado do outro. Dessa forma, você economizaria bastante espaço e talvez as figuras se encaixem melhor no fluxo do texto -- idealmente a figura deveria vir logo após o parágrafo que referencia ela.}
+    \EB{Se possível, também acho que seria legal relembrar o leitor o que significa o termo Volume. Talez usar como rótulo do eixo-x o termo $Volume (inline \times xline \times samples)$}
     }
     \label{fig:peak_memory_facet}
 \end{figure*}
@@ -62,18 +62,18 @@ These combined observations suggest that volume—and more broadly, input shape�
         \includegraphics[width=\textwidth]{assets/images/05/execution_time_by_volume_gaussian-filter}
     \end{subfigure}
     \caption{
-        Execution time by volume for Envelope, \ac{GST3D}, and Gaussian Filter. 
-        All three operators show an increasing trend, reinforcing the impact of volume on processing duration. 
+        Execution time by volume for Envelope, \ac{GST3D}, and Gaussian Filter.
+        All three operators show an increasing trend, reinforcing the impact of volume on processing duration.
         \label{fig:execution_time_by_volume_facet}
     }
 \end{figure*}
 
-\subsection{Execution Time Distributions and Scaling Factor}
+\subsubsection{Execution Time Distributions and Scaling Factor}
 \label{subsec:execution-time-distributions-and-scaling}
 
 To complement the volume-based analysis, Figures~\ref{fig:ex_peak_mu_facet}(a)--(b) compare execution time and peak memory usage across all operators.
 Both metrics escalate in near-lockstep with input size.
-Figure~\ref{fig:ex_peak_mu_facet}(c) then quantifies memory scaling slopes via linear-fits for each operator’s average peak \ac{RAM} usage. 
+Figure~\ref{fig:ex_peak_mu_facet}(c) then quantifies memory scaling slopes via linear-fits for each operator’s average peak \ac{RAM} usage.
 \EB{Acho que fica melhor mostrar o slope da regressão linear em uma tabela - você poderia mostrar o $R^2$ também. Isso tornadria o gráfico menor e talvez passível de inserção logo após o parágrafo que referencia ele.}
 \ac{GST3D} stands out for having the highest slope, suggesting it holds more intermediate data structures during discontinuity detection.
 Envelope lies in the middle, while Gaussian Filter’s slope is relatively smaller, implying that it processes data blocks \EBC{more incrementally}{o que quer dizer de forma mais incremental? seria por partes? Mas todos eles não realizam o cálculo por partes? i.e., por chunks?}.
@@ -129,12 +129,12 @@ Such tails are not unexpected in \ac{HPC} environments, where system-level noise
     \label{fig:execution_time_distribution_facet}
 \end{figure*}
 
-\subsection{Dimension-Specific and Time-Progression Analysis}
+\subsubsection{Dimension-Specific and Time-Progression Analysis}
 \label{subsec:dimension-specific-and-time-progression-analysis}
 
 \EB{Como mencionei anteriormente, não está claro para mim se esta análise de tempo de execução é muito relevante.}
 
-To better understand how different axes of the seismic volume factor into resource usage, we break down memory usage by \emph{inlines}, \emph{xlines}, and \emph{samples} for the Envelope operator~(Figure~\ref{fig:memory_usage_by_configuration_envelope}).
+To better understand how different axes of the seismic volume factor into resource usage, we break down memory usage by inlines, xlines, and samples for the Envelope operator~(Figure~\ref{fig:memory_usage_by_configuration_envelope}).
 We observe that each dimension exerts a similar influence on memory consumption; no single dimension overwhelmingly dominates the Envelope’s consumption pattern.
 This outcome aligns with the notion that Envelope is an element-wise amplitude calculation, depending uniformly on the size of the entire input array.
 
@@ -150,7 +150,7 @@ This outcome aligns with the notion that Envelope is an element-wise amplitude c
         \centering
         \includegraphics[width=\textwidth]{assets/images/05/execution_time_vs_memory_envelope}
         \caption{Execution time vs. memory usage for Envelope, indicating a mild correlation (longer runs often consume more \ac{RAM}).
-            \EB{Não ficou claro para mim como este resultado dá suporte às principais conclusões do capítulo.}
+        \EB{Não ficou claro para mim como este resultado dá suporte às principais conclusões do capítulo.}
         }
     \end{subfigure}
     \hfill
@@ -158,12 +158,12 @@ This outcome aligns with the notion that Envelope is an element-wise amplitude c
         \centering
         \includegraphics[width=\textwidth]{assets/images/05/memory_usage_inlines_xlines_samples_heatmap_envelope}
         \caption{Heatmap combining inlines, xlines, and samples into a 2D view; warmer colors indicate higher memory usage.
-            \EB{Estou inferindo que o objetivo deste gráfico é mostrar que cada dimensão tem uma influência similar no consumo de memória. Se for o caso, acho que seria bom explicar o gráfico no texto e discutir quais características do gráfico levam a esta conclusão.}
+        \EB{Estou inferindo que o objetivo deste gráfico é mostrar que cada dimensão tem uma influência similar no consumo de memória. Se for o caso, acho que seria bom explicar o gráfico no texto e discutir quais características do gráfico levam a esta conclusão.}
         }
     \end{subfigure}
-    \caption{Memory usage and runtime analysis for the Envelope operator. 
-        All three dimensions appear to scale memory demand in a similar manner, and bigger shapes generally require longer processing times.
-        \label{fig:memory_usage_by_configuration_envelope}
+    \caption{Memory usage and runtime analysis for the Envelope operator.
+    All three dimensions appear to scale memory demand in a similar manner, and bigger shapes generally require longer processing times.
+    \label{fig:memory_usage_by_configuration_envelope}
     }
 \end{figure*}
 
@@ -175,13 +175,13 @@ More complex operators like \ac{GST3D} may reveal steeper or stage-based ramps, 
 \begin{figure}[htbp]
     \centering
     \includegraphics[width=\textwidth]{assets/images/05/inline_xline_memory_usage_progression_envelope}
-    \caption{Memory usage progression over time (Envelope operator) for different inlines and xlines. 
-        The consumption profile ramps up gradually rather than spiking in distinct phases.
-        \label{fig:inline_xline_memory_usage_progression_envelope}
+    \caption{Memory usage progression over time (Envelope operator) for different inlines and xlines.
+    The consumption profile ramps up gradually rather than spiking in distinct phases.
+    \label{fig:inline_xline_memory_usage_progression_envelope}
     }
 \end{figure}
 
-\subsection{Memory Safety Margins}
+\subsubsection{Memory Safety Margins}
 \label{subsec:memory-safety-margins}
 
 In real-world \ac{HPC} contexts, underestimating memory can cause abrupt job failures, while overestimation wastes resources.
@@ -216,12 +216,12 @@ Even with container-based isolation, kernel-level memory management can introduc
 Recognizing these high-percentile events is critical for designing robust pre-runtime memory estimators.
 If left unaccounted for, such transient peaks could lead to underestimation, especially for borderline volumes.
 
-\EB{Este me parece ser uma seção bem importante, já que ela discute a questão da margem de erro que devemos levar em consideração na avaliação dos modelos. Quando trabalhamos com os modelos estamos utilizando dados baseados na média ou no 95\%?} 
+\EB{Este me parece ser uma seção bem importante, já que ela discute a questão da margem de erro que devemos levar em consideração na avaliação dos modelos. Quando trabalhamos com os modelos estamos utilizando dados baseados na média ou no 95\%?}
 \EB{Para refletir: Será que não deveríamos estar usando os dados crus, e monitorar estas variações nos errors?}
 
 \EB{BTW, esta variabilidade é usada no cálculo do score que você menciona nas seções subsequentes?}
 
-\subsection{Dimension Correlations}
+\subsubsection{Dimension Correlations}
 \label{subsec:dimension-correlations}
 
 We can further investigate how dimension-specific growth patterns contribute to overall memory usage by plotting pairwise relationships between memory usage and the three shape parameters.
@@ -241,7 +241,7 @@ Nevertheless, once all three dimensions expand simultaneously, the net memory us
 These pairwise correlations, combined with the linear volume trend, underscore that each dimension matters and that polynomial or interaction-based features can help capture how memory usage evolves in less trivial cases (e.g., operators whose complexity grows nonlinearly along certain axes).
 \EB{Não ficou claro para mim como você chegou nesta conclusão.}
 
-\subsection{Summary of Observed Resource Usage}
+\subsubsection{Summary of Observed Resource Usage}
 \label{subsec:resource-usage-summary}
 
 Table~\ref{tab:operator_summary_aggregates} provides a high-level summary of all tested volume ranges, memory usage spans, and measured execution times for each operator.

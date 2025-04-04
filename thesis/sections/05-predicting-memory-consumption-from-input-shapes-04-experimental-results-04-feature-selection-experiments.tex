@@ -1,13 +1,13 @@
-\section{Feature Selection Experiments}
-\label{sec:pmc-results-feature-selection-experiments}
+\subsection{Feature Selection Experiments}
+\label{subsec:pmc-results-feature-selection-experiments}
 
 \EB{Daniel, me parece que seria mais natural apresentar o processo de seleção de features antes das seções que realizam a análise dos dados já pressupondo o uso da feature volume.}
 
 This section investigates the impact of eliminating various shape-derived features on model accuracy, with a particular focus on verifying whether \emph{volume} alone is \EBC{sufficient to predict peak memory usage}{Você já mostrou que a feature volume tem uma relação bem simples (linear) com o pico de consumo de memória.}.
-Section~\ref{sec:pmc-results-model-performance-overview} identified Gradient Boosting, Linear Regression, and Decision Tree as the best performers for Envelope, Gaussian Filter, and \ac{GST3D}, respectively.
+Section~\ref{subsec:pmc-results-model-performance-overview} identified Gradient Boosting, Linear Regression, and Decision Tree as the best performers for Envelope, Gaussian Filter, and \ac{GST3D}, respectively.
 Consequently, the experiments below use these three models when removing features.
 
-\subsection{Volume-Centric Hypothesis}
+\subsubsection{Volume-Centric Hypothesis}
 \label{subsec:feature-selection-volume-centric-hypothesis}
 
 Figure~\ref{fig:memory_vs_volume_regression_subplots} shows how tightly memory usage correlates with volume for Envelope, Gaussian Filter, and \ac{GST3D}.
@@ -35,7 +35,7 @@ This observation motivates a systematic “feature pruning” study to confirm w
     \label{fig:memory_vs_volume_regression_subplots}
 \end{figure*}
 
-\subsection{Feature Removal Process and Metrics}
+\subsubsection{Feature Removal Process and Metrics}
 \label{subsec:feature-removal-methods-and-metrics}
 
 The experiments adopted a stepwise strategy:
@@ -66,13 +66,13 @@ In nearly all cases, \emph{volume} was never dropped, confirming its primacy in 
         \hline
     \end{tabular}
     \caption{Subset of feature-removal results for Envelope, \ac{GST3D}, and Gaussian Filter.
-        \ac{RMSE} and $R^2$ remain largely stable as the number of predictors decreases, implying that volume has the dominant role.
-        \EB{Corrigir invasão de margem.}
-        \label{tab:feature_selection_minimal_impact}
+    \ac{RMSE} and $R^2$ remain largely stable as the number of predictors decreases, implying that volume has the dominant role.
+    \EB{Corrigir invasão de margem.}
+    \label{tab:feature_selection_minimal_impact}
     }
 \end{table}
 
-\subsection{Impact on RMSE, R\texorpdfstring{$^2$}{2}, and Residuals}
+\subsubsection{Impact on RMSE, R\texorpdfstring{$^2$}{2}, and Residuals}
 \label{subsec:impact-on-rmse-r2-and-residuals}
 
 Figures~\ref{fig:feature_selection_overview_part1}--\ref{fig:feature_selection_overview_part2} illustrate the marginal effect of dropping features across operators.
@@ -94,9 +94,9 @@ Both metrics exhibit negligible variations except when volume is excluded, which
         Volume stands out as indispensable.}
     \end{subfigure}
     \caption{Feature-removal impacts.
-        Volume consistently emerges as the most critical input, whereas removing others typically yields negligible performance changes.
-        \EB{Para argumentar que o volume é feature mais importante, não seria necessário mostrar que a remoção dela reduz o desempenho dos modelos?}
-        \label{fig:feature_selection_overview_part1}
+    Volume consistently emerges as the most critical input, whereas removing others typically yields negligible performance changes.
+    \EB{Para argumentar que o volume é feature mais importante, não seria necessário mostrar que a remoção dela reduz o desempenho dos modelos?}
+    \label{fig:feature_selection_overview_part1}
     }
 \end{figure*}
 
@@ -122,7 +122,7 @@ Hence, even simplified models (volume plus one or two shape parameters) are near
     \label{fig:feature_selection_overview_part2}
 \end{figure*}
 
-\subsection{Operator-Specific Breakdown}
+\subsubsection{Operator-Specific Breakdown}
 \label{subsec:operator-specific-breakdown}
 
 Figures~\ref{fig:feature_impact_operator_subplots} and~\ref{fig:residual_metrics_by_number_of_features_operator_subplots} provide per-operator plots of the incremental feature-importance measurements.
@@ -147,11 +147,11 @@ Gaussian Filter achieves a \ac{RMSE} near \(2\times10^{-5}\) with only volume.
         \caption{\ac{GST3D}}
     \end{subfigure}
     \caption{Feature-removal impact by operator.
-        Bars represent the increase in \ac{RMSE} (or other metrics) upon discarding each feature.
-        Volume is consistently the most essential.
-        \EB{Que tal usar "Number of features removed" em vez de "Number of features" no eixo-x dos gráficos?}
-        \EB{BTW, talvez fique melhor usar o mesmo eixo-y (mesmo intervalo no eixo-y) nos três gráficos.}
-        \label{fig:feature_impact_operator_subplots}
+    Bars represent the increase in \ac{RMSE} (or other metrics) upon discarding each feature.
+    Volume is consistently the most essential.
+    \EB{Que tal usar "Number of features removed" em vez de "Number of features" no eixo-x dos gráficos?}
+    \EB{BTW, talvez fique melhor usar o mesmo eixo-y (mesmo intervalo no eixo-y) nos três gráficos.}
+    \label{fig:feature_impact_operator_subplots}
     }
 \end{figure*}
 
@@ -177,13 +177,13 @@ Gaussian Filter achieves a \ac{RMSE} near \(2\times10^{-5}\) with only volume.
     \label{fig:residual_metrics_by_number_of_features_operator_subplots}
 \end{figure*}
 
-\subsection{Summary of Findings}
+\subsubsection{Summary of Findings}
 \label{subsec:feature-selection-summary}
 
 Collectively, these results support the conclusion that volume alone explains most memory usage variance in the tested seismic operators.
 Limited improvements arise from including additional geometric attributes, yet the gain is usually minor.
 Volume consistently appears in the top rank when applying \emph{SelectKBest} or other scoring schemes.
-This aligns with earlier evidence of near-linear volume scaling (Section~\ref{sec:pmc-results-memory-and-execution-time-profiling}).
+This aligns with earlier evidence of near-linear volume scaling (Section~\ref{subsec:pmc-results-memory-and-execution-time-profiling}).
 
 Practitioners seeking a lightweight memory-usage estimator can therefore rely on volume as the central input feature.
-The next section investigate further data reduction (Section~\ref{sec:pmc-results-data-reduction-studies}) to refine the broader performance picture.
+The next section investigate further data reduction (Section~\ref{subsec:pmc-results-data-reduction-studies}) to refine the broader performance picture.
