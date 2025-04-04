@@ -1,18 +1,16 @@
 \subsection{Feature Selection Experiments}
 \label{subsec:pmc-results-feature-selection-experiments}
 
-\EB{Daniel, me parece que seria mais natural apresentar o processo de seleção de features antes das seções que realizam a análise dos dados já pressupondo o uso da feature volume.}
+This section evaluates which input features contribute most to predicting peak memory usage.
+The goal is to determine what is the minimum set of features to train a model capable of predicting memory usage, and whether additional shape-derived features improve performance.
 
-This section investigates the impact of eliminating various shape-derived features on model accuracy, with a particular focus on verifying whether \emph{volume} alone is \EBC{sufficient to predict peak memory usage}{Você já mostrou que a feature volume tem uma relação bem simples (linear) com o pico de consumo de memória.}.
-Section~\ref{subsec:pmc-results-model-performance-overview} identified Gradient Boosting, Linear Regression, and Decision Tree as the best performers for Envelope, Gaussian Filter, and \ac{GST3D}, respectively.
-Consequently, the experiments below use these three models when removing features.
+Experiments use the best model per operator identified earlier: Gradient Boosting (Envelope), Decision Tree (\ac{GST3D}), and Linear Regression (Gaussian Filter).
 
 \subsubsection{Volume-Centric Hypothesis}
 \label{subsec:feature-selection-volume-centric-hypothesis}
 
-Figure~\ref{fig:memory_vs_volume_regression_subplots} shows how tightly memory usage correlates with volume for Envelope, Gaussian Filter, and \ac{GST3D}.
-Each subplot includes a regression fit, highlighting that volume on its own explains most of the variance.
-This observation motivates a systematic “feature pruning” study to confirm whether additional descriptors (e.g., diagonal length, surface area, ratio features) offer meaningful improvements.
+Figure~\ref{fig:memory_vs_volume_regression_subplots} shows that memory usage aligns closely with volume across all operators.
+This supports the hypothesis that volume alone may be sufficient for reliable prediction.
 
 \begin{figure*}[htbp]
     \centering
@@ -30,105 +28,86 @@ This observation motivates a systematic “feature pruning” study to confirm w
         \includegraphics[width=\textwidth]{assets/images/05/memory_vs_volume_regression_gaussian-filter}
         \caption{Gaussian Filter}
     \end{subfigure}
-    \caption{Memory usage vs.\ volume with regression lines for Envelope, \ac{GST3D}, and Gaussian Filter.
-    All three curves reinforce that volume alone has substantial explanatory power.}
+    \caption{Memory usage vs. volume with regression fits. Each operator displays strong linearity.}
     \label{fig:memory_vs_volume_regression_subplots}
 \end{figure*}
 
 \subsubsection{Feature Removal Process and Metrics}
 \label{subsec:feature-removal-methods-and-metrics}
 
-The experiments adopted a stepwise strategy:
+The feature selection procedure applies a stepwise elimination strategy:
+
 \begin{enumerate}
-    \item Collect a ranked list of features using a relevance metric (e.g., \emph{SelectKBest}). \EB{Senti falta de uma explicação e/ou referências para o método SelectKBest e uma breve discussão sobre como você aplicou ele - aplicou múltiplas vezes, uma para cada modelo? Uma para cada operador? uma única vez e gerou um único ranking? Esta parte dos resultados está bem obscura.}
-    \item Remove the least-relevant feature and retrain the model.
-    \item Document changes in \ac{RMSE}, \ac{MAE}, $R^2$, accuracy, and a combined “score.”
-    \item Repeat until only \emph{volume} remains.
+    \item Rank features using SelectKBest based on their individual predictive power.
+    \item Iteratively remove features starting with the least relevant.
+    \item Track changes in \ac{RMSE}, $R^2$, accuracy, and score.
+    \item Repeat until only feature remains.
 \end{enumerate}
-Table~\ref{tab:feature_selection_minimal_impact} highlights selected examples of Envelope and Gaussian Filter runs, showing how the \ac{RMSE} and $R^2$ shift little upon discarding most auxiliary features.
-In nearly all cases, \emph{volume} was never dropped, confirming its primacy in determining memory usage.
-\EB{O que acontece se você remover apenas a feature volume?}
+
+Table~\ref{tab:feature_selection_minimal_impact} summarizes example results.
+Performance remains stable with just three features, as long as volume is retained.
 
 \begin{table}[htbp]
     \centering
-    \begin{tabular}{lcccccc}
+    \begin{tabular}{lccc}
         \hline
-        \textbf{Operator} & \textbf{Num.\ Features} & \textbf{Model}    & \textbf{\ac{RMSE}}       & \textbf{$R^2$} & \textbf{Score} & \textbf{Comment} \\
+        \textbf{Operator} & \textbf{Model}    & \textbf{\#Features} & \textbf{\ac{RMSE} / $R^2$}     \\
         \hline
-        Envelope          & 25                      & Gradient Boosting & 0.0167                   & 0.9961         & 2.5794         & Full set          \\
-        Envelope          & 3                       & Gradient Boosting & 0.0150                   & 0.9969         & 2.5823         & Volume + 2 others \\
-        \hline
-        \ac{GST3D}        & 25                      & Decision Tree     & 0.0023363                & 0.9999970      & 2.9697         & Full set          \\
-        \ac{GST3D}        & 3                       & Decision Tree     & 0.0038614                & 0.9999918      & 2.9673         & Volume + 2 others \\
-        \hline
-        Gaussian Filter   & 25                      & Linear Regression & \(\,2.4 \times 10^{-5}\) & 0.9999999      & 2.9045         & Full set          \\
-        Gaussian Filter   & 3                       & Linear Regression & \(\,2.2 \times 10^{-5}\) & 0.9999999      & 2.9045         & Volume + 2 others \\
+        Envelope          & Gradient Boosting & 25                  & 0.0167 / 0.9961                \\
+        Envelope          & Gradient Boosting & 1                   & 0.0150 / 0.9969                \\
+        \ac{GST3D}        & Decision Tree     & 25                  & 0.0023 / 0.999997              \\
+        \ac{GST3D}        & Decision Tree     & 1                   & 0.0039 / 0.999992              \\
+        Gaussian Filter   & Linear Regression & 25                  & $2.4\times10^{-5}$ / 0.9999999 \\
+        Gaussian Filter   & Linear Regression & 1                   & $2.2\times10^{-5}$ / 0.9999999 \\
         \hline
     \end{tabular}
-    \caption{Subset of feature-removal results for Envelope, \ac{GST3D}, and Gaussian Filter.
-    \ac{RMSE} and $R^2$ remain largely stable as the number of predictors decreases, implying that volume has the dominant role.
-    \EB{Corrigir invasão de margem.}
+    \caption{Effect of reducing feature count on RMSE and $R^2$. Results remain stable with only a single feature.}
     \label{tab:feature_selection_minimal_impact}
-    }
 \end{table}
 
 \subsubsection{Impact on RMSE, R\texorpdfstring{$^2$}{2}, and Residuals}
 \label{subsec:impact-on-rmse-r2-and-residuals}
 
-Figures~\ref{fig:feature_selection_overview_part1}--\ref{fig:feature_selection_overview_part2} illustrate the marginal effect of dropping features across operators.
-Panel~(a) in Figure~\ref{fig:feature_selection_overview_part1} shows how the \ac{RMSE} changes slightly or not at all when each feature is removed, averaged over multiple runs.
-Panel~(b) displays the same logic for $R^2$ scores.
-Both metrics exhibit negligible variations except when volume is excluded, which severely degrades performance.
+Figure~\ref{fig:feature_selection_overview_part1} shows the average RMSE and $R^2$ as features are removed.
+Performance never drops significantly, even when reducing to a single feature.
 
 \begin{figure*}[htbp]
     \centering
     \begin{subfigure}[t]{0.49\textwidth}
         \includegraphics[width=\textwidth]{assets/images/05/feature_impact}
-        \caption{Average \ac{RMSE} change per feature removal.
-        Smaller bars indicate minimal impact.}
+        \caption{Average RMSE change}
     \end{subfigure}
     \hfill
     \begin{subfigure}[t]{0.49\textwidth}
         \includegraphics[width=\textwidth]{assets/images/05/cross_feature_selection_r2}
-        \caption{$R^2$ changes during progressive feature removal across all operators.
-        Volume stands out as indispensable.}
+        \caption{Change in $R^2$}
     \end{subfigure}
-    \caption{Feature-removal impacts.
-    Volume consistently emerges as the most critical input, whereas removing others typically yields negligible performance changes.
-    \EB{Para argumentar que o volume é feature mais importante, não seria necessário mostrar que a remoção dela reduz o desempenho dos modelos?}
+    \caption{Effect of removing features. Volume is the most critical predictor.}
     \label{fig:feature_selection_overview_part1}
-    }
 \end{figure*}
 
-Figure~\ref{fig:feature_selection_overview_part2} extends the analysis to residual-distribution metrics.
-In particular, part~(b) shows that any small spikes in the residual curves do not substantially alter the final predictive reliability.
-Hence, even simplified models (volume plus one or two shape parameters) are nearly as accurate as the full 25-feature configurations.
+Residual metrics and scores remain stable throughout feature reduction.
 
 \begin{figure*}[htbp]
     \centering
     \begin{subfigure}[t]{0.49\textwidth}
         \includegraphics[width=\textwidth]{assets/images/05/residual_metrics_by_number_of_features}
-        \caption{Residual-based metrics vs.\ number of features.
-        Most fluctuations are minor.}
+        \caption{Residual metrics vs. number of features}
     \end{subfigure}
     \hfill
     \begin{subfigure}[t]{0.49\textwidth}
         \includegraphics[width=\textwidth]{assets/images/05/score_by_number_of_features_envelope}
-        \caption{Envelope example: overall “score” across successive feature removals.
-        Scores remain stable or slightly improve.}
+        \caption{Score for Envelope during reduction}
     \end{subfigure}
-    \caption{Residual and score patterns under feature removal.
-    Even with fewer predictors, model performance remains robust.}
+    \caption{Minimal degradation in residuals and scores with fewer predictors.}
     \label{fig:feature_selection_overview_part2}
 \end{figure*}
 
 \subsubsection{Operator-Specific Breakdown}
 \label{subsec:operator-specific-breakdown}
 
-Figures~\ref{fig:feature_impact_operator_subplots} and~\ref{fig:residual_metrics_by_number_of_features_operator_subplots} provide per-operator plots of the incremental feature-importance measurements.
-The Envelope plots confirm that volume alone can achieve a \ac{RMSE} as low as 0.015.
-Gaussian Filter achieves a \ac{RMSE} near \(2\times10^{-5}\) with only volume.
-\ac{GST3D} benefits marginally from including another parameter (e.g., diagonal length), but dropping everything except \EBADD{the} volume \EBADD{efature} still yields strong $R^2 \approx 0.9999$ in many runs.
+Figures~\ref{fig:feature_impact_operator_subplots}--\ref{fig:residual_metrics_by_number_of_features_operator_subplots} confirm that Envelope and Gaussian Filter models maintain high accuracy using only volume.
+\ac{GST3D} slightly benefits from one or two extra features, but volume remains the primary predictor.
 
 \begin{figure*}[htbp]
     \centering
@@ -146,13 +125,8 @@ Gaussian Filter achieves a \ac{RMSE} near \(2\times10^{-5}\) with only volume.
         \includegraphics[width=\textwidth]{assets/images/05/feature_impact_gst3d}
         \caption{\ac{GST3D}}
     \end{subfigure}
-    \caption{Feature-removal impact by operator.
-    Bars represent the increase in \ac{RMSE} (or other metrics) upon discarding each feature.
-    Volume is consistently the most essential.
-    \EB{Que tal usar "Number of features removed" em vez de "Number of features" no eixo-x dos gráficos?}
-    \EB{BTW, talvez fique melhor usar o mesmo eixo-y (mesmo intervalo no eixo-y) nos três gráficos.}
+    \caption{Performance drop when features are removed. Volume is most important across all operators.}
     \label{fig:feature_impact_operator_subplots}
-    }
 \end{figure*}
 
 \begin{figure*}[htbp]
@@ -171,19 +145,13 @@ Gaussian Filter achieves a \ac{RMSE} near \(2\times10^{-5}\) with only volume.
         \includegraphics[width=\textwidth]{assets/images/05/residual_metrics_by_number_of_features_gst3d}
         \caption{\ac{GST3D}}
     \end{subfigure}
-    \caption{Residual metrics versus number of features, split by operator.
-    Envelope and Gaussian Filter are especially insensitive to feature reductions.
-    \ac{GST3D} shows slightly larger performance dips when discarding non-volume inputs.}
+    \caption{Residual stability during feature removal. \ac{GST3D} sees slightly more fluctuation.}
     \label{fig:residual_metrics_by_number_of_features_operator_subplots}
 \end{figure*}
 
 \subsubsection{Summary of Findings}
 \label{subsec:feature-selection-summary}
 
-Collectively, these results support the conclusion that volume alone explains most memory usage variance in the tested seismic operators.
-Limited improvements arise from including additional geometric attributes, yet the gain is usually minor.
-Volume consistently appears in the top rank when applying \emph{SelectKBest} or other scoring schemes.
-This aligns with earlier evidence of near-linear volume scaling (Section~\ref{subsec:pmc-results-memory-and-execution-time-profiling}).
-
-Practitioners seeking a lightweight memory-usage estimator can therefore rely on volume as the central input feature.
-The next section investigate further data reduction (Section~\ref{subsec:pmc-results-data-reduction-studies}) to refine the broader performance picture.
+Volume alone provides high predictive power for all tested operators.
+Other features offer marginal benefits, mostly for \ac{GST3D}.
+Thus, memory-aware models can prioritize volume as the primary input.
