@@ -1,0 +1,14 @@
+*
+**/*
+
+!.gitignore
+
+!notebooks
+
+!results
+!results/20250331101842
+!results/20250331101842/*
+!results/20250331101842/*/**
+results/20250331101842/results/operators/*/results/profile_history.csv
+
+**/*.segy
