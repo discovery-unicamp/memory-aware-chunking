@@ -31,12 +31,13 @@ RUN apt-get update && \
 ARG HOST_UID=1000
 ARG HOST_GID=1000
 
-RUN addgroup --gid ${HOST_GID} experiment && \
-    adduser --uid ${HOST_UID} --gid ${HOST_GID} --disabled-password --gecos "" experiment
+COPY --from=common scripts/create-container-user.sh /usr/local/bin/create-container-user.sh
 
-USER experiment
+RUN chmod +x /usr/local/bin/create-container-user.sh && \
+    HOST_UID=$HOST_UID HOST_GID=$HOST_GID /usr/local/bin/create-container-user.sh
 
 WORKDIR /experiment
+USER ${HOST_UID}:${HOST_GID}
 
 COPY --from=builder /usr/local/lib/python3.13/site-packages /usr/local/lib/python3.13/site-packages
 COPY --from=builder /usr/local/bin /usr/local/bin

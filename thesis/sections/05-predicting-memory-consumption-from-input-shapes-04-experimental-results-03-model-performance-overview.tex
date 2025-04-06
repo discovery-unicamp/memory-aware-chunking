@@ -28,14 +28,14 @@ Table~\ref{tab:performance_summary} highlights the best-performing model per ope
     \centering
     \begin{tabular}{lccc}
         \hline
-        \textbf{Operator} & \textbf{Best Model} & \textbf{Score} & \textbf{Note}                \\
+        \textbf{Operator} & \textbf{Best Model} & \textbf{Score} & \textbf{Note}                                 \\
         \hline
-        Envelope          & Gradient Boosting   & 2.579          & Low RMSE, stable predictions \\
-        \ac{GST3D}        & Decision Tree       & 2.970          & Top $R^2$, low residuals     \\
-        Gaussian Filter   & Linear Regression   & 2.904          & Similar to Elastic Net       \\
+        Envelope          & Linear Regression   & 2.900          & Edges out Elastic Net, stable predictions     \\
+        \ac{GST3D}        & Linear Regression   & 2.349          & Top $R^2$, low residuals                      \\
+        Gaussian Filter   & Elastic Net         & 2.990          & Just ahead of Linear Regression, very similar \\
         \hline
     \end{tabular}
-    \caption{Top models by score for each operator.}
+    \caption{Updated top models and scores from the new CSV data.}
     \label{tab:performance_summary}
 \end{table}
 

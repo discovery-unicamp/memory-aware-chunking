@@ -84,12 +84,12 @@ Since we can see a cler linear pattern, table~\ref{tab:scaling_slopes_summary} l
         \hline
         \textbf{Operator} & \textbf{Memory Slope (GB/volume)} & \textbf{$R^2$} \\
         \hline
-        Envelope          & 0.000027                          & 0.996          \\
-        \ac{GST3D}        & 0.000128                          & 0.998          \\
-        Gaussian Filter   & 0.000011                          & 0.994          \\
+        Envelope          & 0.000026                          & 0.997          \\
+        \ac{GST3D}        & 0.000226                          & 0.999          \\
+        Gaussian Filter   & 0.000008                          & 0.995          \\
         \hline
     \end{tabular}
-    \caption{Linear regression slope and $R^2$ for peak memory vs. volume.}
+    \caption{Updated linear regression slope and $R^2$ for peak memory vs.\ volume, based on the new data.}
     \label{tab:scaling_slopes_summary}
 \end{table}
 
@@ -116,14 +116,26 @@ The accompanying heatmap (part~(b)) visually confirms this uniformity: increasin
     \label{fig:memory_usage_by_configuration_envelope}
 \end{figure*}
 
-\subsubsection{Memory Safety Margins}
+\subsubsection{Memory Safety Margins and Aspect Analysis}
 \label{subsec:memory-safety-margins}
 
-Figure~\ref{fig:memory_safety_margin} compares mean and 95th-percentile memory usage.
-Significant deviations occur even at fixed volumes, indicating high intra-volume variability likely caused by shape permutations (e.g., $(20,10,10)$ vs. $(10,20,10)$).
+Figure~\ref{fig:memory_safety_margin} shows a substantial gap between the average memory usage and the 95\% percentile for Envelope, \ac{GST3D}, and Gaussian Filter.
+Two possible causes explain this discrepancy:
+(1) different shapes that map to the same volume (e.g., $100$ $\times$ $300$ $\times$ $200$ vs. $300$ $\times$ $100$ $\times$ $200$) may exhibit distinct memory consumption, or
+(2) early experiment runs may incur higher overhead, as discussed in Chapter~\ref{ch:measuring-memory-consumption}.
 
-This reinforces the need to treat the full shape tuple, not just volume, when assessing outlier behavior.
-Nonetheless, models trained on volume alone perform well (Section~\ref{subsec:pmc-results-model-performance-overview}), indicating that these spikes are rare enough to have limited impact on global fit.
+To investigate whether varying shape dimensions (while fixing the same total volume) leads to large memory differences, Figure~\ref{fig:memory_by_volume_aspect} bins each operator's memory usage by volume and aspect-ratio ranges.
+The aspect ratio
+\[
+    \text{Aspect} \;=\; \frac{\text{inlines}}{\text{xlines}}
+\]
+is grouped into intervals (\textless0.5, 0.5--1, 1--2, 2--5, \textgreater5).
+The boxplots reveal no pronounced sensitivity to aspect-ratio changes: curves in each volume bin overlap substantially, regardless of whether the shape is long and narrow or nearly cubic.
+Consequently, shape permutations at a fixed volume do not appear to cause the large jump from average to 95\% percentile.
+
+These observations indicate that overhead in the earliest runs is the most likely explanation for high outlier memory usage.
+In other words, most runs stay near the mean, while certain initial sessions consume disproportionately more memory due to initialization overhead or caching.
+The spikes in Figure~\ref{fig:memory_safety_margin} thus represent comparatively rare events that can inflate the 95\% percentile above the mean.
 
 \begin{figure*}[htbp]
     \centering
@@ -141,8 +153,28 @@ Nonetheless, models trained on volume alone perform well (Section~\ref{subsec:pm
         \includegraphics[width=\textwidth]{assets/images/05/memory_safety_margin_gaussian-filter}
         \caption{Gaussian Filter}
     \end{subfigure}
-    \caption{Memory safety margins. The 95th-percentile values often exceed the mean, emphasizing the importance of accounting for peak variability.}
+    \caption{Memory safety margins comparing mean and 95\% percentile. Overheads in initial runs or shape-induced variability can inflate peak usage within the same volume bin.}
     \label{fig:memory_safety_margin}
+\end{figure*}
+
+\begin{figure*}[htbp]
+    \centering
+    \begin{subfigure}[t]{0.32\textwidth}
+        \includegraphics[width=\textwidth]{assets/images/05/memory_by_volume_aspect_envelope}
+        \caption{Envelope}
+    \end{subfigure}
+    \hfill
+    \begin{subfigure}[t]{0.32\textwidth}
+        \includegraphics[width=\textwidth]{assets/images/05/memory_by_volume_aspect_gst3d}
+        \caption{\ac{GST3D}}
+    \end{subfigure}
+    \hfill
+    \begin{subfigure}[t]{0.32\textwidth}
+        \includegraphics[width=\textwidth]{assets/images/05/memory_by_volume_aspect_gaussian-filter}
+        \caption{Gaussian Filter}
+    \end{subfigure}
+    \caption{Memory usage by volume bin and aspect ratio. The boxes overlap substantially in each bin, indicating that varying shape dimensions (at fixed volume) does not drive the 95\% percentile gap shown in Figure\,\ref{fig:memory_safety_margin}.}
+    \label{fig:memory_by_volume_aspect}
 \end{figure*}
 
 \subsubsection{Dimension Correlations}
@@ -171,13 +203,13 @@ All operators reflect the volume-based trend discussed previously.
 
 \begin{table}[htbp]
     \centering
-    \begin{tabular}{lcccc}
+    \begin{tabular}{lccc}
         \hline
         \textbf{Operator} & \textbf{Volume Range}    & \textbf{Peak Mem. (GB)} & \textbf{Exec. Time (s)} \\
         \hline
-        Envelope          & $10^6 \to 6.4\times10^7$ & 0.10 -- 1.76            & 0.0106 -- 0.5025        \\
-        \ac{GST3D}        & $10^6 \to 2.7\times10^7$ & 0.31 -- 6.12            & 0.2475 -- 7.75          \\
-        Gaussian Filter   & $10^6 \to 6.4\times10^7$ & 0.10 -- 0.57            & 0.0232 -- 1.22          \\
+        Envelope          & $10^6 \to 5.1\times10^8$ & 0.13 – 13.45            & 0.19 – 32.03            \\
+        \ac{GST3D}        & $10^6 \to 5.1\times10^8$ & 0.33 – 115.64           & 0.80 – 402.30           \\
+        Gaussian Filter   & $10^6 \to 5.1\times10^8$ & 0.11 – 3.92             & 0.17 – 46.23            \\
         \hline
     \end{tabular}
     \caption{Resource usage summary for Envelope, \ac{GST3D}, and Gaussian Filter. Volume is in number of elements.}

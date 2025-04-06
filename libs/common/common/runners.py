@@ -92,6 +92,8 @@ def run_isolated_container(
         volumes=dind_container_volumes,
         environment={
             "DOCKER_TLS_CERTDIR": "",
+            "HOST_UID": f"{os.getuid()}",
+            "HOST_GID": f"{os.getgid()}",
             "EXPERIMENT_IMAGE_TAG": experiment_image_tag,
             "EXPERIMENT_DOCKERFILE_PATH": experiment_dockerfile_path,
             "EXPERIMENT_BUILD_CONTEXT": experiment_container_build_context,

@@ -100,21 +100,22 @@ Above that range, model performance saturates and does not improve significantly
     \label{fig:score_by_sample_size_operators}
 \end{figure*}
 
+
 \begin{table}[htbp]
     \centering
     \begin{tabular}{lccc}
         \hline
         \textbf{Operator} & \textbf{\#Samples} & \textbf{\ac{RMSE}} & \textbf{$R^2$} \\
         \hline
-        Envelope          & 64                 & 0.0170             & 0.9959         \\
-        Envelope          & 34                 & 0.0217             & 0.9926         \\
-        Envelope          & 11                 & 0.2463             & 0.8805         \\
-        \ac{GST3D}        & 54                 & 0.2371             & 0.9691         \\
-        \ac{GST3D}        & 29                 & 0.3689             & 0.9251         \\
-        \ac{GST3D}        & 11                 & 1.1042             & 0.7684         \\
-        Gaussian Filter   & 64                 & $2.4\times10^{-5}$ & 0.9999999      \\
-        Gaussian Filter   & 34                 & $2.9\times10^{-5}$ & 0.9999998      \\
-        Gaussian Filter   & 11                 & $1.0\times10^{-4}$ & 0.9999997      \\
+        Envelope          & 512                & 0.0019             & 0.9999         \\
+        Envelope          & 91                 & 0.0017             & 0.9999         \\
+        Envelope          & 11                 & 0.0030             & 0.9999         \\
+        \ac{GST3D}        & 496                & 0.0057             & 0.9999         \\
+        \ac{GST3D}        & 99                 & 0.0037             & 0.9999         \\
+        \ac{GST3D}        & 11                 & 0.0110             & 0.9999         \\
+        Gaussian Filter   & 512                & 0.0001             & 0.9999         \\
+        Gaussian Filter   & 91                 & 0.0001             & 0.9999         \\
+        Gaussian Filter   & 11                 & 0.0001             & 0.9999         \\
         \hline
     \end{tabular}
     \caption{Selected results from data-reduction study. Performance degrades most notably below 30 samples.}

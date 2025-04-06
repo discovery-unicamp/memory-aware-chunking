@@ -51,17 +51,17 @@ Performance remains stable with just three features, as long as volume is retain
     \centering
     \begin{tabular}{lccc}
         \hline
-        \textbf{Operator} & \textbf{Model}    & \textbf{\#Features} & \textbf{\ac{RMSE} / $R^2$}     \\
+        \textbf{Operator} & \textbf{Model}    & \textbf{\#Features} & \textbf{\ac{RMSE} / $R^2$} \\
         \hline
-        Envelope          & Gradient Boosting & 25                  & 0.0167 / 0.9961                \\
-        Envelope          & Gradient Boosting & 1                   & 0.0150 / 0.9969                \\
-        \ac{GST3D}        & Decision Tree     & 25                  & 0.0023 / 0.999997              \\
-        \ac{GST3D}        & Decision Tree     & 1                   & 0.0039 / 0.999992              \\
-        Gaussian Filter   & Linear Regression & 25                  & $2.4\times10^{-5}$ / 0.9999999 \\
-        Gaussian Filter   & Linear Regression & 1                   & $2.2\times10^{-5}$ / 0.9999999 \\
+        Envelope          & Linear Regression & 25                  & 0.001 / 0.999              \\
+        Envelope          & Linear Regression & 1                   & 0.002 / 0.999              \\
+        \ac{GST3D}        & Linear Regression & 25                  & 0.005 / 0.999              \\
+        \ac{GST3D}        & Linear Regression & 1                   & 0.050 / 0.999              \\
+        Gaussian Filter   & Elastic Net       & 25                  & 0.001 / 0.999              \\
+        Gaussian Filter   & Elastic Net       & 1                   & 0.001 / 0.999              \\
         \hline
     \end{tabular}
-    \caption{Effect of reducing feature count on RMSE and $R^2$. Results remain stable with only a single feature.}
+    \caption{Revised RMSE and $R^2$ after reducing feature count from 25 to just 1, based on latest CSV data.}
     \label{tab:feature_selection_minimal_impact}
 \end{table}
 
