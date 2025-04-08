@@ -4,9 +4,12 @@
 !.gitignore
 
 !notebooks
-!notebooks/01-memory-profile-20250406153718
-!notebooks/01-memory-profile-20250406153718/*
-!notebooks/01-memory-profile-20250406153718/*/**
+!notebooks/01-memory-profile-20250406220123
+!notebooks/01-memory-profile-20250406220123/*
+!notebooks/01-memory-profile-20250406220123/*/**
+!notebooks/02-predictive-model-20250408011731
+!notebooks/02-predictive-model-20250408011731/*
+!notebooks/02-predictive-model-20250408011731/*/**
 
 !results
 !results/20250331101842
