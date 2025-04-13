@@ -48,7 +48,7 @@ OPERATORS_DIR = os.getenv("OPERATOR_DIR", f"{RESULTS_DIR}/operators")
 PROFILER = os.getenv("PROFILER", "kernel")
 TEST_SIZE = float(os.getenv("TEST_SIZE", "0.2"))
 ACCURACY_THRESHOLD = float(os.getenv("ACCURACY_THRESHOLD", "0.05"))
-SCORE_ACCEPTANCE_THRESHOLD = float(os.getenv("SCORE_ACCEPTANCE_THRESHOLD", "0.05"))
+SCORE_ACCEPTANCE_THRESHOLD = float(os.getenv("SCORE_ACCEPTANCE_THRESHOLD", "0.1"))
 MODELS_TO_EVALUATE = os.getenv(
     "MODELS_TO_EVALUATE",
     "linear_regression,polynomial_regression,decision_tree,random_forest,"
