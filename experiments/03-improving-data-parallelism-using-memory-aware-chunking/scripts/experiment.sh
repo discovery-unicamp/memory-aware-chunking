@@ -1,4 +1,4 @@
-#!/usr/bin/env sh
+#!/usr/bin/env bash
 
 ################################################################################
 # run_experiment_memory_aware_chunking.sh
@@ -36,7 +36,7 @@ DATASET_STEP_SIZE="${DATASET_STEP_SIZE:-100}"
 # Worker scenarios
 WORKER_SCENARIOS="${WORKER_SCENARIOS:-single:1,two:2,smalln:4,bign:8}"
 # Chunking modes
-CHUNKING_MODES="${CHUNKING_MODES:-auto,evenly-split,memaware}"
+CHUNKING_MODES="${CHUNKING_MODES:-auto,evenly_split,memaware}"
 # GST3D model file
 GST3D_MODEL_FILE="${GST3D_MODEL_FILE:-${ROOT_DIR}/experiments/02-predicting-memory-consumption-from-input-shapes/out/results/20250331101842/best_models/gst3d.pkl}"
 
@@ -122,9 +122,9 @@ docker run \
   docker:28.0.1-dind \
   "/workspace/experiment.sh"
 
-#################################################################################
-## STEP 2: RUN SCENARIOS ON EACH SEG-Y FILE
-#################################################################################
+################################################################################
+# STEP 2: RUN SCENARIOS ON EACH SEG-Y FILE
+################################################################################
 IFS=',' read -r -a scenario_array <<< "${WORKER_SCENARIOS}"
 IFS=',' read -r -a chunking_array <<< "${CHUNKING_MODES}"
 
@@ -222,25 +222,35 @@ docker run \
 #################################################################################
 ## STEP 4: ANALYZE RESULTS
 #################################################################################
-#echo
-#echo "Analyzing the results..."
-#
-#docker run --rm --privileged \
-#  --cpuset-cpus="${CPUSET_CPUS}" \
-#  -v "${DIND_VOLUME_NAME}:/var/lib/docker:rw" \
-#  -v "${EXPERIMENT_BUILD_CONTEXT}:/mnt/experiment:ro" \
-#  -v "${OUTPUT_DIR}:/mnt/experiment_out:rw" \
-#  --env DOCKER_TLS_CERTDIR="" \
-#  --env HOST_UID="${HOST_UID}" \
-#  --env HOST_GID="${HOST_GID}" \
-#  --env EXPERIMENT_IMAGE_TAG="${EXPERIMENT_IMAGE_TAG}" \
-#  --env EXPERIMENT_COMMAND="analyze_results.py" \
-#  --env EXPERIMENT_ENV=" \
-#    -e OUTPUT_DIR=/experiment_out \
-#  " \
-#  --env EXPERIMENT_VOLUMES="-v /mnt/experiment_out:/experiment_out:rw" \
-#  docker:28.0.1-dind \
-#  "/workspace/experiment.sh"
+echo
+echo "Analyzing the results..."
+
+docker run \
+  --rm \
+  --privileged \
+  --entrypoint /bin/sh \
+  --cpuset-cpus="${CPUSET_CPUS}" \
+  -v "${DIND_VOLUME_NAME}:/var/lib/docker:rw" \
+  -v "${ROOT_DIR}/libs/common/scripts:/workspace:ro" \
+  -v "${EXPERIMENT_BUILD_CONTEXT}:/mnt${EXPERIMENT_BUILD_CONTEXT}:ro" \
+  -v "${EXPERIMENT_COMMON_BUILD_CONTEXT}:/mnt${EXPERIMENT_COMMON_BUILD_CONTEXT}:ro" \
+  -v "${OUTPUT_DIR}:/mnt${OUTPUT_DIR}:rw" \
+  --env DOCKER_TLS_CERTDIR="" \
+  --env HOST_UID="${HOST_UID}" \
+  --env HOST_GID="${HOST_GID}" \
+  --env EXPERIMENT_IMAGE_TAG="${EXPERIMENT_IMAGE_TAG}" \
+  --env EXPERIMENT_DOCKERFILE_PATH="/mnt${EXPERIMENT_DOCKERFILE_PATH}" \
+  --env EXPERIMENT_BUILD_CONTEXT="/mnt${EXPERIMENT_BUILD_CONTEXT}" \
+  --env EXPERIMENT_EXTRA_CONTEXTS="--build-context common=/mnt${EXPERIMENT_COMMON_BUILD_CONTEXT}" \
+  --env EXPERIMENT_N_RUNS="1" \
+  --env EXPERIMENT_CPUSET_CPUS="${CPUSET_CPUS}" \
+  --env EXPERIMENT_COMMAND="analyze_results.py" \
+  --env EXPERIMENT_ENV=" \
+    -e OUTPUT_DIR=/experiment/out \
+  " \
+  --env EXPERIMENT_VOLUMES="-v /mnt${OUTPUT_DIR}:/experiment/out:rw" \
+  docker:28.0.1-dind \
+  "/workspace/experiment.sh"
 
 echo
 echo "Memory-Aware Chunking experiment complete!"

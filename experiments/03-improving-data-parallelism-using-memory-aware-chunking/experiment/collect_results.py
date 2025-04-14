@@ -14,7 +14,7 @@ def parse_filename(filename: str):
       <inlines>-<xlines>-<samples>-<chunking_mode>-<n_workers>-<timestamp>-<random_id>.json
 
     Returns a tuple:
-      (inlines, xlines, samples, chunking_mode, n_workers, timestamp, random_id)
+      (inlines, xlines, samples, chunk_mode, worker_count, timestamp, random_id)
 
     or None if it doesn't match the pattern.
     """
@@ -60,26 +60,12 @@ def main():
     detail_data = []
 
     # We'll keep track of all (shape, chunk_mode) combos and all worker_counts that appear
-    # for that shape, across all chunk_modes, so we can fill in missing combos as OOM.
-    #
-    # data_catalog[ (inlines, xlines, samples) ] = {
-    #     "all_workers": set of all worker_counts across all chunk_modes,
-    #     "chunk_modes": {
-    #        chunk_mode_1: set_of_worker_counts,
-    #        chunk_mode_2: ...
-    #     }
-    # }
     data_catalog = defaultdict(
         lambda: {"all_workers": set(), "chunk_modes": defaultdict(set)}
     )
 
-    # We'll store actual JSON-run-based summary in a dictionary keyed by
-    # (inlines, xlines, samples, chunk_mode, worker_count, timestamp, random_id).
-    # We keep them separate from the "catalog" used to fill OOM entries.
-    # That way we can handle multiple runs for the same combination if needed.
+    # We'll store actual JSON-run-based summary in a dictionary keyed by the shape+params
     actual_summary_entries = {}
-
-    # detail_entries simply remain a list, because it doesn't need OOM lines
     detail_entries_list = []
 
     # -----------------------------
@@ -89,11 +75,10 @@ def main():
     for filename in sorted(all_files):
         parsed = parse_filename(filename)
         if not parsed:
-            # If a file doesn't match our naming scheme, skip or log
             print(f"[collect_results] Skipping '{filename}' (doesn't match pattern).")
             continue
 
-        inlines, xlines, samples, chunk_mode, worker_count, ts, rnd_id = parsed
+        (inlines, xlines, samples, chunk_mode, worker_count, ts, rnd_id) = parsed
         filepath = os.path.join(profiles_dir, filename)
 
         # Update the "catalog" with the shape/chunking/worker_count
@@ -115,8 +100,7 @@ def main():
         execution_time = data_section.get("execution_time")  # float or None
         memory_usage = data_section.get("memory_usage", {})
 
-        # If memory_usage is empty, that might indicate a partial or OOM run
-        # but let's store an entry anyway (the user can see oom_or_failed = True)
+        # If memory_usage is empty, we treat it as OOM or partial failure
         if not memory_usage:
             summary_data.append(
                 {
@@ -134,15 +118,12 @@ def main():
                     "oom_or_failed": True,
                 }
             )
-            # Save to dictionary form
             actual_summary_entries[
                 (inlines, xlines, samples, chunk_mode, worker_count, ts, rnd_id)
             ] = summary_data[-1]
-            # No "detail_data" for OOM
             continue
 
         # Collect memory usage
-        # worker_addr -> {peak_memory_usage, avg_memory_usage, memory_usage_history}
         worker_peaks = []
         worker_avgs = []
 
@@ -197,43 +178,21 @@ def main():
         ] = summary_item
 
     # -----------------------------------------------------------------------
-    # 2) FILL IN MISSING SCENARIOS (OOM), IF A SHAPE USES A GIVEN WORKER COUNT
+    # 2) FILL IN MISSING SCENARIOS (OOM) IF A SHAPE USES A GIVEN WORKER COUNT
     #    FOR ANY CHUNK_MODE, THEN EVERY CHUNK_MODE FOR THAT SHAPE GETS IT TOO.
     # -----------------------------------------------------------------------
-    # Example logic:
-    #   For shape S = (100, 100, 100):
-    #     Suppose chunk_modes we actually observed = { auto, memaware }
-    #     Suppose for 'auto' we have worker_count = {1, 2, 4, 8}
-    #     Suppose for 'memaware' we only have {1, 2, 4} (and 8 is missing).
-    #     We want to create an entry for (memaware, 8) with oom_or_failed=True
-    #     if we do have (auto, 8) in that shape.
-    #
-    # Implementation approach:
-    #   - For each shape, gather union of all worker_counts across all chunk_modes.
-    #   - For each chunk_mode in that shape, ensure each worker_count in that union is present.
-    #   - If missing, add an OOM row in summary_data.
-
-    # Build the "full set" of chunk modes for the shape, plus the union of all worker counts
-    # across those chunk modes.
     for shape_key, shape_info in data_catalog.items():
         (inlines, xlines, samples) = shape_key
-        chunk_modes_dict = shape_info["chunk_modes"]  # { cm: set_of_workers }
+        chunk_modes_dict = shape_info["chunk_modes"]
         union_of_all_workers = set()
         for cm in chunk_modes_dict:
             union_of_all_workers |= chunk_modes_dict[cm]
 
-        # But also consider that if shape uses chunk_mode X with some worker_count,
-        # all chunk_modes used for that shape must also consider that worker_count
-        # if at least one chunk_mode uses it. So let's also gather the *full set*
-        # of chunk modes used for that shape.
         all_chunk_modes_for_shape = set(chunk_modes_dict.keys())
 
-        # For each chunk mode, if it's missing a worker_count from union_of_all_workers,
-        # we add an OOM row if we don't already have a summary item for that combination.
+        # Check for missing combos -> fill as OOM
         for cm in all_chunk_modes_for_shape:
             for wcount in union_of_all_workers:
-                # We now check if there's ANY summary item for that shape/cm/wcount
-                # (regardless of timestamp or random_id). If none found, we add an OOM row.
                 found_any = False
                 for key_tuple in actual_summary_entries.keys():
                     (
@@ -256,7 +215,6 @@ def main():
                         break
 
                 if not found_any:
-                    # We have no row for shape=(inlines,xlines,samples), cm, wcount => OOM row
                     summary_data.append(
                         {
                             "inlines": inlines,
@@ -280,7 +238,6 @@ def main():
     summary_df = pd.DataFrame(summary_data)
     detail_df = pd.DataFrame(detail_data)
 
-    # Sort them in a friendly manner
     if not summary_df.empty:
         summary_df.sort_values(
             by=[
