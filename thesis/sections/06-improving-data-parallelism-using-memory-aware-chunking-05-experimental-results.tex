@@ -193,7 +193,7 @@ Based on the results across multiple shapes and concurrency levels, we draw the 
         \item \emph{Memory stability}---Memaware chunking ensures the greatest stability, can handle more aggressive parallelism, and helps avoid forced restarts due to out-of-memory incidents.
     \end{itemize}
 
-    \item \textbf{Practical considerations for HPC or cloud environments}. In many HPC or cloud deployments, ephemeral worker nodes can be scaled horizontally. Memaware chunking reduces the risk of losing an entire cluster job if memory is exhausted, which can be critical in pay-per-use or short-time-slot HPC queue systems where restarts are expensive.
+    \item \textbf{Practical considerations for \ac{HPC} or cloud environments}. In many \ac{HPC} or cloud deployments, ephemeral worker nodes can be scaled horizontally. Memaware chunking reduces the risk of losing an entire cluster job if memory is exhausted, which can be critical in pay-per-use or short-time-slot \ac{HPC} queue systems where restarts are expensive.
 \end{enumerate}
 
 \subsection{Summary of Findings}
