@@ -1,6 +1,58 @@
 \section{Conclusion}
 \label{sec:idp-conclusion}
 
-\DFTODO{Concluir sobre a importância de se ter um bom balanceamento de carga}
-\DFTODO{Explicar e concluir sobre a possibilidade de encontrar o melhor tamanho de chunk baseado no consnumo estimado de memória}
-\DFTODO{Discutir as complexidades e próximos passos para integrar facilmente com o Dask}
+The experimental findings presented in this chapter highlight the critical role of load balancing for efficient data-parallel processing in \ac{HPC} environments.
+Simply put, partitioning data into appropriately sized chunks is \emph{fundamental}: large or poorly dimensioned chunks can overwhelm workers and cause \ac{OOM} failures, while overly fragmented partitions introduce massive scheduling overheads that hurt overall performance.
+Balancing these extremes in a systematic manner is essential for maximizing throughput and ensuring reliable execution, especially in computationally heavy fields such as seismic processing, large-scale imaging, or deep learning on multi-dimensional tensors.
+
+Building upon the predictive memory modeling outlined in previous chapters, the proposed \emph{memory-aware chunking} approach demonstrates how an \emph{informed} selection of chunk sizes can significantly reduce memory bottlenecks.
+By leveraging a trained regression model to estimate memory usage ahead of time, we can preemptively tailor chunk dimensions so that per-worker memory consumption stays within acceptable limits, even when intermediate data expansions occur.
+This method stands in contrast to Dask’s default heuristic (\texttt{auto-chunking}), which does not account for algorithm-specific transformations or dynamic expansions of internal arrays.
+
+\vspace{6pt}
+\noindent
+\textbf{Importance of Load Balancing.}
+\begin{itemize}
+    \item \textit{Resource Utilization:} An optimally balanced workload ensures each worker operates near its peak capacity without hitting critical memory thresholds. This balance is especially beneficial in environments with variable node configurations or partially shared resources, where uncontrolled chunk sizes can trigger \ac{OOM} errors on some nodes and underutilization on others.
+    \item \textit{Parallel Efficiency:} Even distribution of data subsets curtails the idle times commonly encountered when one worker finishes quickly while another is stuck with an oversized partition. Consequently, memory-aware chunking helps maintain consistent throughput and prevents stragglers from delaying the entire computation.
+\end{itemize}
+
+\vspace{6pt}
+\noindent
+\textbf{Predicting the “Best” Chunk Size.}
+A key insight from this work is the feasibility of deriving near-optimal chunk dimensions using pre-trained memory models.
+By combining shape-specific parameters (e.g., inlines, xlines, samples) with operator-specific memory footprints (e.g., tensor operations, convolutional kernels, gradient calculations), it becomes possible to predict a per-voxel memory overhead.
+From there, chunk dimensions can be systematically computed to keep each partition’s memory usage comfortably below a user-defined limit.
+This predictive step eliminates much of the guesswork behind chunk size selection—traditionally an iterative or trial-and-error process that consumes significant developer effort and compute time.
+
+\vspace{6pt}
+\noindent
+\textbf{Complexities and Next Steps.}
+\begin{itemize}
+    \item \textbf{Integration with Dask:}
+    While memory-aware chunking already works with Dask, deeper integration could enable \emph{dynamic re-chunking} in response to changing workloads. Hooking a predictive model directly into Dask’s scheduling logic could further optimize resource allocation, reacting to real-time cluster metrics like node availability and CPU/GPU usage.
+
+    \item \textbf{Operator-Specific Extensions:}
+    The current predictive model is primarily trained on gradient-structure-tensor or seismic-based operations. Extending it to more diverse kernels (e.g., deep neural networks, multi-stage geophysical workflows, PDE solvers) would require additional domain-specific training data. Such expansions would increase the generality of memory-aware chunking for a wide range of \ac{HPC} applications.
+
+    \item \textbf{Safety Factor Calibration:}
+    Our approach uses a \emph{user-defined safety factor} to ensure overhead for intermediate steps. Future research could explore adaptive or data-driven tuning of this safety factor, potentially eliminating underutilization in low-memory scenarios while guarding against \ac{OOM} incidents.
+
+    \item \textbf{Multi-Node and Hybrid Architectures:}
+    Scaling from a single \ac{HPC} node to multi-node clusters—or even hybrid CPU/GPU systems—brings additional challenges. Memory-aware chunking could be extended to consider heterogeneous hardware profiles, network bandwidth, or even I/O considerations when deciding the optimal chunk sizes.
+\end{itemize}
+
+\vspace{6pt}
+\noindent
+\textbf{Implications for High-Performance Workloads.}
+The capability to \emph{preemptively} shape the data layout is crucial for massive workloads found in seismic attribute extraction, 3D medical imaging reconstructions, or large-scale linear algebra tasks. By preventing \ac{OOM} errors and uneven load distribution, memory-aware chunking makes high worker concurrency feasible—improving overall wall-clock times without requiring manual intervention. In practical terms, it reduces engineering overhead and lowers the risk of failed jobs that might stall production pipelines in \ac{HPC} or cloud environments.
+
+\vspace{6pt}
+\noindent
+\textbf{Concluding Remarks.}
+In summary, the proposed memory-aware chunking represents a \emph{robust, data-driven} refinement over existing heuristic approaches in Dask.
+By explicitly modeling memory usage, this technique achieves a balanced trade-off between execution speed and reliability, eliminating the frequent \ac{OOM} failures encountered by purely heuristic strategies under large or complex datasets.
+Coupled with the multi-stage experimental results reported in this chapter, these findings strongly suggest that \emph{model-guided} data partitioning will be an increasingly critical tool for advanced parallel computing tasks, paving the way for more intelligent schedulers that can automatically adapt to changing workloads and resource conditions.
+
+Ultimately, while memory-aware chunking is not a silver bullet for every \ac{HPC} challenge, it addresses a longstanding performance bottleneck: suboptimal partitioning of large, multi-dimensional data.
+By striking a better balance between chunk size, memory usage, and parallel performance, it opens up a path for faster, more predictable, and more stable computations, setting the stage for further innovations in scalable data processing.

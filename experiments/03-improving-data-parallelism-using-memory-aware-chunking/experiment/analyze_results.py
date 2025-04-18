@@ -103,7 +103,7 @@ def plot_by_shape(df, charts_dir):
             xlabel="Workers",
             ylabel="Time (s)",
         )
-        fig.savefig(os.path.join(charts_dir, f"{label}_time.png"), dpi=150)
+        fig.savefig(os.path.join(charts_dir, f"{label}_time.pdf"), dpi=150)
         plt.close(fig)
 
         # Memory Usage
@@ -121,7 +121,7 @@ def plot_by_shape(df, charts_dir):
             xlabel="Workers",
             ylabel="Memory (bytes)",
         )
-        fig.savefig(os.path.join(charts_dir, f"{label}_mem.png"), dpi=150)
+        fig.savefig(os.path.join(charts_dir, f"{label}_mem.pdf"), dpi=150)
         plt.close(fig)
 
 

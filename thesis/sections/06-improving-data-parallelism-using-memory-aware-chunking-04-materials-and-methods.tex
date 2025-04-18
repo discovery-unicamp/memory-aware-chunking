@@ -19,6 +19,8 @@ Each step executes within \ac{DIND} containers, ensuring consistent environments
 
 \subsection*{Configuration and Environment}
 
+All experiments were executed on a single \ac{HPC} node at the \ac{UNICAMP} Discovery Labs, equipped with an Intel\textregistered\ Xeon\textregistered\ Silver 4310 processor, 256~\ac{GB} of \ac{RAM}, and two \ac{RTX}~A6000 \ac{GPU}s. Despite the presence of \ac{GPU} resources, all runs relied exclusively on \ac{CPU} execution to ensure comparability across input shapes.
+
 The experiment is extensively configurable through environment variables specified at the beginning of the orchestrator script.
 Important configurable parameters include:
 

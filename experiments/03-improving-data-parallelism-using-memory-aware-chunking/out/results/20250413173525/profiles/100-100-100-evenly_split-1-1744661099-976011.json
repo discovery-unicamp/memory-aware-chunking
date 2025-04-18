@@ -1,0 +1,46 @@
+{
+  "metadata": {
+    "session_id": "976011",
+    "worker_count": 1,
+    "chunking_mode": "evenly-split",
+    "unix_timestamp": 1744661099,
+    "shape": "100-100-100",
+    "chunk_size": "auto",
+    "execution_time_unit": "seconds",
+    "memory_usage_unit": "bytes"
+  },
+  "data": {
+    "execution_time": 4.665945291519165,
+    "memory_usage": {
+      "tcp://127.0.0.1:36523": {
+        "peak_memory_usage": 370700288,
+        "avg_memory_usage": 190251008.0,
+        "memory_usage_history": [
+          156143616,
+          156143616,
+          156143616,
+          156143616,
+          156143616,
+          156405760,
+          156405760,
+          174956544,
+          174956544,
+          180494336,
+          180494336,
+          180494336,
+          189808640,
+          189808640,
+          191197184,
+          191197184,
+          191197184,
+          191340544,
+          191340544,
+          228085760,
+          228085760,
+          228085760,
+          370700288
+        ]
+      }
+    }
+  }
+}
