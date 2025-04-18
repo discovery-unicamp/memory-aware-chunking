@@ -1,12 +1,8 @@
 """
-Parses all JSON memory profile results found in OUTPUT_DIR/profiles, then
-consolidates them into two CSV files: a summary (one row per run) and a
-detail (one row per worker per run).
-
-Missing (OOM) combinations are inferred for shapes that have data in one
-chunk mode but not in others, ensuring consistent coverage.
+Collect and consolidate JSON memory-profile results into summary and detail CSV files.
 """
 
+import argparse
 import json
 import os
 import re
@@ -15,266 +11,229 @@ from collections import defaultdict
 
 import pandas as pd
 
+FILENAME_PATTERN = re.compile(
+    r"^(?P<inlines>\d+)-(?P<xlines>\d+)-(?P<samples>\d+)-"
+    r"(?P<mode>[^-]+)-(?P<workers>\d+)-(?P<ts>\d+)-(?P<rnd>\d+)\.json$"
+)
+OUTPUT_DIR = os.getenv("OUTPUT_DIR", "./out")
+PROFILES_DIR = os.getenv("PROFILES_DIR", f"{OUTPUT_DIR}/profiles")
+RESULTS_DIR = os.getenv("RESULTS_DIR", f"{OUTPUT_DIR}/results")
 
-def main():
-    output_dir = os.getenv("OUTPUT_DIR", "./out/results")
-    profiles_dir = os.path.join(output_dir, "profiles")
 
-    if not os.path.isdir(profiles_dir):
-        print(f"[collect_results] Profiles directory not found: {profiles_dir}")
-        sys.exit(1)
-
-    summary_data = []
-    detail_data = []
-
-    # Catalog to track shapes, chunk_modes, and worker counts in runs
-    data_catalog = defaultdict(
-        lambda: {"all_workers": set(), "chunk_modes": defaultdict(set)}
+def parse_args():
+    parser = argparse.ArgumentParser(
+        description="Consolidate JSON profiles into CSV summaries and details."
     )
-    actual_summary_entries = {}
-
-    all_files = sorted(f for f in os.listdir(profiles_dir) if f.endswith(".json"))
-    for filename in all_files:
-        parsed = _parse_filename(filename)
-        if not parsed:
-            print(f"[collect_results] Skipping '{filename}' (doesn't match pattern).")
-            continue
-
-        (inlines, xlines, samples, chunk_mode, worker_count, ts, rnd_id) = parsed
-        filepath = os.path.join(profiles_dir, filename)
-
-        shape_key = (inlines, xlines, samples)
-        data_catalog[shape_key]["all_workers"].add(worker_count)
-        data_catalog[shape_key]["chunk_modes"][chunk_mode].add(worker_count)
-
-        try:
-            with open(filepath, "r") as f:
-                profile_data = json.load(f)
-        except Exception as e:
-            print(f"[collect_results] Error reading {filepath}: {e}")
-            continue
-
-        metadata = profile_data.get("metadata", {})
-        data_section = profile_data.get("data", {})
-        session_id = metadata.get("session_id")
-        execution_time = data_section.get("execution_time")
-        memory_usage = data_section.get("memory_usage", {})
-
-        # If memory usage is empty, mark as OOM or failed
-        if not memory_usage:
-            summary_data.append(
-                _make_summary_dict(
-                    inlines,
-                    xlines,
-                    samples,
-                    chunk_mode,
-                    worker_count,
-                    ts,
-                    session_id,
-                    rnd_id,
-                    execution_time,
-                    peak_mem=None,
-                    avg_mem=None,
-                    oom=True,
-                )
-            )
-            actual_summary_entries[
-                (inlines, xlines, samples, chunk_mode, worker_count, ts, rnd_id)
-            ] = summary_data[-1]
-            continue
-
-        # Otherwise collect stats and detail rows
-        worker_peaks = []
-        worker_avgs = []
-        for worker_addr, usage_info in memory_usage.items():
-            peak = usage_info.get("peak_memory_usage")
-            avg = usage_info.get("avg_memory_usage")
-            hist = usage_info.get("memory_usage_history", [])
-
-            detail_data.append(
-                {
-                    "inlines": inlines,
-                    "xlines": xlines,
-                    "samples": samples,
-                    "chunking_mode": chunk_mode,
-                    "worker_count": worker_count,
-                    "timestamp": ts,
-                    "session_id": session_id,
-                    "random_id": rnd_id,
-                    "worker_addr": worker_addr,
-                    "peak_memory_usage_bytes": peak,
-                    "avg_memory_usage_bytes": avg,
-                    "memory_usage_history": hist,
-                }
-            )
-
-            if peak is not None:
-                worker_peaks.append(peak)
-            if avg is not None:
-                worker_avgs.append(avg)
-
-        overall_peak = max(worker_peaks) if worker_peaks else None
-        overall_avg = sum(worker_avgs) / len(worker_avgs) if worker_avgs else None
-
-        summary_entry = _make_summary_dict(
-            inlines,
-            xlines,
-            samples,
-            chunk_mode,
-            worker_count,
-            ts,
-            session_id,
-            rnd_id,
-            execution_time,
-            peak_mem=overall_peak,
-            avg_mem=overall_avg,
-            oom=False,
-        )
-        summary_data.append(summary_entry)
-        actual_summary_entries[
-            (inlines, xlines, samples, chunk_mode, worker_count, ts, rnd_id)
-        ] = summary_entry
-
-    # Fill in missing (OOM) rows if shape+worker_count is used in one chunk mode but not another
-    _fill_missing_oom_rows(summary_data, data_catalog, actual_summary_entries)
-
-    # Convert to DataFrame, sort, and save
-    summary_df = pd.DataFrame(summary_data)
-    detail_df = pd.DataFrame(detail_data)
-
-    if not summary_df.empty:
-        summary_df.sort_values(
-            by=[
-                "inlines",
-                "xlines",
-                "samples",
-                "chunking_mode",
-                "worker_count",
-                "timestamp",
-            ],
-            inplace=True,
-            na_position="last",
-        )
-    if not detail_df.empty:
-        detail_df.sort_values(
-            by=[
-                "inlines",
-                "xlines",
-                "samples",
-                "chunking_mode",
-                "worker_count",
-                "timestamp",
-                "worker_addr",
-            ],
-            inplace=True,
-        )
-
-    results_dir = os.path.join(output_dir, "results")
-    os.makedirs(results_dir, exist_ok=True)
-
-    summary_csv_path = os.path.join(results_dir, "profiles_summary.csv")
-    detail_csv_path = os.path.join(results_dir, "profiles_detail.csv")
-
-    summary_df.to_csv(summary_csv_path, index=False)
-    detail_df.to_csv(detail_csv_path, index=False)
-
-    print(f"[collect_results] Summary CSV saved to {summary_csv_path}")
-    print(f"[collect_results] Detail CSV saved to {detail_csv_path}")
-    print("[collect_results] Done.")
+    parser.add_argument(
+        "--profiles-dir", default=PROFILES_DIR, help="Directory with .json profiles"
+    )
+    parser.add_argument(
+        "--results-dir", default=RESULTS_DIR, help="Output directory for CSV files"
+    )
+    return parser.parse_args()
 
 
-def _parse_filename(filename: str):
-    """
-    Expected format:
-      <inlines>-<xlines>-<samples>-<chunk_mode>-<worker_count>-<timestamp>-<random_id>.json
-    Returns a tuple of (inlines, xlines, samples, chunk_mode, worker_count, timestamp, random_id) or None.
-    """
-    pattern = r"^(\d+)-(\d+)-(\d+)-([^-]+)-(\d+)-(\d+)-(\d+)\.json$"
-    match = re.match(pattern, filename)
+def parse_filename(name):
+    match = FILENAME_PATTERN.match(name)
     if not match:
         return None
-
+    parts = match.groupdict()
     return (
-        int(match.group(1)),
-        int(match.group(2)),
-        int(match.group(3)),
-        match.group(4),
-        int(match.group(5)),
-        int(match.group(6)),
-        match.group(7),
+        int(parts["inlines"]),
+        int(parts["xlines"]),
+        int(parts["samples"]),
+        parts["mode"],
+        int(parts["workers"]),
+        parts["ts"],
+        parts["rnd"],
     )
 
 
-def _make_summary_dict(
+def make_summary(
     inlines,
     xlines,
     samples,
-    chunk_mode,
-    worker_count,
+    mode,
+    workers,
     ts,
     session_id,
-    rnd_id,
+    rnd,
     exec_time,
-    peak_mem,
-    avg_mem,
+    peak,
+    avg,
     oom,
 ):
     return {
         "inlines": inlines,
         "xlines": xlines,
         "samples": samples,
-        "chunking_mode": chunk_mode,
-        "worker_count": worker_count,
+        "chunking_mode": mode,
+        "worker_count": workers,
         "timestamp": ts,
         "session_id": session_id,
-        "random_id": rnd_id,
+        "random_id": rnd,
         "execution_time_sec": exec_time,
-        "peak_memory_usage_bytes": peak_mem,
-        "avg_memory_usage_bytes": avg_mem,
+        "peak_memory_usage_bytes": peak,
+        "avg_memory_usage_bytes": avg,
         "oom_or_failed": oom,
     }
 
 
-def _fill_missing_oom_rows(summary_data, data_catalog, actual_summary_entries):
-    """
-    For each shape, if we have multiple chunking modes, ensure that worker
-    counts used by any mode are also present in others. If missing, insert OOM row.
-    """
-    for shape_key, shape_info in data_catalog.items():
-        (inlines, xlines, samples) = shape_key
-        chunk_modes_dict = shape_info["chunk_modes"]
-        union_of_all_workers = set()
-        for cm in chunk_modes_dict:
-            union_of_all_workers |= chunk_modes_dict[cm]
-
-        all_modes_for_shape = set(chunk_modes_dict.keys())
-        for cm in all_modes_for_shape:
-            for wc in union_of_all_workers:
-                found_any = any(
-                    k[0] == inlines
-                    and k[1] == xlines
-                    and k[2] == samples
-                    and k[3] == cm
-                    and k[4] == wc
-                    for k in actual_summary_entries
-                )
-                if not found_any:
-                    summary_data.append(
-                        _make_summary_dict(
-                            inlines,
-                            xlines,
-                            samples,
-                            cm,
-                            wc,
-                            ts=None,
-                            session_id=None,
-                            rnd_id=None,
-                            exec_time=None,
-                            peak_mem=None,
-                            avg_mem=None,
-                            oom=True,
+def fill_missing(summary, catalog, seen):
+    for shape, info in catalog.items():
+        inl, xl, smp = shape
+        workers_union = set().union(*info["modes"].values())
+        for mode, wset in info["modes"].items():
+            for w in workers_union:
+                key = (inl, xl, smp, mode, w)
+                if not any(
+                    (inl, xl, smp, mode, w)
+                    == (
+                        s["inlines"],
+                        s["xlines"],
+                        s["samples"],
+                        s["chunking_mode"],
+                        s["worker_count"],
+                    )
+                    for s in summary
+                ):
+                    summary.append(
+                        make_summary(
+                            inl,
+                            xl,
+                            smp,
+                            mode,
+                            w,
+                            None,
+                            None,
+                            None,
+                            None,
+                            None,
+                            None,
+                            True,
                         )
                     )
+
+
+def main():
+    args = parse_args()
+    profiles = args.profiles_dir
+    results_dir = args.results_dir
+    if not os.path.isdir(profiles):
+        print(f"Profiles dir not found: {profiles}")
+        sys.exit(1)
+
+    summary = []
+    detail = []
+    catalog = defaultdict(lambda: {"workers": set(), "modes": defaultdict(set)})
+
+    for fname in sorted(os.listdir(profiles)):
+        if not fname.endswith(".json"):
+            continue
+        parsed = parse_filename(fname)
+        if not parsed:
+            print(f"Skipping {fname}")
+            continue
+        inl, xl, smp, mode, workers, ts, rnd = parsed
+        path = os.path.join(profiles, fname)
+        catalog[(inl, xl, smp)]["workers"].add(workers)
+        catalog[(inl, xl, smp)]["modes"][mode].add(workers)
+
+        try:
+            data = json.load(open(path))
+        except Exception as e:
+            print(f"Error reading {path}: {e}")
+            continue
+
+        meta = data.get("metadata", {})
+        body = data.get("data", {})
+        sid = meta.get("session_id")
+        exec_time = body.get("execution_time")
+        mem = body.get("memory_usage", {})
+
+        if not mem:
+            summary.append(
+                make_summary(
+                    inl,
+                    xl,
+                    smp,
+                    mode,
+                    workers,
+                    ts,
+                    sid,
+                    rnd,
+                    exec_time,
+                    None,
+                    None,
+                    True,
+                )
+            )
+            continue
+
+        peaks, avgs = [], []
+        for addr, info in mem.items():
+            p = info.get("peak_memory_usage")
+            a = info.get("avg_memory_usage")
+            hist = info.get("memory_usage_history", [])
+            detail.append(
+                {
+                    "inlines": inl,
+                    "xlines": xl,
+                    "samples": smp,
+                    "chunking_mode": mode,
+                    "worker_count": workers,
+                    "timestamp": ts,
+                    "session_id": sid,
+                    "random_id": rnd,
+                    "worker_addr": addr,
+                    "peak_memory_usage_bytes": p,
+                    "avg_memory_usage_bytes": a,
+                    "memory_usage_history": hist,
+                }
+            )
+            if p is not None:
+                peaks.append(p)
+            if a is not None:
+                avgs.append(a)
+
+        peak_all = max(peaks) if peaks else None
+        avg_all = sum(avgs) / len(avgs) if avgs else None
+        summary.append(
+            make_summary(
+                inl,
+                xl,
+                smp,
+                mode,
+                workers,
+                ts,
+                sid,
+                rnd,
+                exec_time,
+                peak_all,
+                avg_all,
+                False,
+            )
+        )
+
+    fill_missing(summary, catalog, None)
+
+    os.makedirs(results_dir, exist_ok=True)
+    pd.DataFrame(summary).sort_values(
+        ["inlines", "xlines", "samples", "chunking_mode", "worker_count", "timestamp"]
+    ).to_csv(os.path.join(results_dir, "profiles_summary.csv"), index=False)
+    pd.DataFrame(detail).sort_values(
+        [
+            "inlines",
+            "xlines",
+            "samples",
+            "chunking_mode",
+            "worker_count",
+            "timestamp",
+            "worker_addr",
+        ]
+    ).to_csv(os.path.join(results_dir, "profiles_detail.csv"), index=False)
+
+    print(f"Saved summary and detail CSVs to {results_dir}")
 
 
 if __name__ == "__main__":

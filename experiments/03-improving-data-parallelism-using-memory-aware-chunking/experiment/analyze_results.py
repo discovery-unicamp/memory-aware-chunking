@@ -1,329 +1,217 @@
 """
-Analyzes execution time and memory usage from summary/detail CSVs,
-generates visualizations (execution time / memory usage vs. worker count),
-and computes a leaderboard of best-performing chunking modes. Also includes
-additional statistics such as OOM frequency and overall time/memory averages.
+Analyze memory-profile CSVs: generate charts, leaderboard, and stats to compare chunking modes.
 """
 
+import argparse
 import os
-import sys
 
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import seaborn as sns
 
+OUTPUT_DIR = os.getenv("OUTPUT_DIR", "./out")
+RESULTS_DIR = os.getenv("RESULTS_DIR", f"{OUTPUT_DIR}/results")
+CHARTS_DIR = os.getenv("CHARTS_DIR", f"{OUTPUT_DIR}/charts")
 
-def main():
-    # Load environment and paths
-    output_dir = os.getenv("OUTPUT_DIR", "./out")
-    results_dir = os.path.join(output_dir, "results")
-    summary_csv = os.path.join(results_dir, "profiles_summary.csv")
-    detail_csv = os.path.join(results_dir, "profiles_detail.csv")
 
-    if not os.path.exists(summary_csv):
-        print(f"[analyze_results] No summary file at {summary_csv}. Exiting.")
-        sys.exit(1)
-
-    summary_df = pd.read_csv(summary_csv)
-    detail_df = (
-        pd.read_csv(detail_csv) if os.path.exists(detail_csv) else pd.DataFrame()
+def parse_args():
+    parser = argparse.ArgumentParser(
+        description="Analyze summary/detail CSVs and output results."
     )
+    parser.add_argument(
+        "--results-dir", default=RESULTS_DIR, help="Directory with summary/detail CSVs"
+    )
+    parser.add_argument(
+        "--charts-dir", default=CHARTS_DIR, help="Output directory for charts"
+    )
+    return parser.parse_args()
 
-    # Convert columns to numeric/string as needed
-    numeric_cols = [
+
+def load_data(results_dir):
+    summary = pd.read_csv(os.path.join(results_dir, "profiles_summary.csv"))
+    detail_path = os.path.join(results_dir, "profiles_detail.csv")
+    detail = pd.read_csv(detail_path) if os.path.exists(detail_path) else pd.DataFrame()
+    return summary, detail
+
+
+def prepare(summary, detail):
+    num_cols = [
         "inlines",
         "xlines",
         "samples",
         "worker_count",
-        "timestamp",
         "execution_time_sec",
         "peak_memory_usage_bytes",
         "avg_memory_usage_bytes",
     ]
-    string_cols = ["chunking_mode", "session_id", "random_id"]
-
-    for col in summary_df.columns:
-        if col in numeric_cols:
-            summary_df[col] = pd.to_numeric(summary_df[col], errors="coerce")
-        elif col in string_cols:
-            summary_df[col] = summary_df[col].astype(str)
-
-    if not detail_df.empty:
-        for col in detail_df.columns:
-            if col in numeric_cols:
-                detail_df[col] = pd.to_numeric(detail_df[col], errors="coerce")
-            elif col in string_cols:
-                detail_df[col] = detail_df[col].astype(str)
-
-    # Compute total peak memory usage by summing peak usage across workers
-    if not detail_df.empty:
-        group_cols = [
-            "inlines",
-            "xlines",
-            "samples",
-            "chunking_mode",
-            "worker_count",
-            "timestamp",
-            "session_id",
-            "random_id",
-        ]
-        detail_agg = (
-            detail_df.groupby(group_cols)["peak_memory_usage_bytes"]
-            .sum()
-            .reset_index(name="total_peak_memory_usage_bytes")
+    present = [c for c in num_cols if c in summary.columns]
+    summary[present] = summary[present].apply(pd.to_numeric, errors="coerce")
+    if not detail.empty:
+        detail_present = [c for c in num_cols if c in detail.columns]
+        detail[detail_present] = detail[detail_present].apply(
+            pd.to_numeric, errors="coerce"
         )
-        combined_df = pd.merge(summary_df, detail_agg, on=group_cols, how="left")
-    else:
-        combined_df = summary_df.copy()
-        combined_df["total_peak_memory_usage_bytes"] = np.nan
+    return summary, detail
 
-    # Separate OOM runs from successful runs
-    combined_df["is_oom"] = combined_df["oom_or_failed"] == True
-    successful_df = combined_df[~combined_df["is_oom"]].copy()
-    oom_df = combined_df[combined_df["is_oom"]].copy()
 
-    # For OOM runs, clear out time/memory columns
-    oom_df["execution_time_sec"] = np.nan
-    oom_df["total_peak_memory_usage_bytes"] = np.nan
+def merge_totals(summary, detail):
+    if detail.empty:
+        summary["total_peak_memory_usage_bytes"] = np.nan
+        return summary
+    cols = [
+        "inlines",
+        "xlines",
+        "samples",
+        "chunking_mode",
+        "worker_count",
+        "timestamp",
+        "session_id",
+        "random_id",
+    ]
+    agg = (
+        detail.groupby(cols)["peak_memory_usage_bytes"]
+        .sum()
+        .reset_index(name="total_peak_memory_usage_bytes")
+    )
+    return summary.merge(agg, on=cols, how="left")
 
-    # Identify shapes and create directory for charts
-    shape_cols = ["inlines", "xlines", "samples"]
-    shape_groups = combined_df[shape_cols].drop_duplicates()
-    charts_dir = os.path.join(output_dir, "charts")
-    os.makedirs(charts_dir, exist_ok=True)
+
+def plot_by_shape(df, charts_dir):
     sns.set_theme(style="whitegrid")
-
-    # Generate charts per shape
-    for _, shape_row in shape_groups.iterrows():
-        inlines = shape_row["inlines"]
-        xlines = shape_row["xlines"]
-        samples = shape_row["samples"]
-        shape_label = f"{int(inlines)}x{int(xlines)}x{int(samples)}"
-
-        shape_success = successful_df[
-            (successful_df["inlines"] == inlines)
-            & (successful_df["xlines"] == xlines)
-            & (successful_df["samples"] == samples)
-        ]
-        shape_oom = oom_df[
-            (oom_df["inlines"] == inlines)
-            & (oom_df["xlines"] == xlines)
-            & (oom_df["samples"] == samples)
-        ]
-
-        if shape_success.empty and shape_oom.empty:
+    os.makedirs(charts_dir, exist_ok=True)
+    shapes = df[["inlines", "xlines", "samples"]].drop_duplicates()
+    for _, r in shapes.iterrows():
+        inl, xl, smp = int(r.inlines), int(r.xlines), int(r.samples)
+        sel = df[(df["inlines"] == inl) & (df["xlines"] == xl) & (df["samples"] == smp)]
+        if sel.empty:
             continue
+        label = f"{inl}x{xl}x{smp}"
 
-        # A) Execution Time vs Worker Count
-        plt.figure(figsize=(8, 6))
-        ax = sns.lineplot(
-            data=shape_success,
+        # Exec Time
+        fig, ax = plt.subplots()
+        sns.lineplot(
+            data=sel[~sel["oom_or_failed"]],
             x="worker_count",
             y="execution_time_sec",
             hue="chunking_mode",
             marker="o",
-            hue_order=["auto", "evenly-split", "memaware"],
+            ax=ax,
         )
-        if not shape_oom.empty:
-            sns.scatterplot(
-                data=shape_oom,
-                x="worker_count",
-                y="execution_time_sec",
-                hue="chunking_mode",
-                marker="X",
-                style="chunking_mode",
-                palette="dark",
-                ax=ax,
-                s=80,
-            )
-            ytop = (
-                shape_success["execution_time_sec"].max()
-                if not shape_success.empty
-                else 1.0
-            )
-            if pd.isna(ytop) or ytop <= 0:
-                ytop = 1.0
-            text_y = ytop * 1.1
-            for _, row in shape_oom.iterrows():
-                wcount = row["worker_count"]
-                cmode = row["chunking_mode"]
-                ax.text(wcount, text_y, f"OOM({cmode})", color="red", ha="center")
+        ax.set(
+            title=f"Execution Time vs Workers ({label})",
+            xlabel="Workers",
+            ylabel="Time (s)",
+        )
+        fig.savefig(os.path.join(charts_dir, f"{label}_time.png"), dpi=150)
+        plt.close(fig)
 
-        plt.title(f"Execution Time vs Worker Count\nShape: {shape_label}")
-        plt.xlabel("Worker Count")
-        plt.ylabel("Execution Time (s)")
-        plt.tight_layout()
-        plt.savefig(os.path.join(charts_dir, f"{shape_label}_exec_time.png"), dpi=150)
-        plt.close()
-
-        # B) Total Peak Memory vs Worker Count
-        plt.figure(figsize=(8, 6))
-        ax = sns.lineplot(
-            data=shape_success,
+        # Memory Usage
+        fig, ax = plt.subplots()
+        sns.lineplot(
+            data=sel[~sel["oom_or_failed"]],
             x="worker_count",
             y="total_peak_memory_usage_bytes",
             hue="chunking_mode",
             marker="o",
-            hue_order=["auto", "evenly-split", "memaware"],
+            ax=ax,
         )
-        if not shape_oom.empty:
-            sns.scatterplot(
-                data=shape_oom,
-                x="worker_count",
-                y="total_peak_memory_usage_bytes",
-                hue="chunking_mode",
-                marker="X",
-                style="chunking_mode",
-                palette="dark",
-                ax=ax,
-                s=80,
-            )
-            ytop = (
-                shape_success["total_peak_memory_usage_bytes"].max()
-                if not shape_success.empty
-                else 1.0
-            )
-            if pd.isna(ytop) or ytop <= 0:
-                ytop = 1.0
-            text_y = ytop * 1.1
-            for _, row in shape_oom.iterrows():
-                wcount = row["worker_count"]
-                cmode = row["chunking_mode"]
-                ax.text(wcount, text_y, f"OOM({cmode})", color="red", ha="center")
-
-        plt.title(f"Total Peak Memory vs Worker Count\nShape: {shape_label}")
-        plt.xlabel("Worker Count")
-        plt.ylabel("Total Peak Memory (bytes)")
-        plt.tight_layout()
-        plt.savefig(
-            os.path.join(charts_dir, f"{shape_label}_total_memory.png"), dpi=150
+        ax.set(
+            title=f"Peak Memory vs Workers ({label})",
+            xlabel="Workers",
+            ylabel="Memory (bytes)",
         )
-        plt.close()
-
-        # C) Worker-level Boxplot from detail
-        if not detail_df.empty:
-            shape_detail = detail_df[
-                (detail_df["inlines"] == inlines)
-                & (detail_df["xlines"] == xlines)
-                & (detail_df["samples"] == samples)
-            ].copy()
-            shape_detail = pd.merge(
-                shape_detail,
-                combined_df[["session_id", "random_id", "is_oom"]],
-                on=["session_id", "random_id"],
-                how="left",
-            )
-            shape_detail = shape_detail[~shape_detail["is_oom"]].copy()
-
-            if not shape_detail.empty:
-                plt.figure(figsize=(10, 6))
-                sns.boxplot(
-                    data=shape_detail,
-                    x="worker_count",
-                    y="peak_memory_usage_bytes",
-                    hue="chunking_mode",
-                    order=sorted(shape_detail["worker_count"].unique()),
-                    hue_order=["auto", "evenly-split", "memaware"],
-                )
-                plt.title(f"Worker-level Peak Memory Usage\nShape: {shape_label}")
-                plt.xlabel("Worker Count")
-                plt.ylabel("Peak Memory Usage (bytes)")
-                plt.tight_layout()
-                plt.savefig(
-                    os.path.join(charts_dir, f"{shape_label}_worker_box.png"), dpi=150
-                )
-                plt.close()
-
-    # Generate a Leaderboard per shape & worker_count
-    if not successful_df.empty:
-        group_cols = ["inlines", "xlines", "samples", "worker_count"]
-        leaders = []
-        for _, grp in successful_df.groupby(group_cols):
-            min_time = grp["execution_time_sec"].min()
-            best_rows = grp[grp["execution_time_sec"] == min_time]
-            best_row = best_rows.iloc[0]
-
-            best_mode = best_row["chunking_mode"]
-            best_time = best_row["execution_time_sec"]
-
-            memaware_grp = grp[grp["chunking_mode"] == "memaware"]
-            if not memaware_grp.empty:
-                mem_time = memaware_grp["execution_time_sec"].min()
-                diff_vs_best = (mem_time - best_time) / best_time * 100.0
-                mem_diff_str = f"{diff_vs_best:.1f}%" if diff_vs_best != 0 else "tie"
-            else:
-                mem_time = None
-                mem_diff_str = "not_run"
-
-            leaders.append(
-                {
-                    "inlines": grp["inlines"].iloc[0],
-                    "xlines": grp["xlines"].iloc[0],
-                    "samples": grp["samples"].iloc[0],
-                    "worker_count": grp["worker_count"].iloc[0],
-                    "best_chunking_mode": best_mode,
-                    "best_exec_time_sec": best_time,
-                    "memaware_time_sec": mem_time,
-                    "memaware_diff_percent": mem_diff_str,
-                }
-            )
-
-        leader_df = pd.DataFrame(leaders)
-        leader_csv = os.path.join(output_dir, "leaderboard.csv")
-        leader_df.to_csv(leader_csv, index=False)
-        print(f"[analyze_results] Leaderboard saved to {leader_csv}")
-        print(leader_df)
-    else:
-        print("[analyze_results] No successful runs found. No leaderboard generated.")
-
-    # Additional statistics: OOM counts and summary stats
-    _compute_and_save_oom_stats(combined_df, output_dir)
-    _compute_and_save_mode_summary(successful_df, output_dir)
-
-    print(f"\n[analyze_results] Charts have been saved to: {charts_dir}")
-    print("[analyze_results] Analysis complete.")
+        fig.savefig(os.path.join(charts_dir, f"{label}_mem.png"), dpi=150)
+        plt.close(fig)
 
 
-def _compute_and_save_oom_stats(combined_df, output_dir):
-    """Summarizes how many OOMs occurred per chunking mode and saves to CSV."""
-    oom_stats = (
-        combined_df.groupby("chunking_mode")["is_oom"]
-        .sum()
-        .reset_index(name="oom_count")
-    )
-    total_counts = combined_df["chunking_mode"].value_counts().reset_index()
-    total_counts.columns = ["chunking_mode", "total_count"]
-
-    stats_df = pd.merge(oom_stats, total_counts, on="chunking_mode", how="right")
-    stats_df["oom_ratio"] = stats_df["oom_count"] / stats_df["total_count"]
-    oom_stats_csv = os.path.join(output_dir, "oom_stats_by_mode.csv")
-    stats_df.to_csv(oom_stats_csv, index=False)
-    print(f"\n[analyze_results] OOM stats by chunking mode saved to {oom_stats_csv}")
-    print(stats_df)
-
-
-def _compute_and_save_mode_summary(successful_df, output_dir):
-    """Computes average/median time & memory usage, plus run counts, per chunk mode."""
-    if successful_df.empty:
+def make_leaderboard(df, out_dir):
+    ok = df[~df["oom_or_failed"]]
+    if ok.empty:
+        print("No successful runs for leaderboard.")
         return
-    mode_summary = (
-        successful_df.groupby("chunking_mode")
+    groups = ["inlines", "xlines", "samples", "worker_count"]
+    rows = []
+    for _, g in ok.groupby(groups):
+        best = g.loc[g["execution_time_sec"].idxmin()]
+        memaware = g[g["chunking_mode"] == "memaware"]
+        diff = "N/A"
+        if not memaware.empty:
+            m = memaware["execution_time_sec"].min()
+            diff = f"{(m - best.execution_time_sec)/best.execution_time_sec*100:.1f}%"
+        rows.append(
+            {
+                **{c: best[c] for c in groups},
+                "best_mode": best["chunking_mode"],
+                "best_time": best["execution_time_sec"],
+                "memaware_diff": diff,
+            }
+        )
+    pd.DataFrame(rows).to_csv(os.path.join(out_dir, "leaderboard.csv"), index=False)
+
+
+def oom_stats(df, out_dir):
+    stats = df.groupby("chunking_mode")["oom_or_failed"].sum().reset_index(name="ooms")
+    totals = (
+        df["chunking_mode"]
+        .value_counts()
+        .rename_axis("chunking_mode")
+        .reset_index(name="count")
+    )
+    merged = stats.merge(totals, on="chunking_mode")
+    merged["oom_ratio"] = merged["ooms"] / merged["count"]
+    merged.to_csv(os.path.join(out_dir, "oom_stats_by_mode.csv"), index=False)
+
+
+def mode_summary(df, out_dir):
+    ok = df[~df["oom_or_failed"]]
+    if ok.empty:
+        return
+    summary = (
+        ok.groupby("chunking_mode")
         .agg(
             avg_exec_time_sec=("execution_time_sec", "mean"),
             median_exec_time_sec=("execution_time_sec", "median"),
             avg_peak_memory_bytes=("total_peak_memory_usage_bytes", "mean"),
             median_peak_memory_bytes=("total_peak_memory_usage_bytes", "median"),
-            count_runs=("chunking_mode", "count"),
+            runs=("chunking_mode", "count"),
         )
         .reset_index()
     )
-    mode_summary_csv = os.path.join(output_dir, "mode_summary_stats.csv")
-    mode_summary.to_csv(mode_summary_csv, index=False)
-    print(
-        f"\n[analyze_results] Summary stats (avg/median time & memory) saved to {mode_summary_csv}"
+    summary.to_csv(os.path.join(out_dir, "mode_summary_stats.csv"), index=False)
+
+
+def shape_summary(df, out_dir):
+    cols = ["inlines", "xlines", "samples", "chunking_mode"]
+    stats = (
+        df.groupby(cols)
+        .agg(
+            avg_exec_time_sec=("execution_time_sec", "mean"),
+            median_exec_time_sec=("execution_time_sec", "median"),
+            avg_total_peak_memory_bytes=("total_peak_memory_usage_bytes", "mean"),
+            median_total_peak_memory_bytes=("total_peak_memory_usage_bytes", "median"),
+            total_runs=("oom_or_failed", "size"),
+            oom_count=("oom_or_failed", "sum"),
+        )
+        .reset_index()
     )
-    print(mode_summary)
+    stats["oom_ratio"] = stats["oom_count"] / stats["total_runs"]
+    stats.to_csv(os.path.join(out_dir, "shape_summary_stats.csv"), index=False)
+
+
+def main():
+    args = parse_args()
+    summary, detail = load_data(args.results_dir)
+    summary, detail = prepare(summary, detail)
+    combined = merge_totals(summary, detail)
+    plot_by_shape(combined, args.charts_dir)
+    make_leaderboard(combined, args.results_dir)
+    oom_stats(combined, args.results_dir)
+    mode_summary(combined, args.results_dir)
+    shape_summary(combined, args.results_dir)
+    print(
+        f"Analysis complete. Charts at {args.charts_dir}, CSV summaries in {args.results_dir}"
+    )
 
 
 if __name__ == "__main__":
