@@ -12,5 +12,8 @@
 !notebooks/02-traceq-demo-20250419014225/**/*
 
 !results
+!results/20250419142924
+!results/20250419142924/*
+!results/20250419142924/**/*
 
 **/*.segy

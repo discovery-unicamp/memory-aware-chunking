@@ -1,18 +1,40 @@
 #!/usr/bin/env sh
 
+################################################################################
+# This script orchestrates:
+#   1) Generating data.
+#   2) Collecting memory profile for each operator.
+#   3) Collecting results into a single dataset.
+#   4) Analyzing the dataset.
+#
+# The Docker container uses "libs/scripts/experiment.sh" as its entrypoint.
+# We pass in the Python script to run via "--env EXPERIMENT_COMMAND=<script.py>".
+################################################################################
+
+set -e
+
+################################################################################
+# CONFIGURATION
+################################################################################
 TIMESTAMP="${TIMESTAMP:-$(date +%Y%m%d%H%M%S)}"
 CPUSET_CPUS="${CPUSET_CPUS:-0}"
+ROOT_DIR=$(git rev-parse --show-toplevel)
+OUTPUT_DIR="${OUTPUT_DIR:-${ROOT_DIR}/experiments/02-predicting-memory-consumption-from-input-shapes/out/results/${TIMESTAMP}}"
+
+# Experiment context
+DIND_VOLUME_NAME="${DIND_VOLUME_NAME:-mac__exp-02__dind-storage}"
 EXPERIMENT_IMAGE_TAG="${EXPERIMENT_IMAGE_TAG:-experiment:${TIMESTAMP}}"
 EXPERIMENT_N_RUNS="${EXPERIMENT_N_RUNS:-5}"
-ROOT_DIR=$(git rev-parse --show-toplevel)
 EXPERIMENT_BUILD_CONTEXT="${EXPERIMENT_BUILD_CONTEXT:-${ROOT_DIR}/experiments/02-predicting-memory-consumption-from-input-shapes}"
 EXPERIMENT_DOCKERFILE_PATH="${EXPERIMENT_DOCKERFILE_PATH:-${EXPERIMENT_BUILD_CONTEXT}/Dockerfile}"
 EXPERIMENT_TRACEQ_BUILD_CONTEXT="${EXPERIMENT_TRACEQ_BUILD_CONTEXT:-${ROOT_DIR}/libs/traceq}"
 EXPERIMENT_COMMON_BUILD_CONTEXT="${EXPERIMENT_COMMON_BUILD_CONTEXT:-${ROOT_DIR}/libs/common}"
+
+# Data generation
 DATASET_FINAL_SIZE="${DATASET_FINAL_SIZE:-800}"
 DATASET_STEP_SIZE="${DATASET_STEP_SIZE:-100}"
-DIND_VOLUME_NAME="${DIND_VOLUME_NAME:-mac__exp-02__dind-storage}"
-OUTPUT_DIR="${OUTPUT_DIR:-${ROOT_DIR}/experiments/02-predicting-memory-consumption-from-input-shapes/out/results/${TIMESTAMP}}"
+
+# Filesystem-related variables
 HOST_UID="${HOST_UID:-$(id -u)}"
 HOST_GID="${HOST_GID:-$(id -g)}"
 
@@ -36,6 +58,9 @@ echo
 
 echo "Starting experiment ${TIMESTAMP}..."
 
+################################################################################
+# Create Docker Volume for DIND
+################################################################################
 echo "Creating Docker volume for DIND..."
 if ! docker volume inspect "${VOLUME_NAME}" &>/dev/null; then
   docker volume create "${VOLUME_NAME}"
@@ -44,6 +69,9 @@ fi
 echo "Creating output dir..."
 mkdir -p "${OUTPUT_DIR}"
 
+################################################################################
+# STEP 1: GENERATE DATA
+################################################################################
 echo "Generating input data..."
 docker run \
   --rm \
@@ -75,6 +103,9 @@ docker run \
   docker:28.0.1-dind \
   "/workspace/experiment.sh"
 
+################################################################################
+# STEP 2: Collecting memory profiles
+################################################################################
 echo "Collecting memory profile for Envelope..."
 for file in "${OUTPUT_DIR}/inputs"/*.segy; do
   filename=$(basename "$file" .segy)
@@ -189,6 +220,9 @@ for file in "${OUTPUT_DIR}/inputs"/*.segy; do
     "/workspace/experiment.sh"
 done;
 
+################################################################################
+# STEP 3: Collecting the results
+################################################################################
 echo "Collecting the results..."
 docker run \
   --rm \
@@ -218,6 +252,9 @@ docker run \
   docker:28.0.1-dind \
   "/workspace/experiment.sh"
 
+################################################################################
+# STEP 3: Analyze the results
+################################################################################
 echo "Analysing the results..."
 docker run \
   --rm \
@@ -246,3 +283,7 @@ docker run \
   --env EXPERIMENT_VOLUMES="-v /mnt${OUTPUT_DIR}:/experiment/out:rw" \
   docker:28.0.1-dind \
   "/workspace/experiment.sh"
+
+echo
+echo "Predicting memory usage experiment complete!"
+echo "Results directory: ${OUTPUT_DIR}"

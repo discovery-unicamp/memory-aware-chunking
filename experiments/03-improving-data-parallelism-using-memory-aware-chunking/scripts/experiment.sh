@@ -1,16 +1,14 @@
 #!/usr/bin/env bash
 
 ################################################################################
-# run_experiment_memory_aware_chunking.sh
-#
 # This script orchestrates:
-#   1) Generating data (generate_data_memory_aware.py)
+#   1) Generating synthetic data.
 #   2) Running multiple scenarios (single worker, 2 workers, small n, large n)
 #      combined with multiple chunking modes (auto, manual, memaware).
-#   3) Collecting results into a single dataset (collect_results_memory_aware.py).
-#   4) Analyzing the dataset (analyze_results_memory_aware.py).
+#   3) Collecting results into a single dataset.
+#   4) Analyzing the dataset.
 #
-# The Docker container uses "/workspace/experiment.sh" as its entrypoint.
+# The Docker container uses "libs/scripts/experiment.sh" as its entrypoint.
 # We pass in the Python script to run via "--env EXPERIMENT_COMMAND=<script.py>".
 ################################################################################
 
@@ -21,29 +19,26 @@ set -e
 ################################################################################
 TIMESTAMP="${TIMESTAMP:-$(date +%Y%m%d%H%M%S)}"
 CPUSET_CPUS="${CPUSET_CPUS:-0}"
-EXPERIMENT_IMAGE_TAG="${EXPERIMENT_IMAGE_TAG:-memory-aware-chunking:${TIMESTAMP}}"
-EXPERIMENT_N_RUNS="${EXPERIMENT_N_RUNS:-3}"
-
 ROOT_DIR="$(git rev-parse --show-toplevel)"
 OUTPUT_DIR="${OUTPUT_DIR:-${ROOT_DIR}/experiments/03-improving-data-parallelism-using-memory-aware-chunking/out/results/${TIMESTAMP}}"
+
+# Experiment context
 DIND_VOLUME_NAME="${DIND_VOLUME_NAME:-mac__exp-03-dind-storage}"
+EXPERIMENT_IMAGE_TAG="${EXPERIMENT_IMAGE_TAG:-memory-aware-chunking:${TIMESTAMP}}"
+EXPERIMENT_N_RUNS="${EXPERIMENT_N_RUNS:-3}"
+EXPERIMENT_BUILD_CONTEXT="${EXPERIMENT_BUILD_CONTEXT:-${ROOT_DIR}/experiments/03-improving-data-parallelism-using-memory-aware-chunking}"
+EXPERIMENT_DOCKERFILE_PATH="${EXPERIMENT_DOCKERFILE_PATH:-${EXPERIMENT_BUILD_CONTEXT}/Dockerfile}"
+EXPERIMENT_COMMON_BUILD_CONTEXT="${EXPERIMENT_COMMON_BUILD_CONTEXT:-${ROOT_DIR}/libs/common}"
 
 # Data generation
 DATASET_INITIAL_SIZE="${DATASET_INITIAL_SIZE:-100}"
 DATASET_FINAL_SIZE="${DATASET_FINAL_SIZE:-400}"
 DATASET_STEP_SIZE="${DATASET_STEP_SIZE:-100}"
 
-# Worker scenarios
+# Scenarios
 WORKER_SCENARIOS="${WORKER_SCENARIOS:-single:1,two:2,smalln:4,bign:8}"
-# Chunking modes
 CHUNKING_MODES="${CHUNKING_MODES:-auto,evenly_split,memaware}"
-# GST3D model file
 GST3D_MODEL_FILE="${GST3D_MODEL_FILE:-${ROOT_DIR}/experiments/02-predicting-memory-consumption-from-input-shapes/out/results/20250331101842/best_models/gst3d.pkl}"
-
-# Paths to build context + Dockerfile
-EXPERIMENT_BUILD_CONTEXT="${EXPERIMENT_BUILD_CONTEXT:-${ROOT_DIR}/experiments/03-improving-data-parallelism-using-memory-aware-chunking}"
-EXPERIMENT_DOCKERFILE_PATH="${EXPERIMENT_DOCKERFILE_PATH:-${EXPERIMENT_BUILD_CONTEXT}/Dockerfile}"
-EXPERIMENT_COMMON_BUILD_CONTEXT="${EXPERIMENT_COMMON_BUILD_CONTEXT:-${ROOT_DIR}/libs/common}"
 
 # Filesystem-related variables
 HOST_UID="${HOST_UID:-$(id -u)}"

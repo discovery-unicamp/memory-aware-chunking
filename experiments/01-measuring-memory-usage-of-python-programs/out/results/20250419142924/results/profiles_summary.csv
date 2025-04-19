@@ -1,0 +1,9 @@
+tool,peak_memory_avg
+psutil,5785.5015625
+tracemalloc,4943.8569633483885
+kernel,5814.85234375
+resource,5887.89921875
+traceq_psutil,5847.9328125
+traceq_tracemalloc,5767.850218963623
+traceq_kernel,5852.34140625
+traceq_resource,5867.51796875
