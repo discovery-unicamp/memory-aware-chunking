@@ -4,9 +4,12 @@
 !.gitignore
 
 !notebooks
-!notebooks/01-dask-cluster-20250418202721
-!notebooks/01-dask-cluster-20250418202721/*
-!notebooks/01-dask-cluster-20250418202721/**/*
+!notebooks/01-measurement-demo-20250418202721
+!notebooks/01-measurement-demo-20250418202721/*
+!notebooks/01-measurement-demo-20250418202721/**/*
+!notebooks/02-traceq-demo-20250419014225
+!notebooks/02-traceq-demo-20250419014225/*
+!notebooks/02-traceq-demo-20250419014225/**/*
 
 !results
 

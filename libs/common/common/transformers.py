@@ -6,6 +6,7 @@ import numpy as np
 __all__ = [
     "transform_b_to_gb",
     "transform_kb_to_gb",
+    "transform_kb_to_mb",
     "transform_b_to_mb",
     "transform_mb_to_gb",
     "transform_ns_to_s",
@@ -21,6 +22,10 @@ def transform_b_to_gb(b_value: int) -> float:
 
 def transform_kb_to_gb(kb_value: int) -> float:
     return kb_value / (1024**2)
+
+
+def transform_kb_to_mb(kb_value: int) -> float:
+    return kb_value / 1024
 
 
 def transform_b_to_mb(b_value: int) -> float:
