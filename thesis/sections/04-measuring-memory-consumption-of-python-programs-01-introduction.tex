@@ -1,7 +1,28 @@
 \section{Introduction}
 \label{sec:mmc-introduction}
 
-%4.1 Introduction
-%• Motivation: Why accurate memory measurement is crucial for Python applications, especially in HPC or large-scale scientific workloads.
-%• Scope: A brief overview of what this chapter covers, linking to the Appendix for deeper technical details.
-%• Chapter Structure: Summarize upcoming sections (e.g., pitfalls overview, recommended approach, and the new traceq library).
+Accurate memory measurement in Python applications is critical, especially within the context of \ac{HPC} and large-scale scientific workloads.
+While Python has become prevalent in prototyping and production-level scientific computing due to its extensive numerical and data-processing libraries, it presents considerable challenges concerning precise memory management.
+These challenges primarily arise from Python’s complex memory model, which involves reference counting, dynamic memory allocation, and garbage collection interacting intricately with the operating system.
+Consequently, misjudgments in memory usage estimation can lead to severe resource mismanagement, causing either premature termination of tasks due to underestimated resources or inefficient utilization of expensive computational infrastructure due to overly cautious estimates.
+
+In \ac{HPC} scenarios, obtaining accurate and reliable memory measurements is essential for effective resource allocation and efficient execution of computational jobs.
+Conventional approaches, such as using operating system tools like \texttt{top}~\cite{top_linux_manpage} or built-in Python modules like \texttt{tracemalloc}~\cite{tracemalloc}, often yield varying and sometimes conflicting results.
+Each method provides a distinct perspective on memory consumption, thereby complicating efforts to attain definitive and comprehensive memory metrics.
+Additionally, containerization technologies like Docker~\cite{docker} and orchestration platforms such as Kubernetes~\cite{kubernetes} introduce further complexities, with their own memory accounting methods and caching mechanisms.
+This variability significantly exacerbates the challenge of accurately quantifying Python’s true memory footprint in distributed or containerized environments.
+
+Addressing these issues requires structured methodologies, a clear understanding of potential pitfalls, and a synthesis of best practices for memory measurement.
+The aim of this chapter is to offer a robust framework for reliably assessing Python’s memory usage in contexts where accuracy is paramount.
+The detailed technical intricacies such as memory fragmentation, garbage collection behaviors, and specific operating system interactions are elaborated in Appendix~\ref{ch:appendix-challenges-and-pitfalls-in-accurate-memory-measurement}, providing a deeper context for interested readers.
+
+This chapter is structured as follows.
+Section~\ref{sec:mmc-common-challenges-and-pitfalls} summarizes frequent difficulties encountered in Python memory measurement, including dynamic allocation issues, garbage collection-induced memory spikes, residual state from repeated allocations, and distortions caused by \ac{OS} and container-level caching.
+Section~\ref{sec:mmc-best-practices} presents practical recommendations to mitigate these identified pitfalls, including environment isolation strategies, appropriate combinations of internal Python and external system-level measurement tools, optimal sampling frequencies, and validation techniques.
+Section~\ref{sec:mmc-traceq} introduces the \texttt{traceq} library, specifically developed to address measurement challenges, covering its motivation, design goals, technical implementation details, usage examples, and validation benchmarks.
+A comprehensive step-by-step recommended measurement strategy, consolidating best practices and the \texttt{traceq} library usage into a clear, executable procedure, is outlined in Section~\ref{sec:mmc-recommended-strategy}.
+Finally, Section~\ref{sec:mmc-conclusion} concludes by reiterating key insights, emphasizing the importance of robust measurement strategies, summarizing the contributions of the \texttt{traceq} library, and proposing directions for future work, such as cluster-wide monitoring and GPU memory tracking.
+
+In summary, accurately measuring Python’s memory usage in complex computing environments is non-trivial.
+By integrating environment isolation, systematic sampling methods, and advanced tools like \texttt{traceq}, practitioners can obtain reliable metrics critical for resource optimization in \ac{HPC} workflows.
+This chapter equips readers with both the conceptual understanding and practical methods necessary to navigate and manage Python memory usage effectively in large-scale computational contexts.
