@@ -1,61 +1,7 @@
-\chapter{Measuring Memory Consumption of Python Programs}
-\label{ch:measuring-memory-consumption}
-
-
+\section{Introduction}
+\label{sec:mmc-introduction}
 
 %4.1 Introduction
 %• Motivation: Why accurate memory measurement is crucial for Python applications, especially in HPC or large-scale scientific workloads.
 %• Scope: A brief overview of what this chapter covers, linking to the Appendix for deeper technical details.
 %• Chapter Structure: Summarize upcoming sections (e.g., pitfalls overview, recommended approach, and the new traceq library).
-%
-%4.2 Common Challenges and Pitfalls (High-Level Summary)
-%• Link to Appendix: Reference the deeper discussion on measuring memory usage in Python. (e.g., “For a full exploration of memory fragmentation, garbage collection details, and OS-level quirks, refer to Appendix A.”)
-%• Key Takeaways (from the Appendix):
-%• Dynamic Memory & Garbage Collection: Summarize how Python’s GC and reference counting create transient memory peaks.
-%• Residual State & Fragmentation: Mention leftover references in interactive environments and fragmentation from repeated allocations.
-%• OS Caching & Containerization: Briefly highlight how the OS or container-level caches can distort memory metrics if not controlled.
-%• Tool Overhead: Note that profiling tools themselves (like tracemalloc) can slightly alter memory usage.
-%
-%4.3 Best Practices for Accurate Memory Measurement
-%• Environment Isolation: Emphasize the importance of containerized or subprocess-based isolation to reset states between runs.
-%• Clean Slate Strategy: Restarting kernels (in Jupyter) or processes between experiments to avoid leftover references.
-%• Combining External & Internal Tools:
-%• A high-level explanation of why a dual approach (system-level + Python-level) is often superior.
-%• Mention psutil or Docker stats for overall process usage vs. tracemalloc for Python object-level insights.
-%• Frequency & Granularity:
-%• Noting that one must pick an appropriate sampling rate or decide on peak-based approaches to avoid overhead or missing short spikes.
-%• Validation Techniques:
-%• Summarize how cross-checking with Docker stats or limiting memory helps confirm real usage.
-%
-%4.4 The \texttt{traceq} Library
-%• 4.4.1 Motivation & Design Goals
-%• Why a new library was created (e.g., bridging the gap between external checks and Python-internal traces, providing an easy-to-use API).
-%• Outline key features or objectives (lightweight overhead, integration with HPC workflows, easy Docker usage, etc.).
-%• 4.4.2 Implementation Overview
-%• Explain the technical backbone of traceq:
-%• Internally uses tracemalloc or other measurement modules.
-%• Possibly collects Docker stats or OS-level info.
-%• Summarizes memory usage in a single place (peak usage, usage over time).
-%• Discuss how it interacts with the Python GC or hooking into process metrics.
-%• 4.4.3 Usage Examples
-%• Show a minimal code snippet: how to import and start traceq, how to record memory usage, how to interpret the results.
-%• Potential example: traceq used in a typical HPC pipeline or a short script demonstrating real-time memory logging.
-%• 4.4.4 Validation & Comparisons
-%• Summarize any testing or benchmark used to verify traceq results against known references (e.g., Docker stats, psutil, or the memory constraints method).
-%• If relevant, mention performance overhead: e.g., “Our experiments showed overhead <5% in CPU and memory usage.”
-%
-%4.5 Recommended Measurement Strategy
-%• Step-by-Step Procedure
-%1. Environment setup: Container or ephemeral process.
-%2. Baseline measurement: Possibly record idle memory usage.
-%3. Run with traceq (or combined approach): capturing both peak and timeline.
-%4. Validate with Docker or memory-limited runs.
-%• Comparative Advantages: Summarize how the recommended approach (using traceq with best practices) is more accurate and less prone to leftover references or untracked OS usage.
-%
-%4.6 Conclusion
-%• Restate the Key Insights:
-%• Python’s memory measurement is tricky; referencing the Appendix reaffirms those pitfalls in detail.
-%• traceq addresses many issues by combining internal and external checks, offering reliable data.
-%• Next Steps or Extensions:
-%• Potential expansions, such as cluster-wide usage, GPU memory tracking, or real-time adaptive chunking (tying into the broader HPC workflow in your thesis).
-%• Possibly mention future feature additions for traceq.
