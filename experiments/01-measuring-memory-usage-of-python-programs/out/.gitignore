@@ -1,0 +1,13 @@
+*
+**/*
+
+!.gitignore
+
+!notebooks
+!notebooks/01-dask-cluster-20250418202721
+!notebooks/01-dask-cluster-20250418202721/*
+!notebooks/01-dask-cluster-20250418202721/**/*
+
+!results
+
+**/*.segy
