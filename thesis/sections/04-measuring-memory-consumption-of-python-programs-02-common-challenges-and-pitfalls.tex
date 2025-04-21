@@ -26,7 +26,7 @@ Thus, memory profiling in Python typically represents a transient snapshot rathe
 Deletion of objects does not necessarily release memory back to the OS or Python interpreter immediately, potentially skewing results when tests run repeatedly without process resets.
 
 \textbf{Memory Fragmentation.} Fragmentation may occur from repeated memory allocations and deallocations at both Python’s allocator level (\texttt{pymalloc}~\cite{pymalloc}) and underlying C libraries (e.g., \texttt{malloc}~\cite{malloc}).
-Fragmentation restricts effective reuse of memory segments, inflating the reported \ac{RSS} beyond the actual requirements of Python objects.
+Fragmentation restricts effective reuse of memory segments, inflating the reported \ac{RSS} beyond the actual requirements of Python objects.~\cite{lamprakos2022impact}
 
 \subsection{\ac{OS} Caching and Containerization Effects}
 \label{subsec:mmc-challenges-os-caching}
@@ -44,7 +44,7 @@ Failing to account for these \ac{OS}-level optimizations can significantly skew 
 \subsection{Tool Overhead}
 \label{subsec:mmc-challenges-tool-overhead}
 
-Memory profiling tools themselves introduce additional overhead, impacting measurements:
+Memory profiling tools themselves introduce additional overhead~\cite{scalene}, impacting measurements:
 
 \begin{itemize}
     \item \textbf{Internal Profilers.} Tools such as \texttt{tracemalloc}, which intercept memory allocation calls, alter native allocation behavior and can increase observed memory usage, especially during numerous small allocations.

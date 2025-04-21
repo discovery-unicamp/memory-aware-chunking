@@ -6,7 +6,7 @@ While Python has become prevalent in prototyping and production-level scientific
 These challenges primarily arise from Python’s complex memory model, which involves reference counting, dynamic memory allocation, and garbage collection interacting intricately with the operating system.
 Consequently, misjudgments in memory usage estimation can lead to severe resource mismanagement, causing either premature termination of tasks due to underestimated resources or inefficient utilization of expensive computational infrastructure due to overly cautious estimates.
 
-In \ac{HPC} scenarios, obtaining accurate and reliable memory measurements is essential for effective resource allocation and efficient execution of computational jobs.
+In \ac{HPC} scenarios, obtaining accurate and reliable memory measurements is essential for effective resource allocation and efficient execution of computational jobs~\cite{layton_processor_2025}.
 Conventional approaches, such as using operating system tools like \texttt{top}~\cite{top_linux_manpage} or built-in Python modules like \texttt{tracemalloc}~\cite{tracemalloc}, often yield varying and sometimes conflicting results.
 Each method provides a distinct perspective on memory consumption, thereby complicating efforts to attain definitive and comprehensive memory metrics.
 Additionally, containerization technologies like Docker~\cite{docker} and orchestration platforms such as Kubernetes~\cite{kubernetes} introduce further complexities, with their own memory accounting methods and caching mechanisms.

@@ -58,7 +58,7 @@ ensure correctness before execution.
 
 ### 1. Experiment Execution Workflow
 
-![](../../../../thesis/assets/images/04-experiment-flowchart.png)
+![](../../../../thesis/assets/images/appendix-a/04-experiment-flowchart.png)
 
 Following the flowchart above, the experiment follows a structured workflow to ensure consistency across multiple runs
 and minimize external interferences:
