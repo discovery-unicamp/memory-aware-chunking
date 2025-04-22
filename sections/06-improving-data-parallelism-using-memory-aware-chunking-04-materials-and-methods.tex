@@ -1,0 +1,96 @@
+\section{Materials and Methods}
+\label{sec:idp-materials-methods}
+
+This section outlines the comprehensive experimental methodology employed to evaluate the performance and efficacy of memory-aware chunking.
+The experiment is structured as a multi-stage pipeline that encompasses data generation, systematic computational profiling within isolated Docker containers, rigorous aggregation of profiling results, and detailed analysis supported by visualization.
+
+\subsection*{Overall Structure}
+
+The experimental pipeline is orchestrated by a single Bash script, \texttt{experiment.sh}, which sequentially coordinates four core Python scripts:
+
+\begin{enumerate}
+    \item \textbf{Data Generation} (\texttt{generate\_data.py})
+    \item \textbf{Profiling Execution} (\texttt{collect\_profile.py})
+    \item \textbf{Result Consolidation} (\texttt{collect\_results.py})
+    \item \textbf{Analysis and Plotting} (\texttt{analyze\_results.py})
+\end{enumerate}
+
+Each step executes within \ac{DIND} containers, ensuring consistent environments, reproducibility of results, and clear isolation of software dependencies.
+
+\subsection*{Configuration and Environment}
+
+All experiments were executed on a single \ac{HPC} node at the \ac{UNICAMP} Discovery Labs, equipped with an Intel\textregistered\ Xeon\textregistered\ Silver 4310 processor, 256~\ac{GB} of \ac{RAM}, and two \ac{RTX}~A6000 \ac{GPU}s. Despite the presence of \ac{GPU} resources, all runs relied exclusively on \ac{CPU} execution to ensure comparability across input shapes.
+
+The experiment is extensively configurable through environment variables specified at the beginning of the orchestrator script.
+Important configurable parameters include:
+
+\begin{itemize}
+    \item \texttt{TIMESTAMP}: Unique identifier for output directories, defaulting to the current date and time.
+    \item \texttt{CPUSET\_CPUS}: Specifies the CPU cores available to Docker, defaulting to core 0.
+    \item \texttt{EXPERIMENT\_IMAGE\_TAG}: Docker image tag used for executing Python scripts.
+    \item \texttt{EXPERIMENT\_N\_RUNS}: Number of repetitions for each scenario, defaulting to 3 runs per configuration.
+    \item \texttt{DATASET\_INITIAL\_SIZE}, \texttt{DATASET\_FINAL\_SIZE}, \texttt{DATASET\_STEP\_SIZE}: Control the dimensions of synthetic seismic data generated, ranging from 100³ to 400³ voxels, incremented by steps of 100.
+    \item \texttt{WORKER\_SCENARIOS}: Specifies worker configurations (e.g., \texttt{single:1}, \texttt{two:2}, \texttt{smalln:4}, \texttt{bign:8}).
+    \item \texttt{CHUNKING\_MODES}: Determines which chunking strategies to compare, including \texttt{auto}, \texttt{evenly\_split}, and \texttt{memaware}.
+    \item \texttt{GST3D\_MODEL\_FILE}: Path to the pre-trained predictive model for memory-aware chunking.
+    \item \texttt{MEMORY\_LIMIT\_GB}: Defines the total memory allocation available per scenario, partitioned evenly among workers.
+\end{itemize}
+
+All configuration settings are logged at the experiment’s initiation for transparency and debugging purposes.
+
+\subsection*{Step 1: Data Generation}
+
+Data generation utilizes the \texttt{generate\_data.py} script, which systematically creates synthetic \ac{SEG-Y} seismic datasets across a grid of specified shapes.
+It iteratively generates data volumes for all combinations of dimensions defined within the configured size range (e.g., $(100,100,100)$ through $(400,400,400)$), saving each as individual \texttt{.segy} files.
+
+\subsection*{Step 2: Profiling Scenarios}
+
+This stage represents the experiment’s core, systematically evaluating the computational performance of different chunking methods.
+For each synthetic dataset, the pipeline:
+
+\begin{enumerate}
+    \item Deploys a local Dask cluster within a containerized environment, with a specified number of workers and memory allocation per worker derived from \texttt{MEMORY\_LIMIT\_GB}.
+    \item Tests each chunking strategy:\begin{itemize}
+                                           \item \texttt{auto}: Default heuristic-driven chunking provided by Dask.
+                                           \item \texttt{evenly\_split}: Divides volumes into equal-sized sub-volumes.
+                                           \item \texttt{memaware}: Employs the pre-trained memory prediction model to estimate the largest feasible chunk dimension that safely fits within memory constraints, adjusted by a safety factor.
+    \end{itemize}
+    \item Executes the gradient-structure-tensor computational kernel while concurrently recording execution time and detailed memory usage profiles (peak and average usage) via periodic sampling.
+    \item Stores profiling results into structured JSON files, systematically named by dataset shape, chunking mode, worker count, and timestamp.
+\end{enumerate}
+
+\subsection*{Step 3: Result Consolidation}
+
+The \texttt{collect\_results.py} script aggregates the profiling JSON outputs into comprehensive, structured CSV datasets:
+
+\begin{itemize}
+    \item \texttt{profiles\_summary.csv}: Summarizes each experimental run, including total execution time, peak memory usage, and \ac{OOM} occurrences.
+    \item \texttt{profiles\_detail.csv}: Provides detailed, per-worker memory usage histories and averages for in-depth analysis.
+\end{itemize}
+
+This consolidation step also addresses incomplete experiments by marking missing scenario results explicitly as \ac{OOM} or failures, ensuring data completeness.
+
+\subsection*{Step 4: Analysis and Visualization}
+
+The final analytical step, executed by \texttt{analyze\_results.py}, interprets consolidated data to assess chunking strategies comprehensively:
+
+\begin{itemize}
+    \item Generates visualizations, including line charts comparing execution time and peak memory usage across worker counts and chunking strategies.
+    \item Produces detailed box plots for per-worker memory usage, facilitating deeper insight into workload distribution.
+    \item Creates a leaderboard \ac{CSV} summarizing the best-performing chunking mode for each dataset shape and worker scenario combination, quantifying relative performance improvements.
+    \item Aggregates additional statistical summaries such as means, medians, \ac{OOM} frequencies, and distributions of chunk counts.
+\end{itemize}
+
+\subsection*{Experimental Significance}
+
+The structured approach described above enables rigorous comparative analysis between traditional heuristic chunking and the proposed memory-aware strategy.
+Key benefits include:
+
+\begin{itemize}
+    \item \textbf{Automated Reproducibility}: A single, comprehensive script facilitates repeatable, end-to-end experimentation.
+    \item \textbf{Fair Comparison}: Identical datasets, hardware constraints, and repetitions ensure unbiased performance evaluations.
+    \item \textbf{Memory-Awareness}: Empirically tests the practical benefits of leveraging predictive modeling to select optimal chunk sizes.
+    \item \textbf{Comprehensive Metrics}: Captures detailed performance (execution time) and resource utilization (memory usage), enabling nuanced performance assessment.
+\end{itemize}
+
+In summary, this detailed experimental methodology enables robust validation of memory-aware chunking as a superior approach to managing computational resources effectively and enhancing data parallelism in high-performance computing contexts.
