@@ -1,4 +1,170 @@
 \chapter{Fundamental Concepts}
 \label{ch:fundamental-concepts}
 
-\DFTODO{Definir os conceitos fundamentais que serão explicados}
+\ac{HPC} accelerates large-scale scientific, engineering, and data-driven tasks by distributing computation over multiple nodes, \ac{CPU}s, or specialized accelerators.
+These environments demand careful planning of memory and processing resources, because errors in estimation can degrade throughput or cause \ac{OOM} failures.
+Python’s increasing adoption in \ac{HPC} contexts offers accessibility and a rich ecosystem of libraries, but it also introduces a unique set of challenges related to memory usage.
+Containerization, meanwhile, has evolved as a lightweight alternative to full virtualization, adding another dimension to resource management.
+Data-parallel frameworks such as Dask further complicate or enhance performance by partitioning data into chunks, where naive chunking strategies can ignore memory-intensive stages.
+Predictive modeling of resource needs arises as an effective solution to reduce trial-and-error.
+This chapter details these core \ac{HPC} and Python concepts, illuminating why memory measurement and prediction strategies require specialized approaches.
+
+
+\section{High-Performance Computing Overview}
+\label{sec:fundamentals-hpc-overview}
+
+\ac{HPC} platforms integrate numerous compute nodes, each containing multiple \ac{CPU} cores or \ac{GPU}s, unified through high-speed interconnects such as InfiniBand~\cite{infiniband-ta-2015}.
+Jobs typically request resources through a batch scheduler, for example Slurm or \ac{PBS}.
+Schedulers queue and dispatch these jobs according to priority, availability, and requested resource constraints.
+Memory allocation must be specified in advance, and erroneous estimates have direct consequences.
+Overestimation wastes cluster capacity.
+Underestimation leads to abrupt terminations when the requested memory limit is exceeded.
+
+\subsection{Resource Allocation and Scheduling}
+\label{subsec:fundamentals-resource-allocation}
+
+Schedulers organize job placement by matching requests to available hardware resources.
+A job that requests certain memory and \ac{CPU} time receives an allocation that remains exclusive until job completion.
+This exclusivity makes memory misuse or imprecise estimates especially costly, since HPC nodes cannot be effectively shared beyond the scheduled allocations.
+If a program demands more memory than predicted, the result can be node-level \ac{OOM} kills, requeuing, or job failure.
+Such inefficiencies motivate improved predictive models and measurement tools.
+
+\subsection{Parallel Workloads and Concurrency}
+\label{subsec:fundamentals-parallel-concurrency}
+
+\ac{HPC} workloads often rely on parallelization interfaces like \ac{OpenMP} (thread-based), \ac{MPI} (message passing), or higher-level abstractions such as array partitioning frameworks.
+Parallel processes operate on different segments of data or distinct tasks within the same workflow.
+Memory usage then must be balanced across multiple workers or nodes to avoid local \ac{OOM} incidents.
+In distributed-memory architectures, each node has private memory.
+In shared-memory or hybrid architectures, different threads or processes may compete for the same memory pool.
+Either approach demands a clear understanding of per-worker memory behavior.
+
+
+\section{Python Memory Model and Measurement Challenges}
+\label{sec:fundamentals-python-memory}
+
+Python’s ecosystem provides convenient libraries (NumPy, SciPy, Pandas, Dask, PyTorch) that enable rapid development of \ac{HPC} applications.
+However, Python’s memory subsystem complicates direct measurement and reliable estimates.
+
+\subsection{Reference Counting}
+\label{subsec:fundamentals-refcounting}
+
+Every Python object maintains a reference count that tracks how many pointers reference it.
+When this count reaches zero, Python deallocates the object.
+Short-lived or frequently created objects may inflate memory usage in bursts, particularly when arrays are constructed as intermediates in a computation.
+Code that spawns many temporary arrays (e.g., sub-slices, filtering masks, partial results) may show dramatic but brief peaks in memory consumption.
+
+\subsection{Garbage Collection}
+\label{subsec:fundamentals-gc}
+
+Python also uses a cyclic garbage collector for objects that form reference cycles, which reference counting alone cannot reclaim.
+Garbage collection runs periodically, scanning object graphs to find cycles.
+This mechanism can delay memory freeing and cause occasional spikes in \ac{CPU} usage.
+Memory usage observed just before a garbage-collection cycle might look higher than at other times, while reclaimed memory might still remain allocated within Python’s private arenas.
+
+\subsection{Memory Fragmentation and \ac{OS} Interactions}
+\label{subsec:fundamentals-fragmentation}
+
+At the Python level, the allocator may request memory from the operating system in relatively large chunks.
+Frequent allocations and deallocations can fragment these chunks, resulting in internal fragmentation.
+At the \ac{OS} level, calls to \texttt{malloc} and \texttt{free} do not always return memory to the kernel immediately.
+Thus, \ac{RSS} might remain elevated even if Python has freed objects internally.
+Peaks might also be undercounted if certain memory pages are cached but not labeled as used in standard \ac{OS} metrics.
+These conditions complicate the interpretation of a single memory usage metric.
+
+
+\section{Containerization in \ac{HPC}}
+\label{sec:fundamentals-containerization}
+
+Containerization packages software dependencies and environment configuration into isolated bundles that share the host’s kernel while separating file systems, namespaces, and cgroups.
+Containers provide a consistent application environment across diverse \ac{HPC} systems.
+They also enable per-container resource constraints, including memory quotas.
+
+\subsection{Docker and Singularity}
+\label{subsec:fundamentals-docker-singularity}
+
+Docker is a popular container platform for microservices and cloud deployments, though \ac{HPC} sites increasingly adopt it when security policies allow.
+Singularity is another container solution aimed at \ac{HPC} settings, granting user-level container execution without privileged operations.
+Both can isolate Python processes and dependencies to ensure reproducible states for measurement or production runs.
+
+\subsection{Nested Containers and \ac{DIND}}
+\label{subsec:fundamentals-nested-dind}
+
+\ac{DIND} enables running new containers within an existing container environment, offering an additional isolation layer that can prevent external interference.
+This environment proves useful for memory measurement, because multiple ephemeral containers can be launched, each representing a clean-slate state for repeated experiments.
+
+\subsection{Cgroups for Memory Management}
+\label{subsec:fundamentals-cgroups}
+
+Control groups (cgroups) in Linux limit and track resource usage (\ac{CPU}, memory, \ac{I/O}) for processes.
+Containers built on cgroups can impose memory caps and allow for in-depth accounting of each container’s usage.
+However, cgroup metrics do not inherently distinguish which process or library inside the container allocates memory.
+Python-level measurement thus remains necessary for precise insight into dynamic allocation behavior and overhead from Python’s internal mechanisms.
+
+
+\section{Data-Parallel Frameworks and Chunking}
+\label{sec:fundamentals-data-parallel}
+
+Data partitioning is crucial when large datasets exceed the memory capacity of a single node or must be processed in parallel.
+Frameworks like Dask allow arrays or dataframes to be split into smaller \emph{chunks} across multiple workers, enabling concurrent execution.
+
+\subsection{Dask Arrays and Task Graphs}
+\label{subsec:fundamentals-dask-overview}
+
+Dask builds a \ac{DAG} of tasks, each representing an operation (for instance, array slicing, map operations, or reductions) on one or more chunks.
+Workers consume and produce chunks as scheduled.
+Heuristic-based auto-chunking sets chunk sizes with limited awareness of actual operator memory usage.
+This naive approach leads to frequent imbalance:
+\begin{itemize}
+    \item \emph{Over-fragmentation} if chunks are too small, increasing overhead from task scheduling.
+    \item \emph{\ac{OOM} errors} if chunks are too large, surpassing worker memory.
+\end{itemize}
+
+\subsection{Memory-Intensive Operators}
+\label{subsec:fundamentals-memory-ops}
+
+Many \ac{HPC} workloads involve \ac{3D} convolutions, Fourier transforms, or matrix decompositions that create large intermediate buffers.
+Allocating these buffers can multiply memory usage beyond the size of the input array itself.
+If each chunk is processed with an operator that amplifies the array footprint, then chunk boundary decisions become critical.
+Insufficiently sized chunks might hamper parallel efficiency, while oversized chunks may exceed memory capacity.
+
+
+\section{Predictive Modeling in HPC Resource Management}
+\label{sec:fundamentals-predictive-modeling}
+
+Resource managers benefit significantly from predictive models that forecast memory usage or runtime based on job features.
+Such forecasts reduce guesswork in scheduling and facilitate better cluster utilization.
+
+\subsection{Existing Approaches and Gaps}
+\label{subsec:fundamentals-existing-approaches}
+
+Historical-based solutions gather logs of prior runs and fit regressions or machine-learning models to estimate resources for similar future jobs.
+A limitation arises when new workloads present shapes or configurations unlike any previously seen.
+In such situations, shape-based or operator-based predictions are more reliable, especially for consistent algorithms whose memory usage follows a mathematical pattern.
+
+\subsection{Shape-Based Memory Prediction}
+\label{subsec:fundamentals-shape-prediction}
+
+Tensor-centric tasks often revolve around multi-dimensional data, where memory usage correlates closely with array volume or dimension sizes.
+Large arrays, by definition, store more elements, leading to proportionally higher memory demands.
+Certain operators add overhead that scales with the same dimension or an offset of it.
+Empirical studies repeatedly show near-linear relationships between array size and peak memory for filters, transforms, or deep learning layers.
+
+\subsection{Chunking Decisions via Modeling}
+\label{subsec:fundamentals-chunking-decisions}
+
+Predictive models help \ac{HPC} frameworks decide chunk sizes based on the memory footprint expected per chunk, factoring in overhead from the operators in question.
+Memory usage per chunk can be estimated from the data shape, and chunk boundaries can then be constrained by a user-defined or system-imposed memory threshold.
+This approach significantly reduces \ac{OOM} incidents and the risk of idle workers awaiting a chunk that some worker cannot handle.
+
+
+\section{Summary of Fundamental Concepts}
+\label{sec:fundamentals-summary}
+
+\ac{HPC} resource management requires precise knowledge of how applications use memory, yet Python introduces complexities via reference counting, garbage collection, and dynamic allocations that standard profiling methods do not always capture well.
+Containerization enables stable environments and cgroup-based memory constraints, yet container-level metrics alone do not dissect Python’s internal overhead.
+Data-parallel frameworks—such as Dask—rely on chunking to scale large datasets across many workers, but naive chunk sizing can yield inefficient or failing computations.
+
+Predictive models that link shape attributes (e.g., total volume, dimension sizes) to expected memory usage serve as powerful mechanisms to drive chunking decisions and resource scheduling.
+When integrated properly, these models minimize guesswork while maintaining concurrency and preventing out-of-memory failures.
+The subsequent chapters detail how to measure Python memory accurately, how to build shape-based predictors for typical scientific workloads, and how to incorporate those predictors into chunk partitioning to achieve reliable, memory-aware data parallelism.

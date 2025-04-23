@@ -2,7 +2,7 @@
 \label{sec:mmc-traceq}
 
 The \texttt{traceq} library is a specialized Python profiling tool designed for detailed and accurate measurement of memory usage in Python programs.
-Traditional methods for measuring memory—such as Docker container statistics or \ac{OS}-level queries—often miss Python-internal nuances or introduce significant overhead.
+Traditional methods for measuring memory, such as Docker container statistics or \ac{OS}-level queries, often miss Python-internal nuances or introduce significant overhead.
 \texttt{traceq} addresses this by combining low-level Python profiling mechanisms with high-level system monitoring techniques, tailored specifically for memory-aware chunking applications and \ac{HPC} workflows.
 
 \subsection{Motivation and Design Goals}
@@ -30,7 +30,7 @@ By integrating Python-internal tools such as \texttt{tracemalloc} with \ac{OS}-l
 \begin{itemize}
     \item \textbf{Python-internal tracing (\texttt{tracemalloc})}: Captures detailed memory allocation and deallocation patterns within Python’s managed heap, highlighting fine-grained memory dynamics.
     \item \textbf{System-level metrics (\texttt{psutil})}: Provides real-time monitoring of \ac{RSS} and virtual memory consumption, offering visibility into native extensions and non-Python memory allocations.
-    \item \textbf{Container-level statistics (Docker/cgroups)}: Optionally integrates Docker or Linux cgroup metrics, essential for \ac{HPC} workflows and containerized applications.
+    \item \textbf{Kernel-level statistics (/proc)}: Integrates with Linux kernel metrics, essential for \ac{HPC} workflows and containerized applications.
     \item \textbf{Direct function-level tracing}: Identifies specific functions responsible for significant memory usage, enabling pinpoint accuracy in detecting memory-intensive code segments.
 \end{itemize}
 
@@ -70,24 +70,29 @@ This workflow ensures accurate tracking of memory dynamics, enabling insightful 
 
 \textbf{Simple profiling example:}
 \begin{verbatim}
-traceq profile my_script.py –metric memory –precision 0.1
+traceq profile my_script.py –-enable-metric memory –-profiler-precision 1
 \end{verbatim}
 
 This command profiles memory usage with 100ms sampling intervals, generating detailed trace reports.
 
-\textbf{Integration in \ac{HPC} environments:}
-\begin{verbatim}
-srun traceq profile simulation.py –interval
-\end{verbatim}
-
-When integrated into \ac{HPC} schedulers (e.g., Slurm), \texttt{traceq} logs memory and execution-time data, facilitating real-time resource monitoring and optimization.
-
 \textbf{Docker container profiling:}
 \begin{verbatim}
-docker run traceq profile main.py –docker-stats –precision 0.5
+docker run traceq profile main.py –-profiler-precision 4
 \end{verbatim}
 
-In Docker environments, enabling container-level statistics allows for correlation between Python-level memory events and container resource usage.
+You can run withihn a Docker container, allowing for seamless integration into containerized workflows.
+
+\textbf{Profiling with a decorator:}
+\begin{verbatim}
+from traceq import profile
+
+@profile
+def my_function():
+    # Function code here
+    pass
+\end{verbatim}
+
+This decorator enables profiling of specific functions, providing targeted insights into memory usage.
 
 \subsection{Validation and Performance}
 \label{sec:mmc-traceq-validation}
