@@ -80,7 +80,7 @@ This could be a binary classification using features from the job submission (us
 If the job is predicted to be large-memory, a specialized regression model then predicts the amount of memory it will use, trained only on historical large-memory jobs.
 By isolating this subset, the regression can learn the behavior of memory-intensive applications without interference from the many small jobs.
 Conversely, if a job is predicted to be small, a separate model (or simply a default low memory value) can be used, but the primary contribution is improving large-job estimates.
-They evaluated this approach on real job logs from IBM Spectrum \ac{LSF} clusters (multiple sites), using typical \ac{ML} algorithms for classification and regression (the specific models aren’t stated in the abstract, but likely decision trees or ensembles given the results).
+They evaluated this approach on real job logs from IBM Spectrum \ac{LSF} clusters (multiple sites), using a typical Random Forest model for classification and regression.
 The results showed a significant improvement: for nearly 90\% of large memory jobs, the prediction error was reduced by up to 40\% compared to a one-size-fits-all model.
 In other words, the specialized predictor was much more accurate on the important high-memory cases.
 Additionally, by filtering the training dataset, they reduced model training cost by >30\% while still focusing on the most critical data.
@@ -90,7 +90,7 @@ This work is relevant to memory-aware scheduling because it means the scheduler 
 For example, if the classifier flags a job as large-memory, the scheduler might schedule it on a node with more available RAM or not pack it with other memory-heavy jobs.
 The approach also complements a shape-based regressor: while Li \textit{et al.} do not explicitly use data sizes or program characteristics, they implicitly group jobs by “type” (large-memory patterns).
 In a Python context, one might analogously first detect if a task will be data-intensive (e.g. based on array sizes) and then apply a detailed model.
-The two-step method highlights an important point for the user’s thesis: segmenting the prediction problem can yield better accuracy.
+The two-step method highlights an important point: segmenting the prediction problem can yield better accuracy.
 If in a Dask workflow some tasks (like certain tensor operations) are known to dominate memory, it might be worth modeling them separately from trivial tasks.
 Li \textit{et al.}’s use of historical logs is an offline empirical validation approach – they need past data for similar jobs.
 The user’s shape-based approach could achieve something similar by using domain knowledge (input sizes) to identify heavy tasks even without extensive history.
