@@ -1,0 +1,23 @@
+\section{Conclusion}
+\label{sec:mmc-conclusion}
+
+Measuring memory consumption in Python introduces complexities that involve Python’s allocator, operating system abstractions, container accounting, and ephemeral or frequently reused data structures.
+This chapter provides a systematic approach for addressing those challenges through environment isolation, a clean‑slate procedure for each measurement cycle, multi‑tool cross‑validation, and careful sampling strategies.
+
+The analysis identifies common difficulties in Python memory measurement, including fragmentation, garbage‑collection‑induced spikes, and residual references that linger in interactive or long‑lived processes.
+\ac{OS}‑level caching and container overhead further distort or misrepresent memory usage.
+Profilers such as \texttt{tracemalloc} offer detailed insights but add their own instrumentation overhead, making it necessary to correlate Python‑level data with external metrics like \texttt{psutil}, \texttt{/proc}, and Docker stats.
+
+The best practices presented in this chapter recommend running containerized or subprocess‑based experiments to avoid memory artifacts from previous runs and hidden references.
+A “clean slate” policy restarts kernels or interpreter processes to eliminate accumulated fragmentation or lingering objects.
+Combining both internal (e.g., \texttt{tracemalloc}) and external (e.g., \texttt{psutil}, \texttt{/proc}) measurement tools, as well as carefully tuning the sampling frequency, reveals transient memory spikes without overwhelming the system.
+Validating these measurements through memory limits or multi‑tool comparisons confirms their accuracy and stability across repeated runs.
+
+The \texttt{traceq} library consolidates these measurement techniques and manages high‑frequency sampling with minimal overhead.
+\texttt{traceq} captures short‑lived allocations that coarse \ac{OS}‑level polling might miss, and it outputs consistent data formats for post‑analysis.
+Pinning \ac{CPU} cores, clearing caches, and performing warm‑up runs in a nested containerized setup further strengthens reproducibility and eliminates interference from host services.
+Experimental comparisons demonstrate that \texttt{traceq} collects significantly more samples than native approaches while preserving peak memory readings within a small margin of error.
+
+Accurate memory measurement in Python calls for deliberate and structured workflows.
+Careful isolation, combined with balanced instrumentation, minimizes \ac{OOM} failures and prevents excessive over‑provisioning—particularly in \ac{HPC} contexts where memory usage imposes strict resource ceilings.
+Future chapters will build on these strategies to predict memory consumption from input shapes and improve data parallelism with memory‑aware chunking, using the same measurement methodologies to ensure dependable results in large‑scale or performance‑sensitive environments.

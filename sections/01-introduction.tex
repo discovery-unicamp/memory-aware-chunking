@@ -5,20 +5,57 @@
 \section{Motivation}
 \label{sec:intro-motivation}
 
-\DFTODO{Desafios no processamento de dados em larga escala, focando em sísmica}
-\DFTODO{Problemas com o gerenciamento de recursos em sistemas distribuídos como o Dask}
-\DFTODO{A necessidade de prever o consumo de memória para definir o tamanho do chunk em algoritmos que são memory-intensive}
+\ac{HPC} systems and distributed processing frameworks are increasingly called upon to handle massive, resource-intensive tasks.
+Seismic workloads stand out as an example of large-scale data processing where input volumes often span hundreds of gigabytes or more.
+These volumes require significant memory capacity for storage, intermediate computations, and output generation.
+Numerical methods in seismic analysis also introduce additional complexity by creating temporary buffers, running matrix operations on large arrays, or storing partial results for subsequent steps.
+
+Distributed platforms such as Dask~\cite{rocklin2015dask} facilitate horizontal scaling, enabling multiple workers to process segments (\emph{chunks}) of the data in parallel.
+This level of concurrency substantially reduces execution time but carries important risks if resource demands are underestimated.
+Dask's default chunking heuristics do not factor in the memory requirements of specific operators or data types.
+They distribute data primarily based on file-block boundaries or user-defined size targets.
+This approach can lead to an overfragmented pipeline, where overhead from excessively many tasks slows the job, or conversely, oversize chunks, where memory usage exceeds the available capacity and triggers \ac{OOM} errors.
+
+These challenges motivate the development of more reliable strategies for anticipating memory usage.
+When data is \emph{memory-intensive}, knowledge of memory requirements is critical, because one miscalculation can crash a job or underutilize the system.
+In seismic processing, for instance, convolution-based algorithms or three-dimensional filtering often exhibit unpredictable memory spikes due to short-lived but large intermediate arrays.
+A robust memory-aware method to define chunk dimensions is therefore essential for \ac{HPC} and distributed systems, eliminating tedious attempts to guess resource allocations.
 
 
 \section{Objectives}
 \label{sec:intro-objectives}
 
-\DFTODO{Desenvolver um método para estimar o consumo de memória com a menor quantidade de execuções possíveis}
-\DFTODO{Tornar o auto-chunking do Dask memory-aware para reduzir a tentativa e erro na alocação de recursos}
+The overarching objective of this thesis is to create a systematic and efficient method for estimating memory consumption in large-scale, Python-based data processing tasks, using a minimal number of experimental runs.
+Specifically, the work seeks to integrate such predictive insights into Dask’s chunking logic, making it \emph{memory-aware} rather than relying on naive file-size or user-defined heuristics.
+
+More concretely, this thesis pursues the following:
+\begin{itemize}
+    \item \textbf{Modeling Memory Usage.}
+    Develop a procedure to profile Python’s memory consumption in a controlled manner and derive a predictive model that correlates high-level input characteristics (e.g., volume or dimensional parameters) with peak memory usage.
+    \item \textbf{Minimizing Trial Executions.}
+    Ensure that profiling a small selection of data shapes or input sizes yields sufficient information to generalize memory demands across a wider range of workloads.
+    \item \textbf{Enhancing Auto-Chunking.}
+    Extend Dask’s existing auto-chunking mechanism so it accounts for memory requirements based on the model, reducing the risk of under-allocation or excessive overhead.
+\end{itemize}
 
 
 \section{Contributions}
 \label{sec:intro-contributions}
 
-\DFTODO{Criação de um modelo preditivo para o consumo de memória}
-\DFTODO{Desenvolvimento de um método para estimar o consumo de memória com poucas execuções}
+The contributions of this thesis can be summarized as follows:
+\begin{itemize}
+    \item \textbf{Predictive Memory Model.}
+    A lightweight predictive model is introduced that estimates peak memory usage from a small set of profiler runs.
+    The model exploits measurable input characteristics such as array dimensions and uses these as features in an empirically validated regression or machine-learning pipeline.
+
+    \item \textbf{Practical Method for Minimal Profiling.}
+    A method is presented to reduce the profiling effort required, so multiple full-scale executions become unnecessary.
+    The strategy isolates key data points or shapes to accurately capture operator memory behavior with minimal overhead, enabling simpler integration with real-world HPC pipelines.
+
+    \item \textbf{Memory-Aware Auto-Chunking.}
+    A memory-aware chunking algorithm is proposed that adopts the predictive model’s estimates to set chunk sizes in Dask automatically.
+    This approach reduces guesswork when partitioning data, mitigates \ac{OOM} failures, and avoids conservative over-allocation.
+\end{itemize}
+
+These developments address the critical need for robust memory management in high-volume seismic data processing and other demanding \ac{HPC} applications.
+By combining measurement, modeling, and automated chunk resizing, the solutions outlined here streamline distributed computing workflows that rely on Python and Dask for large-scale scientific or industrial tasks.

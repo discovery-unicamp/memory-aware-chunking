@@ -374,6 +374,14 @@ and Schwiegelshohn, Uwe",
     doi = {10.1145/3292500.3330701}
 }
 
+@misc{delucca2025experiment1,
+    author = {Daniel Fonseca},
+    title = {Memory-Aware Chunking: Experiment Folder for Measuring Memory Consumption of Python programs},
+    year = {2025},
+    howpublished = {\url{https://github.com/discovery-unicamp/memory-aware-chunking/blob/main/experiments/01-measuring-memory-usage-of-python-programs}},
+    note = {Accessed: 2025-03-23}
+}
+
 @misc{delucca2025experiment2,
     author = {Daniel Fonseca},
     title = {Memory-Aware Chunking: Experiment Folder for Predicting Memory Consumption from Input Shapes},
@@ -529,4 +537,114 @@ and de Supinski, Bronis R.",
     editor = {Huff, Kathryn and Bergstra, James},
     pages = {130--136},
     year = {2015},
+}
+
+@misc{top_linux_manpage,
+    title = {top(1) - Linux User's Manual},
+    author = {procps-ng project},
+    year = {2023},
+    note = {Available online at \url{https://man7.org/linux/man-pages/man1/top.1.html}},
+}
+
+@manual{malloc,
+    title = {{Memory Allocation} (malloc, calloc, realloc, free)},
+    author = {{The GNU C Library Reference Manual}},
+    organization = {Free Software Foundation, Inc.},
+    year = {2021},
+    note = {Online; accessed 2025-04-19},
+    url = {https://www.gnu.org/software/libc/manual/html_node/Memory-Allocation.html}
+}
+
+@misc{kubernetes,
+    author = {{Kubernetes Authors}},
+    title = {{Kubernetes}: Production‑Grade Container Orchestration},
+    howpublished = {\url{https://kubernetes.io}},
+    year = {2025},
+    note = {Version 1.32 (stable). Accessed 2025‑04‑19}
+}
+
+@online{layton_processor_2025,
+    author = {Layton, Jeff},
+    title = {Monitoring {HPC} Systems: Processor and Memory Metrics},
+    year = {2025},
+    organization = {{ADMIN} Magazine},
+    url = {https://www.admin-magazine.com/HPC/Articles/Processor-and-Memory-Metrics},
+    urldate = {2025-04-21},
+    note = {HPC article on practical techniques for collecting processor and memory metrics across cluster nodes}
+}
+
+@inbook{lamprakos2022impact,
+    author = {Lamprakos, Christos and Papadopoulos, Lazaros and Catthoor, Francky and Soudris, Dimitrios},
+    year = {2022},
+    month = {08},
+    pages = {219-234},
+    title = {The Impact of Dynamic Storage Allocation on CPython Execution Time, Memory Footprint and Energy Consumption: An Empirical Study},
+    isbn = {978-3-031-15073-9},
+    doi = {10.1007/978-3-031-15074-6_14}
+}
+
+@inproceedings{scalene,
+    author = {Emery D. Berger and Sam Stern and Juan Altmayer Pizzorno},
+    title = {Triangulating Python Performance Issues with {SCALENE}},
+    booktitle = {17th USENIX Symposium on Operating Systems Design and Implementation (OSDI 23)},
+    year = {2023},
+    isbn = {978-1-939133-34-2},
+    address = {Boston, MA},
+    pages = {51--64},
+    url = {https://www.usenix.org/conference/osdi23/presentation/berger},
+    publisher = {USENIX Association},
+    month = jul
+}
+
+@techreport{infiniband-ta-2015,
+    author = {{InfiniBand Trade Association}},
+    title = {InfiniBand Architecture Specification, Volume 1: Release 1.3},
+    institution = {InfiniBand Trade Association},
+    address = {Beaverton, OR},
+    year = {2015},
+    number = {IBTA3010101},
+    url = {https://www.infinibandta.org/content/pages.php?pg=specification}
+}
+
+
+@article{myung2021,
+    AUTHOR = {Myung, Rohyoung and Choi, Sukyong},
+    TITLE = {Machine-Learning Based Memory Prediction Model for Data Parallel Workloads in Apache Spark},
+    JOURNAL = {Symmetry},
+    VOLUME = {13},
+    YEAR = {2021},
+    NUMBER = {4},
+    ARTICLE-NUMBER = {697},
+    URL = {https://www.mdpi.com/2073-8994/13/4/697},
+    ISSN = {2073-8994},
+    ABSTRACT = {A lack of memory can lead to job failures or increase processing times for garbage collection. However, if too much memory is provided, the processing time is only marginally reduced, and most of the memory is wasted. Many big data processing tasks are executed in cloud environments. When renting virtual resources in a cloud environment, it is necessary to pay the cost according to the specifications of resources (i.e., the number of virtual cores and the size of memory), as well as rental time. In this paper, given the type of workload and volume of the input data, we analyze the memory usage pattern and derive the efficient memory size of data-parallel workloads in Apache Spark. Then, we propose a machine-learning-based prediction model that determines the efficient memory for a given workload and data. To determine the validity of the proposed model, we applied it to data-parallel workloads which include a deep learning model. The predicted memory values were in close agreement with the actual amount of required memory. Additionally, the whole building time for the proposed model requires a maximum of 44% of the total execution time of a data-parallel workload. The proposed model can improve memory efficiency up to 1.89 times compared with the vanilla Spark setting.},
+    DOI = {10.3390/sym13040697}
+}
+
+@article{pupykina2019,
+    author = {Pupykina, Anna and Agosta, Giovanni},
+    year = {2019},
+    month = {11},
+    pages = {1-1},
+    title = {Survey of Memory Management Techniques for HPC and Cloud Computing},
+    volume = {PP},
+    journal = {IEEE Access},
+    doi = {10.1109/ACCESS.2019.2954169}
+}
+
+@phdthesis{witt2020,
+    author = {Witt, Carl Philipp},
+    title = {Predictive Resource Management for Scientific Workflows},
+    school = {Humboldt-UniversitÃ¤t zu Berlin, Mathematisch-Naturwissenschaftliche FakultÃ¤t},
+    year = {2020},
+    doi = {http://dx.doi.org/10.18452/21608}
+}
+
+@inproceedings{ke2017lightgbm,
+    title = {LightGBM: A Highly Efficient Gradient Boosting Decision Tree},
+    author = {Ke, Guolin and Meng, Qi and Finley, Thomas and Wang, Taifeng and Chen, Wei and Ma, Weidong and Ye, Qiwei and Liu, Tie-Yan},
+    booktitle = {Advances in Neural Information Processing Systems 30},
+    pages = {3146--3154},
+    year = {2017},
+    publisher = {Curran Associates, Inc.}
 }
