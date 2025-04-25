@@ -8,6 +8,7 @@ Research on predicting memory usage for \ac{HPC} and scientific applications spa
 Discussion covers techniques for memory profiling, predictive modeling (especially with data shape or engineered features), integration with parallel frameworks such as Spark or Dask, and implications for resource-aware scheduling and chunking.
 Research also addresses challenges like containerized execution and system-level tracing.
 The following section summarizes key works by highlighting research goals, methodology, datasets, modeling techniques, and relevance to a Python-based memory prediction approach (for instance, using tensor shapes and empirical validation in Dask).
+Finally, you can find a concise comparison of the discussed works in Table~\ref{tab:related-work}.
 
 
 \section{Helping \ac{HPC} Users Specify Job Memory Requirements}
@@ -371,7 +372,7 @@ For a Python-centric approach (e.g. memory-aware chunking in Dask workflows), ke
 
 \end{itemize}
 
-In conclusion, this body of research demonstrates that memory usage prediction is feasible and valuable for \ac{HPC} and distributed computing.
+In conclusion, this body of research demonstrates that memory usage prediction is feasible and valuable for \ac{HPC} and distributed computing (see also Table~\ref{tab:related-work}).
 Techniques range from pure data-driven \ac{ML} on past jobs to hybrid analytical-\ac{ML} models using domain features.
 Integrating these predictions into schedulers or chunking strategies produces tangible benefits: higher utilization, lower wait times, and fewer failures.
 For Python-based workloads and Dask, these studies provide both inspiration and caution.
@@ -380,3 +381,60 @@ For Python-based workloads and Dask, these studies provide both inspiration and 
 Studies such as Myung’s~\cite{myung2021} (which used cross-validation for feature selection) and Witt’s~\cite{witt2020} (which introduced feedback loops) highlight proven models like random forests and LightGBM.
 Applying these ideas can advance memory-aware scheduling for Python workflows.
 Ultimately, the convergence of \ac{HPC} batch system insights and big data framework strategies supports efficient scientific computing, allocating “just right” memory for each task and enabling robust, scalable analysis of ever-growing datasets.
+
+\begin{table}[htbp]
+    \centering
+    \footnotesize
+    \renewcommand{\arraystretch}{1.15}
+    \caption{Comparison of HPC Memory Prediction Approaches}
+    \label{tab:related-work}
+    \begin{tabular}{p{1.9cm}p{2.2cm}p{2.6cm}p{3.0cm}p{3.2cm}}
+        \toprule
+        \textbf{Reference} & \textbf{Focus} & \textbf{Data} & \textbf{Approach} & \textbf{Evaluation} \\
+        \midrule
+
+        \textbf{Rodrigues \textit{et al.}~\cite{rodrigues2016}}
+        & \ac{HPC} job memory specification for batch systems
+        & Scheduler logs from 2 \ac{HPC} clusters: user ID, job name, etc.
+        & Classification into 512\,\ac{MB} bins; ensemble (\ac{SVM}, \ac{MLP}, etc.)
+        & 94--98\% accuracy; integrated as an offline \ac{CLI} for users; helps refine memory requests \\
+
+        \textbf{Pupykina \& Agosta~\cite{pupykina2019}}
+        & Survey of memory management across \ac{HPC} and cloud
+        & N/A (literature survey)
+        & Explores \ac{OS}-level, container, hypervisor approaches, cgroups
+        & No direct model; highlights container overhead, cloud vs.\ \ac{HPC} gap, future unified mgmt. \\
+
+        \textbf{Li \textit{et al.}~\cite{li2019}}
+        & Targeting large-memory \ac{HPC} jobs
+        & \ac{HPC} logs (\ac{LSF}); identifies outlier high-mem tasks
+        & Two-step \ac{ML}: classify large memory then apply specialized regression
+        & Up to 40\% error reduction on large-memory subset; shows focusing on tail jobs improves accuracy \\
+
+        \textbf{Witt~\cite{witt2020}}
+        & Scientific workflow scheduling with resource prediction
+        & Workflow tasks (bio, astro, etc.) on \ac{HPC}, dynamic resource usage
+        & Custom model w/ penalty for underestimation; feedback loop updates after each task
+        & Evaluated in simulation; integrates scheduling + prediction; suggests adaptive chunking for Python/Dask \\
+
+        \textbf{Myung \& Choi~\cite{myung2021}}
+        & Memory configuration in Spark data-parallel workloads
+        & Spark \ac{ML} tasks (K-means, \ac{CNN}, etc.); measure \ac{SoE}
+        & Hybrid analytical + \ac{ML} (Ridge, Lasso, \ac{MLP}) fitting memory to \ac{SoE}
+        & 95--99\% accuracy; shape-based approach validated; concept parallels chunk-based Dask prediction \\
+
+        \textbf{Tanash \textit{et al.}~\cite{tanash2021ampro}}
+        & Predict mem/time for jobs on Slurm \ac{HPC} clusters
+        & 17.6M Slurm job records; user logs, requested vs.\ actual usage
+        & Supervised regression (Random Forest, LightGBM, etc.)
+        & $R^2 \approx 0.72$ for mem; AMPRO-HPCC tool integrated w/ Slurm submission; large-scale data-driven \\
+
+        \textbf{Newaz \& Mollah~\cite{newaz2023}}
+        & Feature-engineered \ac{HPC} memory classification
+        & Titan supercomputer logs (\ac{RUR}); user/app are key features
+        & Classification (Random Forest, \ac{XGBoost}) into memory bins
+        & $\sim$90\% exact accuracy, $>$95\% within $\pm 1$ bin; high accuracy via strong feature engineering \\
+
+        \bottomrule
+    \end{tabular}
+\end{table}
