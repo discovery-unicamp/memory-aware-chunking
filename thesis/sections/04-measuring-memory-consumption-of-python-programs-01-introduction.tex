@@ -3,7 +3,7 @@
 
 Accurate memory measurement in Python applications is critical for large-scale scientific workloads, especially in \ac{HPC} contexts where resources must be requested in advance.
 Python’s complex memory model, which mixes reference counting, dynamic allocations, and garbage collection, often obscures true memory usage.
-Overestimates waste resources, whereas underestimates risk out-of-memory (\ac{OOM}) errors.
+Overestimates waste resources, whereas underestimates risk \ac{OOM} errors.
 
 Tools like \texttt{top}\cite{top_linux_manpage}, \texttt{tracemalloc}\cite{tracemalloc}, and container-based statistics each provide a different view of memory consumption.
 Containerization (e.g., Docker~\cite{docker}) further complicates accounting due to caching and shared kernel resources.
