@@ -23,16 +23,20 @@ The memory-aware chunking workflow consists of the following detailed steps:
 
 \end{enumerate}
 
-The Python implementation of this logic is encapsulated in the \texttt{\_find\_memaware\_chunk\_size} function within the script \texttt{collect\_profile.py}. This function explicitly loads a previously trained predictive model (stored as \texttt{gst3d.pkl}), forecasts the memory requirements for a given volume, and computes the optimal chunk size based on the user-defined memory limit and safety factor parameters. These configurations, represented by environment variables such as \texttt{MEMORY\_LIMIT\_GB} (e.g., 16 GB) and \texttt{SAFETY\_FACTOR} (e.g., 0.8), allow users to dynamically control memory utilization relative to their available computational resources.
+The Python implementation of this logic is encapsulated in the \texttt{\_find\_memaware\_chunk\_size} function within the script \texttt{collect\_profile.py}. 
+This function explicitly loads a previously trained predictive model (\eg, stored as \texttt{gst3d.pkl}), forecasts the memory requirements for a given volume, and computes the optimal chunk size based on the user-defined memory limit and safety factor parameters. 
+These configurations, represented by environment variables such as \texttt{MEMORY\_LIMIT\_GB} (\eg, 16 GB) and \texttt{SAFETY\_FACTOR} (\eg, 0.8), allow users to dynamically control memory utilization relative to their available computational resources.
 
 The benefits of employing memory-aware chunking in large-scale tensor-based computations and seismic processing workflows include:
 
 \begin{itemize}
+    
     \item \textbf{Reduced OOM Incidents:} Automatic constraint enforcement ensures chunk sizes remain within specified memory limits, even during intermediate computational stages characterized by temporary memory expansions due to kernel operations and transformations.
 
     \item \textbf{Predictable and Efficient Scaling:} Memory-aware chunking systematically selects chunk dimensions that distribute workloads evenly across parallel workers, thereby enhancing computational efficiency and resource utilization without being restricted by arbitrary file-block boundaries or heuristic thresholds.
 
-    \item \textbf{Minimized Manual Hyper-Parameter Tuning:} By automating the chunk size determination process through predictive modeling, this approach significantly reduces the need for manual tuning. This minimizes computational overhead associated with iterative, trial-and-error approaches, thereby saving considerable time and computational resources.
+    \item \textbf{Minimized Manual Hyper-Parameter Tuning:} By automating the chunk size determination process through predictive modeling, this approach significantly reduces the need for manual tuning. 
+    This minimizes computational overhead associated with iterative, trial-and-error approaches, thereby saving considerable time and computational resources.
 
 \end{itemize}
 

@@ -22,7 +22,7 @@ A single shell script, \texttt{scripts/experiment.sh}\cite{delucca2025experiment
     \item Extraction and consolidation of peak memory values, shape metadata, and execution logs into structured \texttt{.csv} files.
 \end{enumerate}
 
-The script looped over all permutations of \texttt{(inlines, xlines, samples)}, parsing \texttt{TraceQ} outputs and joining them with shape metadata.
+The script looped over all permutations of \texttt{(inlines, xlines, samples)}, parsing \texttt{TraceQ} \EB{Lembrar de padronizar o termo \traceq} outputs and joining them with shape metadata.
 The final output consisted of a consolidated dataset for model fitting.
 
 \subsection{Synthetic Data Generation and Real-Data Validation}
@@ -37,6 +37,7 @@ This method enabled a controlled exploration of both common and extreme input co
 \paragraph{Netherlands F3 Dataset~\cite{f3dataset}.}
 The standard Netherlands F3 seismic volume ($651$ $\times$ $951$ $\times$ $462$) served as a real-data validation benchmark.
 Memory usage predictions from the trained models were compared against actual measurements on this dataset, enabling evaluation of model generalization to real-world data.
+\EB{Indicar um respositório de onde o leitor possa baixar este dado para reproduzir seu trabalho.}
 
 \subsection{Containerized Seismic Operators and Memory Profiling}
 \label{subsec:containerized-seismic-operators-and-memory-profiling}
@@ -69,7 +70,7 @@ This merged dataset was stored in structured \ac{CSV} files under \texttt{OUTPUT
 The entire experiment is publicly available at a Github repository~\cite{delucca2025experiment2}.
 This repository contains source code, setup instructions, and automation scripts that orchestrate data generation, processing, and profiling.
 All artifacts for this experiment resides in \texttt{experiments/02-predicting-memory-consumption-from-input-shapes}.
-A detailed \texttt{README.md} file describes environment requirements, including Docker, and explains how to run each step.
+A detailed \texttt{README.md} file describes environment requirements, including Docker, and explains how to run each step. \EB{Revisar o PDF para identificar violações de margem como esta do README.md.}
 
 The \texttt{scripts/experiment.sh} script~\cite{delucca2025experiment2script} automates the entire pipeline.
 Users must install Docker, clone the repository, and execute \texttt{experiment.sh} to reproduce every stage of data processing and analysis.

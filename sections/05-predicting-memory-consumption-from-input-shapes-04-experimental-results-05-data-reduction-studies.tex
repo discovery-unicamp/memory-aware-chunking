@@ -11,7 +11,9 @@ Models used are the same as in prior sections: Gradient Boosting (Envelope), Dec
 \label{subsec:data-reduction-strategy-and-motivation}
 
 By excluding central volume values and keeping only extreme configurations, we test how performance degrades with fewer samples.
-Figure~\ref{fig:cross_data_reduction_and_residual} shows \ac{RMSE} and residual metrics as the dataset shrinks.
+Figure~\ref{fig:cross_data_reduction_and_residual} shows \ac{RMSE} and residual metrics as the \EBADD{training} dataset shrinks. \EB{Qual a principal conclusão do experimento?}
+
+\EB{O problema desta abordagemé que os experimentos com as maiores amostras são os experimentos mais custosos. Será que é possível derivar bons modelos apenas com amostras pequenas e, talvez, médias?}
 
 \begin{figure*}[htbp]
     \centering
@@ -31,7 +33,7 @@ Figure~\ref{fig:cross_data_reduction_and_residual} shows \ac{RMSE} and residual 
 \subsubsection{Operator-Wise Performance Trends}
 \label{subsec:operator-wise-sample-size-analysis}
 
-Figures~\ref{fig:residual_metrics_by_sample_size_operators} and~\ref{fig:metrics_evolution_sample_size_operators} analyze performance by operator.
+Figures~\ref{fig:residual_metrics_by_sample_size_operators} and~\ref{fig:metrics_evolution_sample_size_operators} \EBC{analyze performance by operator.}{Daniel, para cada figura, procure oferecer uma breve descrição do que a figura está mostrando, apontar as principais características a serem observadas e as conclusões que podem ser derivadas.}
 Errors grow rapidly below 30 samples, but remain low for 40--50.
 
 \begin{figure*}[htbp]
@@ -127,5 +129,5 @@ Above that range, model performance saturates and does not improve significantly
 
 Model accuracy remains high with only 30--40 samples per operator.
 This supports practical deployment of memory estimators using small training datasets.
-\ac{GST3D} is more sensitive, while Envelope and Gaussian Filter remain robust with fewer configurations.
+\ac{GST3D} is more sensitive, while Envelope and Gaussian Filter remain robust with fewer \EBRPD{configurations}{data samples}.
 Volume extremes provide valuable learning signal, but some middle-volume coverage improves stability.
