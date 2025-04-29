@@ -12,7 +12,7 @@ Achieving a balanced chunking strategy is therefore crucial for maximizing throu
 \textbf{Predictive Load Balancing via Memory-Awareness.}
 \begin{itemize}
     \item \emph{No \ac{OOM} Failures:} A central observation from our experiments is that \emph{memory-aware chunking}, underpinned by a predictive memory model, yielded \emph{zero} \ac{OOM} incidents. This reliability makes it possible to execute workloads safely even in tighter memory scenarios or with higher worker counts, where heuristic-based methods typically fail.
-    \item \emph{Slight Speed Trade-Off:} While memory-aware chunking is typically slower than the fastest alternative (e.g., evenly-split or auto-chunking) on small-to-medium data, it remains fairly close to the best strategy in many scenarios. As dataset sizes increase, the ability to avoid \ac{OOM} errors becomes paramount, offsetting the extra runtime and positioning memaware as a robust fallback in virtually any setting.
+    \item \emph{Slight Speed Trade-Off:} While memory-aware chunking is typically slower than the fastest alternative (\eg, evenly-split or auto-chunking) on small-to-medium data, it remains fairly close to the best strategy in many scenarios. As dataset sizes increase, the ability to avoid \ac{OOM} errors becomes paramount, offsetting the extra runtime and positioning memaware as a robust fallback in virtually any setting.
     \item \emph{Predictability and Efficiency:} By predicting memory usage from input shapes and algorithm profiles, chunks can be sized so that the per-worker load stays below a configured memory limit. This approach dramatically reduces trial-and-error tuning, freeing up engineering effort while ensuring that computation remains safely within system resources.
 \end{itemize}
 
@@ -29,11 +29,11 @@ Achieving a balanced chunking strategy is therefore crucial for maximizing throu
 \textbf{Complexities and Future Directions.}
 \begin{itemize}
     \item \textbf{Integration with Dask:}
-    Although memory-aware chunking works within Dask’s framework, deeper integration could enable \emph{dynamic} adjustments to chunk sizes in response to real-time cluster metrics (e.g., CPU/GPU usage, memory availability).
+    Although memory-aware chunking works within Dask’s framework, deeper integration could enable \emph{dynamic} adjustments to chunk sizes in response to real-time cluster metrics (\eg, CPU/GPU usage, memory availability).
     \item \textbf{Operator-Specific Extensions:}
-    Our current memory model targets seismic and tensor-based computations. Adapting it to additional workloads (e.g., deep learning or PDE solvers) would involve gathering and training on a wider range of memory-consumption profiles.
+    Our current memory model targets seismic and tensor-based computations. Adapting it to additional workloads (\eg, deep learning or PDE solvers) would involve gathering and training on a wider range of memory-consumption profiles.
     \item \textbf{Safety Factor Calibration:}
-    Memory-aware chunking employs a user-defined safety factor to account for overhead (e.g., temporary arrays in intermediate steps). Research into an \emph{adaptive} approach could optimize resource usage further while remaining robust against \ac{OOM} risks.
+    Memory-aware chunking employs a user-defined safety factor to account for overhead (\eg, temporary arrays in intermediate steps). Research into an \emph{adaptive} approach could optimize resource usage further while remaining robust against \ac{OOM} risks.
     \item \textbf{Hybrid and Multi-Node Scenarios:}
     Scaling from a single \ac{HPC} node to large clusters—or across heterogeneous hardware—may require considering network bandwidth, \ac{I/O} patterns, and different memory topologies when predicting optimal chunk dimensions.
 \end{itemize}

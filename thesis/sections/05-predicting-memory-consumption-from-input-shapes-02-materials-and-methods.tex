@@ -7,7 +7,7 @@ The overall pipeline includes four core phases.
 (ii) Memory Profiling,
 (iii) Result Collection,
 and (iv) Analysis.
-These phases ensure consistent, reproducible, and high-quality measurements, which support machine learning models that learn memory usage from shape attributes.
+These phases ensure consistent, reproducible, and high-quality measurements, which support \ac{ML} models that learn memory usage from shape attributes.
 
 \vspace{1em}
 \noindent
@@ -109,13 +109,13 @@ They control dataset sizes, repetition counts, and output paths.
     \label{tab:env_vars}
     \begin{tabular}{ll}
         \hline
-        \textbf{Variable}             & \textbf{Description}                                                                        \\
+        \textbf{Variable}             & \textbf{Description}                                                                       \\
         \hline
         \texttt{DATASET\_FINAL\_SIZE} & Final dimension size (\eg, 800)                                                            \\
         \texttt{DATASET\_STEP\_SIZE}  & Step size between dimension increments (\eg, 100)                                          \\
         \texttt{EXPERIMENT\_N\_RUNS}  & Number of repeated runs per shape (\eg, 5)                                                 \\
         \texttt{CPUSET\_CPUS}         & \ac{CPU} core pinning for Docker containers (\eg, 0)                                       \\
-        \texttt{OUTPUT\_DIR}          & Directory for output profiles, logs, and \texttt{\ac{CSV}} files                            \\
+        \texttt{OUTPUT\_DIR}          & Directory for output profiles, logs, and \texttt{\ac{CSV}} files                           \\
         \texttt{ALGORITHM}            & Selected operator (\eg, \texttt{envelope}, \texttt{\ac{GST3D}}, \texttt{gaussian\_filter}) \\
         \hline
     \end{tabular}
@@ -307,7 +307,7 @@ Section~\ref{sec:pmc-results} elaborates on these experimental outcomes and comp
             \draw[arrow] (p1output.east) -- ++(0.7,0) |- (p2input.west);
 
             % Phase 3: Feature Aggregation
-            \node[phase, right=3cm of phase2] (phase3) {Phase 3:\\Aggregation \& Feature\\Construction};
+            \node[phase, right=3cm of phase2] (phase3) {Phase 3:\\Aggregation and Feature\\Construction};
             \node[box, below=of phase3] (p3input) {\textbf{Input}\\.prof files + shape info};
             \node[box, below=of p3input] (p3process) {\textbf{Process}\\Parse peak usage\\Derive features};
             \node[box, below=of p3process] (p3output) {\textbf{Output}\\Feature dataset};
@@ -317,7 +317,7 @@ Section~\ref{sec:pmc-results} elaborates on these experimental outcomes and comp
             \draw[arrow] (p2output.east) -- ++(0.7,0) |- (p3input.west);
 
             % Phase 4: Model Training
-            \node[phase, right=3cm of phase3] (phase4) {Phase 4:\\Model Training \& Evaluation};
+            \node[phase, right=3cm of phase3] (phase4) {Phase 4:\\Model Training and Evaluation};
             \node[box, below=of phase4] (p4input) {\textbf{Input}\\Feature dataset};
             \node[box, below=of p4input] (p4process) {\textbf{Process}\\Train regression\\(XGBoost, NN, etc)};
             \node[box, below=of p4process] (p4output) {\textbf{Output}\\Memory usage\\predictions};
@@ -328,9 +328,9 @@ Section~\ref{sec:pmc-results} elaborates on these experimental outcomes and comp
 
         \end{tikzpicture}
     }
-    \caption{Schematic of the memory prediction \EBRPD{pipeline}{experiment}. 
-        It includes synthetic data generation, containerized profiling, feature extraction, and regression model training.
-        \EB{Feature Construction $\rightarrow$ Feature Extraction?}
-        \label{fig:pmc_datapipeline}
+    \caption{Schematic of the memory prediction \EBRPD{pipeline}{experiment}.
+    It includes synthetic data generation, containerized profiling, feature extraction, and regression model training.
+    \EB{Feature Construction $\rightarrow$ Feature Extraction?}
+    \label{fig:pmc_datapipeline}
     }
 \end{figure}

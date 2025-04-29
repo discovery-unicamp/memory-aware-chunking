@@ -11,15 +11,13 @@ These volumes require significant memory capacity for storage, intermediate comp
 Numerical methods in seismic analysis also introduce additional complexity by creating temporary buffers, running matrix operations on large arrays, or storing partial results for subsequent steps.
 
 Distributed platforms such as Dask~\cite{rocklin2015dask} facilitate horizontal scaling, enabling multiple workers to process segments (\emph{chunks}) of the data in parallel.
-\EB{Daniel, o termo chunk me parece um termo muito importante para o entendimento do trabalho. Dessa forma, talvez vale a pena adicionar uma figura aqui que ilustra o processamento de dados massivos em chunks.}
 This level of concurrency substantially reduces execution time but carries important risks if resource demands are underestimated.
 Dask's default chunking heuristics do not factor in the memory requirements of specific operators or data types.
 They distribute data primarily based on file-block boundaries or user-defined size targets.
-This approach can lead to an overfragmented pipeline, where overhead from excessively many tasks slows the job, or conversely, oversize chunks, where memory usage exceeds the available capacity and triggers \ac{OOM} errors. 
-\EB{Daniel, procure sempre extandir/explicar a sigla no seu primeiro uso. P.ex.:  triggers Out of Memory (\ac{OOM}) errors.}
+This approach can lead to an overfragmented pipeline, where overhead from excessively many tasks slows the job, or conversely, oversize chunks, where memory usage exceeds the available capacity and triggers \ac{OOM} errors.
 
 These challenges motivate the development of more reliable strategies for anticipating memory usage.
-When \EBC{data}{data or the computation?} is \emph{memory-intensive}, knowledge of memory requirements is critical, because one miscalculation can crash a job or underutilize the system.
+When the computation is \emph{memory-intensive}, knowledge of memory requirements is critical, because one miscalculation can crash a job or underutilize the system.
 In seismic processing, for instance, convolution-based algorithms or three-dimensional filtering often exhibit unpredictable memory spikes due to short-lived but large intermediate arrays.
 A robust memory-aware method to define chunk dimensions is therefore essential for \ac{HPC} and distributed systems, eliminating tedious attempts to guess resource allocations.
 
@@ -33,7 +31,7 @@ Specifically, the work seeks to integrate such predictive insights into Dask’s
 More concretely, this thesis pursues the following:
 \begin{itemize}
     \item \textbf{Modeling Memory Usage.}
-    Develop a procedure to profile \EBRP{Python’s}{Python programs'} memory consumption in a controlled manner and derive a predictive model that correlates high-level input characteristics (e.g., volume or dimensional parameters) with peak memory usage. \EB{e.g., i.e., etc, etal. são abreviações de expressões em latin e deveriam ser destacadas em itálico. Utilize macros em latex para escrever estas expressões: P.ex: \etc, \ie, \eg, ...}
+    Develop a procedure to profile Python’s memory consumption in a controlled manner and derive a predictive model that correlates high-level input characteristics (\eg, volume or dimensional parameters) with peak memory usage.
     \item \textbf{Minimizing Trial Executions.}
     Ensure that profiling a small selection of data shapes or input sizes yields sufficient information to generalize memory demands across a wider range of workloads.
     \item \textbf{Enhancing Auto-Chunking.}
@@ -48,18 +46,21 @@ The contributions of this thesis can be summarized as follows:
 \begin{itemize}
     \item \textbf{Predictive Memory Model.}
     A lightweight predictive model is introduced that estimates peak memory usage from a small set of profiler runs.
-    The model exploits measurable input characteristics such as array dimensions and uses these as features in an empirically validated regression or machine-learning pipeline.
+    The model exploits measurable input characteristics such as array dimensions and uses these as features in an empirically validated regression or \ac{ML} pipeline.
 
     \item \textbf{Practical Method for Minimal Profiling.}
     A method is presented to reduce the profiling effort required, so multiple full-scale executions become unnecessary.
-    The strategy isolates key data points or shapes to accurately capture operator memory behavior with minimal overhead, enabling simpler integration with real-world HPC pipelines.
+    The strategy isolates key data points or shapes to accurately capture operator memory behavior with minimal overhead, enabling simpler integration with real-world \ac{HPC} pipelines.
 
     \item \textbf{Memory-Aware Auto-Chunking.}
     A memory-aware chunking algorithm is proposed that adopts the predictive model’s estimates to set chunk sizes in Dask automatically.
     This approach reduces guesswork when partitioning data, mitigates \ac{OOM} failures, and avoids conservative over-allocation.
 
-    \item \EB{Faltou argumentar que você aplicou estes métodos e técnicas em um estudo de caso real, com dados sísmicos, e comprovou sua utilidade. Certo?}
-
+    \item \textbf{Real Seismic Data Case Study.}
+    In addition to theoretical and controlled evaluations, this thesis applies the proposed strategies to a large-scale seismic dataset, mirroring real-world industry requirements.
+    The experiments showcase the feasibility of the memory modeling approach, as well as the advantages of memory-aware auto-chunking in a genuinely resource-intensive environment.
+    Performance measurements and system logs confirm that the predictive model closely approximates actual memory consumption, substantially reducing the likelihood of \ac{OOM} incidents.
+    Moreover, the results highlight how intelligently chosen chunk sizes improve throughput and overall utilization, ultimately validating the practical utility of this work in realistic seismic processing pipelines.
 \end{itemize}
 
 These developments address the critical need for robust memory management in high-volume seismic data processing and other demanding \ac{HPC} applications.

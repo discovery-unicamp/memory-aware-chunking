@@ -455,7 +455,7 @@ and de Supinski, Bronis R.",
     publisher = "Springer International Publishing",
     address = "Cham",
     pages = "1--18",
-    abstract = "Users in high performance computing (HPC) clusters normally face challenges to specify accurate resource estimates for running their applications as batch jobs. Prediction is a common way to alleviate this complexity by using historical job records of previous runs to estimate resource usage for new coming jobs. Most of existing resource prediction methods directly build a single model to consider all of the jobs in clusters. However, people in production usage tend to only focus on the resource usage of jobs with certain patterns, e.g. jobs with large memory consumption. This paper proposes a practical resource prediction method for large memory jobs. The proposed method first tries to predict whether a job tends to use large memory size, and then predicts the final memory usage using a model which is trained by only historical large memory jobs. Using several real-world job traces collected from large production clusters of IBM Spectrum LSF customer sites, the evaluation results show that the average prediction errors can be reduced up to 40{\%} for nearly 90{\%} of large memory jobs. Meanwhile, the model training cost can be reduced over 30{\%} for the evaluated job traces.",
+    abstract = "Users in high performance computing (HPC) clusters normally face challenges to specify accurate resource estimates for running their applications as batch jobs. Prediction is a common way to alleviate this complexity by using historical job records of previous runs to estimate resource usage for new coming jobs. Most of existing resource prediction methods directly build a single model to consider all of the jobs in clusters. However, people in production usage tend to only focus on the resource usage of jobs with certain patterns, \eg jobs with large memory consumption. This paper proposes a practical resource prediction method for large memory jobs. The proposed method first tries to predict whether a job tends to use large memory size, and then predicts the final memory usage using a model which is trained by only historical large memory jobs. Using several real-world job traces collected from large production clusters of IBM Spectrum LSF customer sites, the evaluation results show that the average prediction errors can be reduced up to 40{\%} for nearly 90{\%} of large memory jobs. Meanwhile, the model training cost can be reduced over 30{\%} for the evaluated job traces.",
     isbn = "978-3-030-18645-6"
 }
 
@@ -647,4 +647,37 @@ and de Supinski, Bronis R.",
     pages = {3146--3154},
     year = {2017},
     publisher = {Curran Associates, Inc.}
+}
+
+@article{singularity,
+    title = {Singularity: Scientific containers for mobility of compute},
+    author = {Kurtzer, Gregory M. and Sochat, Vanessa and Bauer, Michael W.},
+    journal = {PLOS ONE},
+    volume = {12},
+    number = {5},
+    pages = {e0177459},
+    year = {2017},
+    publisher = {Public Library of Science}
+}
+
+@inproceedings{zaharia2010spark,
+    title = {Spark: Cluster Computing with Working Sets},
+    author = {Zaharia, Matei and Chowdhury, Mosharaf and Franklin, Michael J. and Shenker, Scott and Stoica, Ion},
+    booktitle = {Proceedings of the 2nd USENIX Conference on Hot Topics in Cloud Computing (HotCloud ’10)},
+    pages = {10--10},
+    year = {2010},
+    organization = {USENIX Association}
+}
+
+@inproceedings{vavilapalli2013apache,
+    title = {Apache Hadoop YARN: yet another resource negotiator},
+    author = {Vavilapalli, Vinod K. and Murthy, Arun C. and Douglas, Chris and Agarwal, Sharad and Konar, Mahadev and Evans, Robert and Graves, Thomas and Lowe, Jason and Shah, Hitesh and Seth, Siddharth and Saha, Bikas and Curino, Carlo and O’Malley, Owen and Radia, Sanjay and Reed, Benjamin and Baldeschwieler, Eric},
+    booktitle = {Proceedings of the 4th Annual Symposium on Cloud Computing (SoCC '13)},
+    pages = {1--16},
+    year = {2013},
+    address = {Santa Clara, CA},
+    publisher = {ACM},
+    isbn = {978-1-4503-2428-1},
+    doi = {10.1145/2523616.2523633},
+    url = {https://dl.acm.org/doi/10.1145/2523616.2523633}
 }

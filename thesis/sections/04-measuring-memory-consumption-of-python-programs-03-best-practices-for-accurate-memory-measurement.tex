@@ -12,11 +12,11 @@ Isolation involves restricting the execution context through subprocesses, conta
 Such strategies reduce interference from external processes, ensuring memory usage metrics reflect solely the targeted application.
 
 \paragraph{Containerized Environments.}
-Docker and similar container technologies offer effective isolation through namespace encapsulation and cgroup resource management.
+Docker and similar container technologies offer effective isolation through namespace encapsulation and \ac{cgroup} resource management.
 Containerized environments provide two primary benefits:
 \begin{enumerate}
     \item \textbf{Minimization of Background Processes:} Containers initialized from minimal base images significantly reduce baseline memory overhead.
-    \item \textbf{Explicit Resource Management:} Containers allow defined memory constraints using flags such as \texttt{–memory} or cgroup configurations, useful for validating memory usage limits (detailed in Section~\ref{subsec:mmc-bestpractices-validation}).
+    \item \textbf{Explicit Resource Management:} Containers allow defined memory constraints using flags such as \texttt{–memory} or \ac{cgroup} configurations, useful for validating memory usage limits (detailed in Section~\ref{subsec:mmc-bestpractices-validation}).
 \end{enumerate}
 Despite these advantages, container-level abstractions can introduce measurement inaccuracies due to caching or shared kernel resources.
 Cross-validation of container metrics against system-level metrics (\eg, via Linux’s \texttt{/proc/[pid]/smaps}) is essential to ensure accuracy.
@@ -38,7 +38,7 @@ Establishing a “clean slate” between experimental runs complements environme
 
 \begin{itemize}
 
-    \item \textbf{Kernel or Interpreter Reset in Interactive Environments:} Interactive environments like Jupyter notebooks retain memory references across executions. 
+    \item \textbf{Kernel or Interpreter Reset in Interactive Environments:} Interactive environments like Jupyter notebooks retain memory references across executions.
     Restarting the kernel ensures the complete removal of lingering objects and facilitates accurate baseline memory assessment.
 
     \item \textbf{Process-Level Restarts in Batch Executions:} Persistent Python processes executing repeated scripts can accumulate memory fragmentation and partial garbage collection states. Initiating each experiment as an independent process invocation guarantees memory measurements free from residual influence.
@@ -61,7 +61,7 @@ These metrics provide insights into:
 \begin{itemize}
 
     \item \textbf{System Resource Contention:} Identifying interactions or competitions with other processes for memory resources.
-    
+
     \item \textbf{Peak Memory Consumption:} Accurate tracking of actual memory allocation at the \ac{OS} level.
 
 \end{itemize}
@@ -71,7 +71,7 @@ Internal profiling tools like \texttt{tracemalloc}~\cite{tracemalloc} offer gran
 \begin{itemize}
 
     \item \textbf{Identification of Memory Hotspots:} Pinpointing specific code segments and data structures that drive memory consumption.
-    
+
     \item \textbf{Monitoring Python Allocation Patterns Over Time:} Detecting memory usage trends and fragmentation issues at the interpreter level.
 
 \end{itemize}

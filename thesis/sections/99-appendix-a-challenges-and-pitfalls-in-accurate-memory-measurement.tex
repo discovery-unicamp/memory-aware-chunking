@@ -33,7 +33,7 @@
 %    The timing of these collections can significantly affect memory profiling, as delayed garbage collection may artificially inflate memory usage metrics.
 %
 %    \item \textbf{Memory Fragmentation}:
-%    Both Python's memory allocator (e.g., pymalloc~\cite{pymalloc}) and the underlying C libraries can cause memory fragmentation.
+%    Both Python's memory allocator (\eg, pymalloc~\cite{pymalloc}) and the underlying C libraries can cause memory fragmentation.
 %    Fragmentation leads to inefficient memory utilization, where the allocated memory space cannot be fully utilized due to non-contiguous free blocks.
 %    This phenomenon can result in higher apparent memory usage than the actual data footprint.
 %
@@ -45,11 +45,11 @@
 %
 %    \item \textbf{Caching Mechanisms}:
 %    Python and the operating system both employ caching strategies that can skew memory usage metrics.
-%    For instance, Python maintains internal caches for frequently used objects (e.g., small integers and strings), while the \ac{OS} uses disk and memory caches to optimize \ac{I/O} operations.
+%    For instance, Python maintains internal caches for frequently used objects (\eg, small integers and strings), while the \ac{OS} uses disk and memory caches to optimize \ac{I/O} operations.
 %    These caches can persist across program executions, leading to inconsistent memory profiles unless explicitly cleared.
 %
 %    \item \textbf{Third-Party Libraries}:
-%    Scientific applications often rely on third-party libraries (e.g., NumPy~\cite{numpy}, pandas~\cite{pandas}, TensorFlow~\cite{tensorflow}), which may implement their own memory management strategies.
+%    Scientific applications often rely on third-party libraries (\eg, NumPy~\cite{numpy}, pandas~\cite{pandas}, TensorFlow~\cite{tensorflow}), which may implement their own memory management strategies.
 %    These libraries, typically written in C or C++, interact directly with system memory, bypassing Python's \ac{GC}.
 %    Consequently, memory usage attributed to Python may not fully represent the actual consumption, necessitating specialized profiling tools to capture native allocations.
 %\end{enumerate}
@@ -74,7 +74,7 @@
 %Techniques such as spawning isolated subprocesses for each experiment can mitigate this issue, ensuring clean memory states between runs.
 %
 %Another critical consideration is the impact of measurement tools themselves.
-%Profiling tools, whether external (e.g., psutil~\cite{psutil}, resource~\cite{importlib_resources}) or internal (e.g., tracemalloc~\cite{tracemalloc}), introduce overhead that can influence the very metrics they aim to capture.
+%Profiling tools, whether external (\eg, psutil~\cite{psutil}, resource~\cite{importlib_resources}) or internal (\eg, tracemalloc~\cite{tracemalloc}), introduce overhead that can influence the very metrics they aim to capture.
 %High-frequency sampling, for instance, increases \ac{CPU} and memory load, potentially skewing performance characteristics.
 %Moreover, tools that rely on instrumentation may alter code execution paths, subtly affecting memory allocation patterns.
 %
@@ -83,7 +83,7 @@
 %
 %\begin{itemize}
 %    \item Isolating experiments in separate processes or containers to prevent cross-contamination of memory states.
-%    \item Resetting the environment (e.g., restarting the Python interpreter or Jupyter kernel) before each measurement to ensure a clean slate.
+%    \item Resetting the environment (\eg, restarting the Python interpreter or Jupyter kernel) before each measurement to ensure a clean slate.
 %    \item Controlling external factors, such as disabling \ac{OS}-level caches or running benchmarks on dedicated, idle systems to minimize background noise.
 %    \item Using hybrid measurement techniques, combining high-level process metrics with low-level memory tracing for comprehensive profiling.
 %\end{itemize}

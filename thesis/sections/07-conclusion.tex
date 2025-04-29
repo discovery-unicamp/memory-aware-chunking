@@ -12,7 +12,7 @@ Underestimations often lead to \ac{OOM} failures, while overestimations waste co
 
 The first phase establishes a framework to reliably measure Python memory consumption under conditions typical of \ac{HPC} deployments.
 Python’s internal memory model, reference counting, cyclic garbage collection, and dynamic allocation, makes it difficult to capture stable numbers for peak or average memory usage.
-Container-based abstractions (e.g., Docker or other cgroup-based solutions) introduce further variability due to filesystem caches, shared kernel resources, and copy-on-write behaviors.
+Container-based abstractions (\eg, Docker or other \ac{cgroup}-based solutions) introduce further variability due to filesystem caches, shared kernel resources, and copy-on-write behaviors.
 
 Several practices address these complexities.
 \begin{enumerate}
@@ -40,11 +40,11 @@ in seismic contexts.
 Key findings include:
 \begin{itemize}
     \item Dominance of Volume.
-    Among shape-derived features (e.g., surface area, aspect ratios, diagonal lengths), the volume term explains the majority of the variance (often exceeding 99\%).
+    Among shape-derived features (\eg, surface area, aspect ratios, diagonal lengths), the volume term explains the majority of the variance (often exceeding 99\%).
     \item Operator-Specific Variations.
     Although Envelope, \ac{GST3D}, and Gaussian Filter show slightly different slopes due to intermediate buffers, the volume-centric regression captures memory behavior effectively for each operator.
     \item Model Simplicity.
-    Complex regressors (e.g., gradient boosting or neural networks) provide only minor gains compared to simpler linear or polynomial regressions, making it practical for HPC teams to use faster-to-train models without losing accuracy.
+    Complex regressors (\eg, gradient boosting or neural networks) provide only minor gains compared to simpler linear or polynomial regressions, making it practical for HPC teams to use faster-to-train models without losing accuracy.
 \end{itemize}
 
 Data reduction experiments confirm that even a moderate set of shape-memory measurements (on the order of 30--40 representative shapes) suffices to build a robust predictive model.
@@ -55,7 +55,7 @@ This reduces overhead when profiling large shape grids.
 \label{sec:conc-chunking}
 
 The third phase integrates predictive memory models into a memory-aware chunking scheme for data-parallel tasks, such as those managed by Dask.
-Conventional chunking heuristics (e.g., Dask’s “auto-chunking”) often struggle with higher-dimensional or HPC contexts.
+Conventional chunking heuristics (\eg, Dask’s “auto-chunking”) often struggle with higher-dimensional or HPC contexts.
 Chunk sizes either exceed memory limits and trigger out-of-memory conditions or over-fragment the data, producing a proliferation of tiny tasks and excessive scheduling overhead.
 
 Memory-aware chunking computes a chunk dimension \(c\) so each chunk remains below a predefined memory threshold, derived from user constraints and a safety factor.
