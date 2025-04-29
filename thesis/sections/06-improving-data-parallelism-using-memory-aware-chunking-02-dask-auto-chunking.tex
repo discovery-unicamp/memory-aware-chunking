@@ -25,7 +25,9 @@ For instance, processing a moderate-sized volume like $600\times600\times600$ co
 
 This fundamental limitation highlights the necessity for more sophisticated chunk-sizing strategies that account explicitly for the characteristics of the underlying computational tasks.
 Different computational workloads impose distinct requirements; for example, data pipelines involving deep convolutional operations require carefully shaped chunks that minimize boundary overheads and control memory expansion during intermediate steps.
-Conversely, simpler, volume-based attributes might benefit from fewer, larger chunk divisions.
+Conversely, simpler, volume-based \EBRPD{attributes}{operators} might benefit from fewer, larger chunk divisions.
 
 Dask’s auto-chunking mechanism currently lacks the ability to incorporate such task-specific and operator-specific information, leading to suboptimal performance in demanding scenarios typical of seismic and high-dimensional imaging applications.
 Addressing this shortcoming, the subsequent section introduces \emph{memory-aware chunking}, a predictive approach that leverages an algorithm-specific memory usage model to intelligently guide chunk size selection, thereby enhancing both memory efficiency and computational performance.
+
+\EB{A seção não explicou como funciona o autochunking. Seria possível explicar isso de forma simples, talvez com um fluxograma ou um pseudo-código?} 

@@ -10,14 +10,16 @@ Profilers such as \texttt{tracemalloc} offer detailed insights but add their own
 
 The best practices presented in this chapter recommend running containerized or subprocess‑based experiments to avoid memory artifacts from previous runs and hidden references.
 A “clean slate” policy restarts kernels or interpreter processes to eliminate accumulated fragmentation or lingering objects.
-Combining both internal (e.g., \texttt{tracemalloc}) and external (e.g., \texttt{psutil}, \texttt{/proc}) measurement tools, as well as carefully tuning the sampling frequency, reveals transient memory spikes without overwhelming the system.
+Combining both internal (\eg, \texttt{tracemalloc}) and external (\eg, \texttt{psutil}, \texttt{/proc}) measurement tools, as well as carefully tuning the sampling frequency, reveals transient memory spikes without overwhelming the system.
 Validating these measurements through memory limits or multi‑tool comparisons confirms their accuracy and stability across repeated runs.
 
-The \texttt{traceq} library consolidates these measurement techniques and manages high‑frequency sampling with minimal overhead.
+The \texttt{traceq} \EBC{library}{library or tool?} consolidates these measurement techniques and manages high‑frequency sampling with minimal overhead.
 \texttt{traceq} captures short‑lived allocations that coarse \ac{OS}‑level polling might miss, and it outputs consistent data formats for post‑analysis.
 Pinning \ac{CPU} cores, clearing caches, and performing warm‑up runs in a nested containerized setup further strengthens reproducibility and eliminates interference from host services.
 Experimental comparisons demonstrate that \texttt{traceq} collects significantly more samples than native approaches while preserving peak memory readings within a small margin of error.
 
 Accurate memory measurement in Python calls for deliberate and structured workflows.
 Careful isolation, combined with balanced instrumentation, minimizes \ac{OOM} failures and prevents excessive over‑provisioning—particularly in \ac{HPC} contexts where memory usage imposes strict resource ceilings.
-Future chapters will build on these strategies to predict memory consumption from input shapes and improve data parallelism with memory‑aware chunking, using the same measurement methodologies to ensure dependable results in large‑scale or performance‑sensitive environments.
+\EBRP{Future}{The following} chapters will build on these strategies to predict memory consumption from input shapes and improve data parallelism with memory‑aware chunking, using the same measurement methodologies to ensure dependable results in large‑scale or performance‑sensitive environments.
+
+\EB{Daniel, penso que a ferramenta (toolkit?) \traceq é uma das contribuições do seu trabalho e deveria ser listada na lista de contribuições na introdução da dissertação.}

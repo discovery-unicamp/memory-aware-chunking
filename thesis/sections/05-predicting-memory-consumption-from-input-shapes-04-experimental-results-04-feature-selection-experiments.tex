@@ -10,7 +10,8 @@ Experiments use the best model per operator identified earlier: Gradient Boostin
 \label{subsec:feature-selection-volume-centric-hypothesis}
 
 Figure~\ref{fig:memory_vs_volume_regression_subplots} shows that memory usage aligns closely with volume across all operators.
-This supports the hypothesis that volume alone may be sufficient for reliable prediction.
+This supports the hypothesis that volume alone may be sufficient for \EBRP{reliable prediction}{a reliable prediction for these operators}.
+\EB{Esta figura está mostrando as mesmas informações que as figuras 5.2 e 5.4 (a)? }
 
 \begin{figure*}[htbp]
     \centering
@@ -38,14 +39,14 @@ This supports the hypothesis that volume alone may be sufficient for reliable pr
 The feature selection procedure applies a stepwise elimination strategy:
 
 \begin{enumerate}
-    \item Rank features using SelectKBest based on their individual predictive power.
+    \item Rank features using \EBC{SelectKBest}{Faltou explicar o que é SelectKBest} based on their individual predictive power.
     \item Iteratively remove features starting with the least relevant.
     \item Track changes in \ac{RMSE}, $R^2$, accuracy, and score.
     \item Repeat until only feature remains.
 \end{enumerate}
 
 Table~\ref{tab:feature_selection_minimal_impact} summarizes example results.
-Performance remains stable with just three features, as long as volume is retained.
+Performance remains stable with just \EBC{three features}{Não seria 1?}, as long as volume is retained.
 
 \begin{table}[htbp]
     \centering
@@ -61,8 +62,10 @@ Performance remains stable with just three features, as long as volume is retain
         Gaussian Filter   & Elastic Net       & 1                   & 0.001 / 0.999              \\
         \hline
     \end{tabular}
-    \caption{Revised RMSE and $R^2$ after reducing feature count from 25 to just 1, based on latest CSV data.}
-    \label{tab:feature_selection_minimal_impact}
+    \caption{Revised RMSE and $R^2$ after reducing feature count from 25 to just 1, 
+        based on latest CSV data.
+        \label{tab:feature_selection_minimal_impact}
+    }
 \end{table}
 
 \subsubsection{Impact on RMSE, R\texorpdfstring{$^2$}{2}, and Residuals}
@@ -82,8 +85,10 @@ Performance never drops significantly, even when reducing to a single feature.
         \includegraphics[width=\textwidth]{assets/images/05/cross_feature_selection_r2}
         \caption{Change in $R^2$}
     \end{subfigure}
-    \caption{Effect of removing features. Volume is the most critical predictor.}
-    \label{fig:feature_selection_overview_part1}
+    \caption{Effect of removing features. Volume is the most critical predictor.
+        \EB{A escala do eixo y do gráfico B está estranha. Deveria ir de 0 a 1, certo?}
+        \label{fig:feature_selection_overview_part1}
+    }
 \end{figure*}
 
 Residual metrics and scores remain stable throughout feature reduction.
@@ -102,6 +107,8 @@ Residual metrics and scores remain stable throughout feature reduction.
     \caption{Minimal degradation in residuals and scores with fewer predictors.}
     \label{fig:feature_selection_overview_part2}
 \end{figure*}
+
+\EB{Talvez fosse interessante mostrar o que acontece se a feature Volume for removida e todas as outras preservadas - será que as demais são suficientes para que os modelos resolvam o problema? Outro experimento interessante seria fazer a avaliação usando apenas as features originais, ou seja, sem as features derivadas.}
 
 \subsubsection{Operator-Specific Breakdown}
 \label{subsec:operator-specific-breakdown}
@@ -154,4 +161,4 @@ Figures~\ref{fig:feature_impact_operator_subplots}--\ref{fig:residual_metrics_by
 
 Volume alone provides high predictive power for all tested operators.
 Other features offer marginal benefits, mostly for \ac{GST3D}.
-Thus, memory-aware models can prioritize volume as the primary input.
+Thus, memory-aware models \EBADD{for these operators} can prioritize volume as the primary input.

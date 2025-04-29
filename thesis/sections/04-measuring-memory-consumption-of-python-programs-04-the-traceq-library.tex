@@ -1,16 +1,17 @@
-\section{The \texttt{traceq} Library}
+\section{The \traceq Library}
 \label{sec:mmc-traceq}
 
-The \texttt{traceq} library is a specialized Python profiling tool designed for detailed and accurate measurement of memory usage in Python programs.
+The \traceq library is a specialized Python profiling tool designed for detailed and accurate measurement of memory usage in Python programs.
 Traditional methods for measuring memory, such as Docker container statistics or \ac{OS}-level queries, often miss Python-internal nuances or introduce significant overhead.
-\texttt{traceq} addresses this by combining low-level Python profiling mechanisms with high-level system monitoring techniques, tailored specifically for memory-aware chunking applications and \ac{HPC} workflows.
+\traceq addresses this by combining low-level Python profiling mechanisms with high-level system monitoring techniques, tailored specifically for memory-aware chunking applications and \ac{HPC} workflows.
+\EB{Faltou você falar que este é um dos produtos deste trabalho de mestrado - da forma como está isso não está claro.}
 
 \subsection{Motivation and Design Goals}
 \label{sec:mmc-traceq-motivation}
 
 Existing profiling tools commonly focus either on general-purpose \ac{CPU} profiling or offer only coarse-grained memory insights.
 However, memory-aware chunking requires precise tracking of memory behavior over time.
-The \texttt{traceq} library meets these needs with the following key objectives:
+The \traceq library meets these needs with the following key objectives:
 
 \begin{itemize}
     \item \textbf{High-resolution memory tracing}: Accurately captures subtle, transient memory peaks essential for optimizing memory usage.
@@ -20,12 +21,12 @@ The \texttt{traceq} library meets these needs with the following key objectives:
     \item \textbf{Avoiding intermediate state impact}: Prevents the profiler’s internal memory usage from significantly influencing measurement results, ensuring accurate reflection of the profiled application's true memory behavior.
 \end{itemize}
 
-By integrating Python-internal tools such as \texttt{tracemalloc} with \ac{OS}-level utilities like \texttt{psutil} and Docker or cgroup statistics, \texttt{traceq} provides a unified, reliable profiling experience suited to complex computational environments.
+By integrating Python-internal tools such as \texttt{tracemalloc} with \ac{OS}-level utilities like \texttt{psutil} and Docker or cgroup statistics, \traceq provides a unified, reliable profiling \EBRP{experience}{mechanism} suited to complex computational environments.
 
 \subsection{Technical Implementation}
 \label{sec:mmc-traceq-implementation}
 
-\texttt{traceq} leverages an adaptable backend architecture, allowing users to select among multiple profiling techniques to comprehensively measure memory usage:
+\traceq leverages an adaptable backend architecture, allowing users to select among multiple profiling techniques to comprehensively measure memory usage:
 
 \begin{itemize}
     \item \textbf{Python-internal tracing (\texttt{tracemalloc})}: Captures detailed memory allocation and deallocation patterns within Python’s managed heap, highlighting fine-grained memory dynamics.
@@ -34,13 +35,13 @@ By integrating Python-internal tools such as \texttt{tracemalloc} with \ac{OS}-l
     \item \textbf{Direct function-level tracing}: Identifies specific functions responsible for significant memory usage, enabling pinpoint accuracy in detecting memory-intensive code segments.
 \end{itemize}
 
-\texttt{traceq} centralizes these measurement techniques through its core profiler engine, triggered via a simple \ac{CLI} or programmatically within Python scripts.
-Configuration settings are flexible, supporting \ac{TOML} files, environment variables, and \ac{CLI} arguments, allowing precise control over profiling behavior.
+\traceq centralizes these measurement techniques through its core profiler engine, triggered via a simple \ac{CLI} or programmatically within Python scripts.
+Configuration settings are flexible, supporting \ac{TOML} files, environment variables, and \ac{CLI} arguments, allowing precise control over profiling behavior. \EB{Lembre-se de explicar as siglas/acrônimos sempre que usados pela primeira vez.}
 
 \subsection{High-Level Architecture}
 \label{sec:mmc-traceq-architecture}
 
-The \texttt{traceq} architecture comprises four main components:
+The \traceq architecture comprises four main components:
 
 \begin{enumerate}
     \item \textbf{\ac{CLI}}: Provides a user-friendly interface, parsing commands and initiating profiling tasks.
@@ -52,7 +53,7 @@ The \texttt{traceq} architecture comprises four main components:
 \subsection{Profiling Workflow}
 \label{sec:mmc-traceq-workflow}
 
-When a profiling command such as \texttt{traceq profile script.py –metric memory,time} is executed, \texttt{traceq} follows a structured workflow:
+When a profiling command such as \texttt{traceq profile script.py –metric memory,time} is executed, \traceq follows a structured workflow:
 
 \begin{enumerate}
     \item Constructs instrumentation hooks based on user-selected metrics (memory, time).
@@ -62,6 +63,8 @@ When a profiling command such as \texttt{traceq profile script.py –metric memo
     \item Upon completion of the subprocess, consolidates collected traces into structured objects.
     \item Generates a comprehensive profiling report, including trace metadata and serialized measurement data.
 \end{enumerate}
+
+\EB{Daniel, estou sentindo falta de figuras no texto. Este capítulo, em particular, poderia se beneficiar de figuras que ilustram a organização da ferramenta e/ou o workflow.}
 
 This workflow ensures accurate tracking of memory dynamics, enabling insightful analysis of memory behavior in Python applications.
 
@@ -80,7 +83,7 @@ This command profiles memory usage with 100ms sampling intervals, generating det
 docker run traceq profile main.py –-profiler-precision 4
 \end{verbatim}
 
-You can run withihn a Docker container, allowing for seamless integration into containerized workflows.
+You can run within a Docker container, allowing for seamless integration into containerized workflows.
 
 \textbf{Profiling with a decorator:}
 \begin{verbatim}
@@ -97,8 +100,8 @@ This decorator enables profiling of specific functions, providing targeted insig
 \subsection{Validation and Performance}
 \label{sec:mmc-traceq-validation}
 
-Validation studies detailed on Section~\ref{sec:mmc-recommended-strategy} confirm \texttt{traceq}’s accuracy and low overhead.
+Validation studies detailed on Section~\ref{sec:mmc-recommended-strategy} confirm \traceq’s accuracy and low overhead.
 Comparative benchmarking against \ac{OS}-level tools (Docker stats, \texttt{psutil}) demonstrates alignment within 2-3\% variance, accounting primarily for transient Python allocations and garbage collection effects.
 Profiling overhead remains minimal, typically under 5\% for standard interval sampling, ensuring practical applicability for performance-sensitive scenarios.
 
-In summary, the \texttt{traceq} library provides a robust and precise solution for profiling memory usage, making it highly suitable for sophisticated computational workloads and memory-sensitive Python applications.
+In summary, the \traceq library provides a robust and precise solution for profiling memory usage, making it highly suitable for sophisticated computational workloads and memory-sensitive Python applications.

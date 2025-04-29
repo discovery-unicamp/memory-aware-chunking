@@ -8,12 +8,13 @@ Several salient findings emerged:
     \item \textbf{Linear Volume Dependence and Operator Sensitivity.}
     All operators demonstrated a near-linear escalation in peak \ac{RAM} usage with respect to total input volume (\( \text{inlines} \times \text{xlines} \times \text{samples} \)).
     \ac{GST3D} remained the most sensitive, displaying a steeper volume-based slope compared to Envelope and Gaussian Filter.
-    Envelope and Gaussian Filter, by contrast, showed comparatively gentler linear relationships, suggesting that their computational kernels rely less on large intermediate buffers.
+    Envelope and Gaussian Filter, by contrast, showed comparatively gentler linear relationships, suggesting that their computational kernels \EBC{rely less on large intermediate buffers}{Se a curva é mais inclinada, então ele deve estar dependendo mais de buffers intermediários, não?}.
 
     \item \textbf{Feature Selection and the Predominance of Volume.}
-    Systematic removal of shape-derived features (e.g., diagonal length, surface area, ratio transformations) underscored that \emph{volume} alone captures most of the variance in peak memory usage.
+    Systematic removal of shape-derived features (\eg, diagonal length, surface area, ratio transformations) underscored that \emph{volume} alone captures most of the variance in peak memory usage.
     Even advanced transformations (logarithmic or polynomial terms) contributed only marginal improvements once volume was included.
-    \ac{GST3D} occasionally benefited from additional parameters (e.g., diagonal length), but not enough to outweigh the straightforward predictive power of volume.
+    \ac{GST3D} occasionally benefited from additional parameters (\eg, diagonal length), but not enough to outweigh the straightforward predictive power of volume.
+    \EB{E se o volume não for usado? Ou se apenas as features originais forem usadas?}
 
     \item \textbf{Model Performance and Robustness.}
     Across nine regression approaches, simpler or regularized methods—like Linear Regression, Elastic Net, and decision-tree ensembles—performed well, achieving \(R^2 \approx 0.99\) or higher in many configurations.
@@ -33,10 +34,10 @@ Several salient findings emerged:
 
 Overall, Chapter~\ref{ch:predicting-memory-consumption-from-input-shapes} establishes that:
 \begin{enumerate}
-    \item \emph{Volume is the primary explanatory feature} for predicting peak memory usage, with additional variables offering only minor gains.
+    \item \emph{Volume is the primary explanatory feature} for predicting peak memory usage \EBADD{for the evaluated operators}, with additional variables offering only minor gains.
     \item Simple or linear-in-spirit regressors often suffice to model Envelope and Gaussian Filter, while \ac{GST3D} can benefit from tree-based methods if data coverage in the mid-volume range is adequate.
     \item A sample size of approximately 30–40 shape configurations provides a practical lower bound for stable memory prediction, making data collection efforts more tractable for real-world \ac{HPC} scenarios.
 \end{enumerate}
 
-With these findings, we have a clearer framework for implementing memory-aware chunking strategies: one can rely on volume-based models (potentially augmented by minimal shape features) and still maintain accurate peak \ac{RAM} consumption estimates, even with relatively small training sets.
+With these findings, we have a clearer framework for implementing memory-aware chunking strategies \EBADD{for applications that rely on these operators}: one can rely on volume-based models (potentially augmented by minimal shape features) and still maintain accurate peak \ac{RAM} consumption estimates, even with relatively small training sets.
 The subsequent chapter applies these insights to optimize data-parallel chunking and scheduling decisions for large-scale seismic workloads.

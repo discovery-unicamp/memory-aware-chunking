@@ -19,7 +19,7 @@ Containerized environments provide two primary benefits:
     \item \textbf{Explicit Resource Management:} Containers allow defined memory constraints using flags such as \texttt{–memory} or cgroup configurations, useful for validating memory usage limits (detailed in Section~\ref{subsec:mmc-bestpractices-validation}).
 \end{enumerate}
 Despite these advantages, container-level abstractions can introduce measurement inaccuracies due to caching or shared kernel resources.
-Cross-validation of container metrics against system-level metrics (e.g., via Linux’s \texttt{/proc/[pid]/smaps}) is essential to ensure accuracy.
+Cross-validation of container metrics against system-level metrics (\eg, via Linux’s \texttt{/proc/[pid]/smaps}) is essential to ensure accuracy.
 
 \paragraph{Subprocess-Based Isolation.}
 Subprocess invocation serves as an effective isolation alternative where containerization is impractical.
@@ -37,11 +37,14 @@ Ensuring complete isolation guarantees accurate reflection of actual memory requ
 Establishing a “clean slate” between experimental runs complements environmental isolation, further enhancing accuracy:
 
 \begin{itemize}
-    \item \textbf{Kernel or Interpreter Reset in Interactive Environments:} Interactive environments like Jupyter notebooks retain memory references across executions. Restarting the kernel ensures the complete removal of lingering objects and facilitates accurate baseline memory assessment.
+
+    \item \textbf{Kernel or Interpreter Reset in Interactive Environments:} Interactive environments like Jupyter notebooks retain memory references across executions. 
+    Restarting the kernel ensures the complete removal of lingering objects and facilitates accurate baseline memory assessment.
 
     \item \textbf{Process-Level Restarts in Batch Executions:} Persistent Python processes executing repeated scripts can accumulate memory fragmentation and partial garbage collection states. Initiating each experiment as an independent process invocation guarantees memory measurements free from residual influence.
 
     \item \textbf{Elimination of Persistent Global State:} Long-running processes maintaining global or static objects must be restarted unless explicitly required by the experimental design. Persistent global states can distort accurate memory profiling.
+
 \end{itemize}
 
 These practices ensure consistent and precise memory usage measurements by systematically preventing residual state accumulation.
@@ -53,18 +56,24 @@ Combining system-level (external) and Python-level (internal) memory measurement
 Reliance on a single approach risks incomplete or misleading results.
 
 \paragraph{System-Level Metrics.}
-Tools such as \texttt{psutil}~\cite{psutil}, Docker statistics, and Linux’s \texttt{/proc} filesystem measure system-wide metrics including \ac{RSS}, \ac{VMS}, and shared memory.
+Tools such as \texttt{psutil}~\cite{psutil}, Docker statistics, and Linux’s \texttt{/proc} filesystem measure system-wide metrics including \ac{RSS}, \ac{VMS}, and shared memory.\EB{Talvez fosse importante ter uma seção no capítulo 2 explicando estes termos/conceitos -- RSS, VMS, \etc. O que acha?}
 These metrics provide insights into:
 \begin{itemize}
+
     \item \textbf{System Resource Contention:} Identifying interactions or competitions with other processes for memory resources.
+    
     \item \textbf{Peak Memory Consumption:} Accurate tracking of actual memory allocation at the \ac{OS} level.
+
 \end{itemize}
 
 \paragraph{Python Object-Level Insights.}
 Internal profiling tools like \texttt{tracemalloc}~\cite{tracemalloc} offer granular, Python-specific memory allocation information, enabling:
 \begin{itemize}
+
     \item \textbf{Identification of Memory Hotspots:} Pinpointing specific code segments and data structures that drive memory consumption.
+    
     \item \textbf{Monitoring Python Allocation Patterns Over Time:} Detecting memory usage trends and fragmentation issues at the interpreter level.
+
 \end{itemize}
 
 \paragraph{Resolving Discrepancies.}
@@ -74,7 +83,7 @@ Reconciling these measurements by analyzing temporal correlations enhances under
 \subsection{Frequency and Granularity of Measurement}
 \label{subsec:mmc-bestpractices-frequency-granularity}
 
-Selecting appropriate measurement frequency and granularity is crucial to accurately capturing memory usage without excessive overhead:
+Selecting appropriate measurement frequency and granularity is crucial to accurately capture memory usage without excessive overhead:
 
 \paragraph{Sampling Frequency.}
 Regular interval sampling of metrics like \ac{RSS} with tools such as \texttt{psutil} provides a balance between capturing short-lived spikes and avoiding significant runtime overhead.

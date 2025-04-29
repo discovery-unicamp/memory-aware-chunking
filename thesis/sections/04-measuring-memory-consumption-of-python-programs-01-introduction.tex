@@ -6,13 +6,13 @@ Python’s complex memory model, which mixes reference counting, dynamic allocat
 Overestimates waste resources, whereas underestimates risk \ac{OOM} errors.
 
 Tools like \texttt{top}\cite{top_linux_manpage}, \texttt{tracemalloc}\cite{tracemalloc}, and container-based statistics each provide a different view of memory consumption.
-Containerization (e.g., Docker~\cite{docker}) further complicates accounting due to caching and shared kernel resources.
+Containerization (\eg, Docker~\cite{docker}) further complicates accounting due to caching and shared kernel resources.
 Consequently, obtaining definitive or comprehensive memory metrics in large-scale or containerized settings can be difficult.
 
 This chapter lays out a structured approach to measuring Python memory accurately.
 Section~\ref{sec:mmc-common-challenges-and-pitfalls} summarizes frequent pitfalls, such as memory fragmentation, garbage-collection spikes, and container-level distortions.
 Section~\ref{sec:mmc-best-practices} consolidates best practices for environment isolation, cross-validation, and sampling strategies.
-Section~\ref{sec:mmc-traceq} introduces the \texttt{traceq} library, designed to allow a memory-footprint free profiling for both Python-internal (e.g., \texttt{tracemalloc}) and system-level metrics (e.g., \texttt{psutil}).
+Section~\ref{sec:mmc-traceq} introduces the \texttt{traceq} library, designed to allow a memory-footprint free profiling for both Python-internal (\eg, \texttt{tracemalloc}) and system-level metrics (\eg, \texttt{psutil}).
 Section~\ref{sec:mmc-recommended-strategy} walks through a step-by-step recommended measurement workflow, culminating in an example experiment that benchmarks overhead and accuracy.
 Section~\ref{sec:mmc-conclusion} concludes with the main findings and outlines how these measurements underpin later chapters (notably Chapter~\ref{ch:predicting-memory-consumption-from-input-shapes} and Chapter~\ref{ch:improving-data-parallelism-using-memory-aware-chunking}).
 

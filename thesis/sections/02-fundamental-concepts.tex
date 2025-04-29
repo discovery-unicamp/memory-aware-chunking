@@ -1,11 +1,13 @@
 \chapter{Fundamental Concepts}
 \label{ch:fundamental-concepts}
 
+\EB{Daniel, o capítulo oferece explicações e definições dos principais termos, mas senti falta de referência de onde você tirou estas explicações. Geralmente referenciamos materiais bem consolidados, como livros técnicos e/ou surveys - artigos periódicos que discorrem sobre um determinado tema. Geralmente, para cada definição, é de praxe colocarmos uma referência no final da frase.}
+
 \ac{HPC} accelerates large-scale scientific, engineering, and data-driven tasks by distributing computation over multiple nodes, \ac{CPU}s, or specialized accelerators.
 These environments demand careful planning of memory and processing resources, because errors in estimation can degrade throughput or cause \ac{OOM} failures.
 Python’s increasing adoption in \ac{HPC} contexts offers accessibility and a rich ecosystem of libraries, but it also introduces a unique set of challenges related to memory usage.
 Containerization, meanwhile, has evolved as a lightweight alternative to full virtualization, adding another dimension to resource management.
-Data-parallel frameworks such as Dask further complicate or enhance performance by partitioning data into chunks, where naive chunking strategies can ignore memory-intensive stages.
+Data-parallel frameworks such as Dask further \EBC{complicate or enhance}{qual é o ponto aqui? Argumentar que ele ajuda ou que ele atrapalha?} performance by partitioning data into chunks, where naive chunking strategies can ignore memory-intensive stages.
 Predictive modeling of resource needs arises as an effective solution to reduce trial-and-error.
 This chapter details these core \ac{HPC} and Python concepts, illuminating why memory measurement and prediction strategies require specialized approaches.
 
@@ -43,7 +45,7 @@ Either approach demands a clear understanding of per-worker memory behavior.
 \section{Python Memory Model and Measurement Challenges}
 \label{sec:fundamentals-python-memory}
 
-Python’s ecosystem provides convenient libraries (NumPy, SciPy, Pandas, Dask, PyTorch) that enable rapid development of \ac{HPC} applications.
+Python’s ecosystem provides convenient libraries (\eg, NumPy, SciPy, Pandas, Dask, PyTorch) that enable rapid development of \ac{HPC} applications.
 However, Python’s memory subsystem complicates direct measurement and reliable estimates.
 
 \subsection{Reference Counting}
@@ -52,7 +54,7 @@ However, Python’s memory subsystem complicates direct measurement and reliable
 Every Python object maintains a reference count that tracks how many pointers reference it.
 When this count reaches zero, Python deallocates the object.
 Short-lived or frequently created objects may inflate memory usage in bursts, particularly when arrays are constructed as intermediates in a computation.
-Code that spawns many temporary arrays (e.g., sub-slices, filtering masks, partial results) may show dramatic but brief peaks in memory consumption.
+Code that spawns many temporary arrays (\eg, sub-slices, filtering masks, partial results) may show dramatic but brief peaks in memory consumption.
 
 \subsection{Garbage Collection}
 \label{subsec:fundamentals-gc}
@@ -60,7 +62,7 @@ Code that spawns many temporary arrays (e.g., sub-slices, filtering masks, parti
 Python also uses a cyclic garbage collector for objects that form reference cycles, which reference counting alone cannot reclaim.
 Garbage collection runs periodically, scanning object graphs to find cycles.
 This mechanism can delay memory freeing and cause occasional spikes in \ac{CPU} usage.
-Memory usage observed just before a garbage-collection cycle might look higher than at other times, while reclaimed memory might still remain allocated within Python’s private arenas.
+Memory usage observed just before a garbage-collection cycle might look higher than at other times, while reclaimed memory might still remain allocated within Python’s private arenas. \EB{O que é uma arena?}
 
 \subsection{Memory Fragmentation and \ac{OS} Interactions}
 \label{subsec:fundamentals-fragmentation}
@@ -76,7 +78,7 @@ These conditions complicate the interpretation of a single memory usage metric.
 \section{Containerization in \ac{HPC}}
 \label{sec:fundamentals-containerization}
 
-Containerization packages software dependencies and environment configuration into isolated bundles that share the host’s kernel while separating file systems, namespaces, and cgroups.
+Containerization packages software dependencies and environment configuration into isolated bundles that share the host’s kernel while separating file systems, namespaces, and \EBC{cgroups}{Talvez cgroups não seja um termo tão conhecido - que tal usar ``and other computing resources such''? }.
 Containers provide a consistent application environment across diverse \ac{HPC} systems.
 They also enable per-container resource constraints, including memory quotas.
 
@@ -91,7 +93,9 @@ Both can isolate Python processes and dependencies to ensure reproducible states
 \label{subsec:fundamentals-nested-dind}
 
 \ac{DIND} enables running new containers within an existing container environment, offering an additional isolation layer that can prevent external interference.
+\EB{Lembre-se de definir as siglas e acrônimos antes do primeiro uso - BTW, não conhecia o termo DIND.}
 This environment proves useful for memory measurement, because multiple ephemeral containers can be launched, each representing a clean-slate state for repeated experiments.
+\EB{Senti falta de referências para o projeto/site/artigo que apresenta o DIND.}
 
 \subsection{Cgroups for Memory Management}
 \label{subsec:fundamentals-cgroups}
@@ -106,7 +110,7 @@ Python-level measurement thus remains necessary for precise insight into dynamic
 \label{sec:fundamentals-data-parallel}
 
 Data partitioning is crucial when large datasets exceed the memory capacity of a single node or must be processed in parallel.
-Frameworks like Dask allow arrays or dataframes to be split into smaller \emph{chunks} across multiple workers, enabling concurrent execution.
+Frameworks like Dask allow arrays or dataframes\ADDREF to be split into smaller \emph{chunks} across multiple workers, enabling concurrent execution.
 
 \subsection{Dask Arrays and Task Graphs}
 \label{subsec:fundamentals-dask-overview}
@@ -114,6 +118,9 @@ Frameworks like Dask allow arrays or dataframes to be split into smaller \emph{c
 Dask builds a \ac{DAG} of tasks, each representing an operation (for instance, array slicing, map operations, or reductions) on one or more chunks.
 Workers consume and produce chunks as scheduled.
 Heuristic-based auto-chunking sets chunk sizes with limited awareness of actual operator memory usage.
+
+\EB{Seria legal ter uma imagem aqui ilustrando o processamento em chunks. De preferência uma imagem que ajude a visualizar os problemas de selecionar chunks muito pequenos (excesso de tarefas para escalonar), e chunks muito grandes. Se a imagem na introdução já deixar estes conceitos claros, então não vejo necessidade de adicionar outra aqui.}
+
 This naive approach leads to frequent imbalance:
 \begin{itemize}
     \item \emph{Over-fragmentation} if chunks are too small, increasing overhead from task scheduling.
@@ -126,34 +133,35 @@ This naive approach leads to frequent imbalance:
 Many \ac{HPC} workloads involve \ac{3D} convolutions, Fourier transforms, or matrix decompositions that create large intermediate buffers.
 Allocating these buffers can multiply memory usage beyond the size of the input array itself.
 If each chunk is processed with an operator that amplifies the array footprint, then chunk boundary decisions become critical.
-Insufficiently sized chunks might hamper parallel efficiency, while oversized chunks may exceed memory capacity.
+Insufficiently sized chunks might hamper parallel efficiency, while oversized chunks may exceed memory capacity \EBADD{and lead to \ac{OOM}}.
 
 
 \section{Predictive Modeling in HPC Resource Management}
 \label{sec:fundamentals-predictive-modeling}
 
-Resource managers benefit significantly from predictive models that forecast memory usage or runtime based on job features.
+Resource managers \EBADD{can} benefit significantly from predictive models that forecast memory usage or runtime based on job features.
 Such forecasts reduce guesswork in scheduling and facilitate better cluster utilization.
 
 \subsection{Existing Approaches and Gaps}
 \label{subsec:fundamentals-existing-approaches}
 
-Historical-based solutions gather logs of prior runs and fit regressions or machine-learning models to estimate resources for similar future jobs.
+Historical-based solutions gather logs of prior runs and fit regressions or machine-learning models to estimate resources for similar future jobs. \EB{Adicione referências para trabalhos que usam esta abordagem}
 A limitation arises when new workloads present shapes or configurations unlike any previously seen.
 In such situations, shape-based or operator-based predictions are more reliable, especially for consistent algorithms whose memory usage follows a mathematical pattern.
+\EB{Se houver, adicione referências para trabalhos que usam esta outra abordagem}
 
 \subsection{Shape-Based Memory Prediction}
 \label{subsec:fundamentals-shape-prediction}
 
-Tensor-centric tasks often revolve around multi-dimensional data, where memory usage correlates closely with array volume or dimension sizes.
+\EBC{Tensor-centric}{Não estou certo ainda, mas talvez seja melhor evitar o uso do termo tensor} tasks often revolve around multi-dimensional data, where memory usage correlates closely with array volume or dimension sizes.
 Large arrays, by definition, store more elements, leading to proportionally higher memory demands.
 Certain operators add overhead that scales with the same dimension or an offset of it.
-Empirical studies repeatedly show near-linear relationships between array size and peak memory for filters, transforms, or deep learning layers.
+Empirical studies repeatedly show near-linear relationships between array size and peak memory for filters, transforms, or deep learning layers. \EB{Adicione referências para estes estudos.}
 
 \subsection{Chunking Decisions via Modeling}
 \label{subsec:fundamentals-chunking-decisions}
 
-Predictive models help \ac{HPC} frameworks decide chunk sizes based on the memory footprint expected per chunk, factoring in overhead from the operators in question.
+Predictive models \EBC{help}{help or can help?} \ac{HPC} frameworks decide chunk sizes based on the memory footprint expected per chunk, factoring in overhead from the operators in question.
 Memory usage per chunk can be estimated from the data shape, and chunk boundaries can then be constrained by a user-defined or system-imposed memory threshold.
 This approach significantly reduces \ac{OOM} incidents and the risk of idle workers awaiting a chunk that some worker cannot handle.
 
@@ -165,6 +173,6 @@ This approach significantly reduces \ac{OOM} incidents and the risk of idle work
 Containerization enables stable environments and cgroup-based memory constraints, yet container-level metrics alone do not dissect Python’s internal overhead.
 Data-parallel frameworks—such as Dask—rely on chunking to scale large datasets across many workers, but naive chunk sizing can yield inefficient or failing computations.
 
-Predictive models that link shape attributes (e.g., total volume, dimension sizes) to expected memory usage serve as powerful mechanisms to drive chunking decisions and resource scheduling.
+Predictive models that link shape attributes (\eg, total volume, dimension sizes) to expected memory usage serve as powerful mechanisms to drive chunking decisions and resource scheduling.
 When integrated properly, these models minimize guesswork while maintaining concurrency and preventing out-of-memory failures.
 The subsequent chapters detail how to measure Python memory accurately, how to build shape-based predictors for typical scientific workloads, and how to incorporate those predictors into chunk partitioning to achieve reliable, memory-aware data parallelism.
