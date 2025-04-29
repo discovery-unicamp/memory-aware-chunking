@@ -19,13 +19,13 @@ Several practices address these complexities.
     \item Clean-Slate Isolation.
     Lightweight containers or fresh Python subprocesses for each measurement iteration prevent remnant state, memory fragmentation, or objects leftover from prior runs.
     \item Cross-Validation with Multiple Tools.
-    Rather than relying on a single utility such as \texttt{top} or \texttt{tracemalloc}, both internal (Python-level) and external (OS-level) metrics ensure transient allocations are captured while instrumentation overhead remains limited.
+    Rather than relying on a single utility such as \texttt{top} or \texttt{tracemalloc}, both internal (Python-level) and external (\ac{OS}-level) metrics ensure transient allocations are captured while instrumentation overhead remains limited.
     \item Structured Sampling Methodologies.
     By balancing sampling frequency, which might distort native performance, and the need to capture ephemeral spikes, the strategy retains a sufficiently granular timeline with only a few percentage points of overhead.
 \end{enumerate}
 
-The specialized open-source library \texttt{traceq} streamlines these measurements.
-Empirical tests show that \texttt{traceq} tracks peak memory usage within 2--3\% of \ac{OS}-level benchmarks with minimal impact on performance.
+The specialized open-source library \traceq streamlines these measurements.
+Empirical tests show that \traceq tracks peak memory usage within 2--3\% of \ac{OS}-level benchmarks with minimal impact on performance.
 
 
 \section{Predicting Memory Consumption from Input Shapes}
@@ -44,7 +44,7 @@ Key findings include:
     \item Operator-Specific Variations.
     Although Envelope, \ac{GST3D}, and Gaussian Filter show slightly different slopes due to intermediate buffers, the volume-centric regression captures memory behavior effectively for each operator.
     \item Model Simplicity.
-    Complex regressors (\eg, gradient boosting or neural networks) provide only minor gains compared to simpler linear or polynomial regressions, making it practical for HPC teams to use faster-to-train models without losing accuracy.
+    Complex regressors (\eg, gradient boosting or neural networks) provide only minor gains compared to simpler linear or polynomial regressions, making it practical for \ac{HPC} teams to use faster-to-train models without losing accuracy.
 \end{itemize}
 
 Data reduction experiments confirm that even a moderate set of shape-memory measurements (on the order of 30--40 representative shapes) suffices to build a robust predictive model.
@@ -82,7 +82,7 @@ In HPC operations where out-of-memory errors invalidate entire runs, this trade-
 The thesis contributes four principal findings across these phases.
 \begin{enumerate}
     \item Robust Memory-Measurement Methodology.
-    A tested strategy involving containerized isolation, multi-tool cross-validation, carefully chosen sampling frequencies, and the \texttt{traceq} library.
+    A tested strategy involving containerized isolation, multi-tool cross-validation, carefully chosen sampling frequencies, and the \traceq library.
     This approach applies beyond seismic workloads to any Python-based \ac{HPC} scenario.
     \item Empirical Validation of Shape-Based Predictors.
     Seismic and tensor-based algorithms frequently display near-linear memory scaling with volume, enabling straightforward and efficient predictive models.
@@ -103,7 +103,7 @@ Certain limitations and open research avenues remain.
     \item \ac{GPU} Memory.
     The thesis focuses on \ac{CPU} memory usage.
     \ac{HPC} systems increasingly use \ac{GPU} accelerators, and the interplay of \ac{CPU}, \ac{GPU}, and on-device memory introduces further complexity.
-    Extensions of \texttt{traceq} or similar tools could track \ac{GPU} device allocations in real time.
+    Extensions of \traceq or similar tools could track \ac{GPU} device allocations in real time.
     \item Adaptive Safety Factors.
     The current memory-aware approach sets a static safety factor.
     Adapting this factor dynamically to real-time memory feedback may yield more efficient chunk sizes with minimal \ac{OOM} risk.

@@ -28,10 +28,9 @@ Larger volumes lead to more consistent memory consumption, whereas smaller volum
         \includegraphics[width=\textwidth]{assets/images/05/peak_memory_by_volume_gaussian-filter}
         \caption{Gaussian Filter}
     \end{subfigure}
-    \caption{Peak memory usage vs. $Volume~(\text{inlines} \times \text{xlines} \times \text{samples})$ for Envelope, \ac{GST3D}, and Gaussian Filter. 
-        Each operator displays approximate linear scaling. Variability is higher in smaller volumes.
-        \EB{Faltou uma legenda ou texto explicando o significado das cores azul e laranja. A fonte nos gráficos poderia ser maior também -- vale para todos os gráficos.}
-        \label{fig:peak_memory_facet}
+    \caption{Peak memory usage vs. $Volume~(\text{inlines} \times \text{xlines} \times \text{samples})$ for Envelope, \ac{GST3D}, and Gaussian Filter.
+    Each operator displays approximate linear scaling. Variability is higher in smaller volumes.
+    \label{fig:peak_memory_facet}
     }
 \end{figure*}
 
@@ -62,7 +61,7 @@ This reinforces that input shape, especially total volume, is the dominant facto
 \subsubsection{Execution Time Distributions and Scaling Factor}
 \label{subsec:execution-time-distributions-and-scaling}
 
-Figure~\ref{fig:ex_peak_mu_facet}(a)--\EBC{(c)}{(b)?} aggregate execution time and peak memory usage for all operators.
+Figure~\ref{fig:ex_peak_mu_facet}(a)--(b) aggregate execution time and peak memory usage for all operators.
 Since we can see a clear linear pattern, Table~\ref{tab:scaling_slopes_summary} lists the slope and $R^2$ values considering a linear regression fit.
 \ac{GST3D} exhibits the steepest slope, followed by Envelope and then Gaussian Filter, indicating increasingly efficient memory usage.
 
@@ -122,7 +121,7 @@ The accompanying heatmap (part~(b)) visually confirms this uniformity: increasin
 \subsubsection{Memory Safety Margins and Aspect Analysis}
 \label{subsec:memory-safety-margins}
 
-Figure~\ref{fig:memory_safety_margin} shows a substantial gap between the average memory usage and the 95\% percentile for Envelope, \ac{GST3D}, and Gaussian Filter. \EB{Adicione algumas frases para explicar o que os gráficos estão mostrando -- também aumente o tamanho da fonte dos textos nos gráficos.}
+Figure~\ref{fig:memory_safety_margin} shows a substantial gap between the average memory usage and the 95\% percentile for Envelope, \ac{GST3D}, and Gaussian Filter.
 Two possible causes explain this discrepancy:
 (1) different shapes that map to the same volume (\eg, $100$ $\times$ $300$ $\times$ $200$ vs. $300$ $\times$ $100$ $\times$ $200$) may exhibit distinct memory consumption, or
 (2) early experiment runs may incur higher overhead, as discussed in Chapter~\ref{ch:measuring-memory-consumption}.
@@ -143,10 +142,9 @@ Two possible causes explain this discrepancy:
         \includegraphics[width=\textwidth]{assets/images/05/memory_safety_margin_gaussian-filter}
         \caption{Gaussian Filter}
     \end{subfigure}
-    \caption{Memory safety margins comparing mean and 95\% percentile. 
-        Overheads in initial runs or shape-induced variability can inflate peak usage within the same volume bin.
-        \EB{Tamanho da fonte.}
-        \label{fig:memory_safety_margin}
+    \caption{Memory safety margins comparing mean and 95\% percentile.
+    Overheads in initial runs or shape-induced variability can inflate peak usage within the same volume bin.
+    \label{fig:memory_safety_margin}
     }
 \end{figure*}
 

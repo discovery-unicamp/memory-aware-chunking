@@ -1,7 +1,7 @@
 \section{Materials and Methods}
 \label{sec:pmc-materials-and-methods}
 
-This section explains the complete methodology for gathering memory-consumption data, generating shape-based features, \EBRP{and training}{training, and evaluation the} predictive models.
+This section explains the complete methodology for gathering memory-consumption data, generating shape-based features, training, and evaluation the predictive models.
 The overall pipeline includes four core phases.
 (i) Data Generation,
 (ii) Memory Profiling,
@@ -19,12 +19,11 @@ For example, when the initial size equals 100, the final size equals 600, and th
 \(\{\,(100,100,100),\,(100,100,200),\dots,(600,600,600)\}\)
 and writes them to \ac{SEG-Y}~\cite{barry1975segy} files.
 These synthetic datasets mimic actual seismic data and span diverse volumes to reveal how memory grows with increasing dimension sizes.
-\EB{Talvez seja importante argumentar que o uso de dados sintéticos não causa viés na análise por que o perfil de computação e consumo de memória dos operadores usados no processamento do dado não dependem dos valores das amostras em si, apenas do shape do dado.}
 
 \vspace{1em}
 \noindent
 \textbf{Phase 2: Memory Profiling.}
-A shell script schedules container-based jobs to run \EBC{seismic operators}{Não lembro se você definiu o que são seismic operators. Se não definiu, talvez vale adicionar uma breve seção explicando as aplicações e/ou operadores - estas aplicações/operadores fazem parte dos materiais usados no experimento.} on each generated dataset.
+A shell script schedules container-based jobs to run seismic operators on each generated dataset.
 Chapter~\ref{ch:measuring-memory-consumption} describes the \ac{HPC}-like constraints and the rationale for isolating each job to reduce interference.
 Accordingly, the script starts \ac{dind} containers pinned to specific \ac{CPU} cores through \texttt{--cpuset-cpus}.
 This binding ensures comparable runs.
@@ -42,7 +41,7 @@ The script then processes three main operators:
 
 Each operator appears as a Docker image defined in the \texttt{Dockerfile}.
 Each container execution uses a Python script to load and process input data.
-The \texttt{traceq} library records \ac{RSS} over time, as discussed in Chapter~\ref{ch:measuring-memory-consumption}.
+The \traceq library records \ac{RSS} over time, as discussed in Chapter~\ref{ch:measuring-memory-consumption}.
 On completion, a \texttt{.prof} file stores the memory timeline and associated metadata, including timestamps and shape parameters.
 This procedure captures peak memory usage accurately.
 
@@ -124,8 +123,8 @@ They control dataset sizes, repetition counts, and output paths.
 \vspace{1em}
 \noindent
 \textbf{Phase 3: Results Collection and Feature Construction.}
-This phase consists in evaluating the \texttt{.prof} files \EBRP{output}{produced} by \texttt{traceq}, extracting peak memory usage, and associating it with the input shape.
-The script identifies \EBC{inlines, xlines,}{Estes termos foram definidos?} and samples from filenames, notes the operator, retains the maximum time-series \ac{RSS} value, and compiles a consolidated dataframe.
+This phase consists in evaluating the \texttt{.prof} files produced by \traceq, extracting peak memory usage, and associating it with the input shape.
+The script identifies inlines, xlines, and samples from filenames, notes the operator, retains the maximum time-series \ac{RSS} value, and compiles a consolidated dataframe.
 It also derives extended features such as total volume
 (\(\text{inlines} \times \text{xlines} \times \text{samples}\)),
 logarithmic transforms
@@ -165,7 +164,7 @@ df_features["log_volume"] = np.log2(df_features["volume"])
 \vspace{1em}
 \noindent
 \textbf{Phase 4: Model Training and Analysis.}
-Phase 4 trains multiple regression models using inlines, xlines, samples, and derived features as \EBADD{memory consumption} predictors.
+Phase 4 trains multiple regression models using inlines, xlines, samples, and derived features as memory consumption predictors.
 Peak memory usage serves as the target variable.
 An 80/20 training/test split ensures fair comparisons across Envelope, \ac{GST3D}, and Gaussian Filter runs.
 
@@ -191,7 +190,6 @@ Maximizing \(\texttt{score}\) balances the risk of underestimating memory (which
 The \texttt{Optuna} framework~\cite{akiba2019optuna} guides hyperparameter tuning for each model and determines suitable weights for \(\mathrm{acc}\), \(\mathrm{RMSE}\), \(\mathrm{MAE}\), and \(R^2\).
 A study is created with \(\texttt{direction}=\text{"maximize"}\); at every trial, the study trains the model, evaluates the composite score, and updates search parameters accordingly.
 The best trial parameters yield an optimal combination of hyperparameters and multi-metric weights.
-\EB{Daniel, a busca de hiperparâmetros deve ser feita com um conjunto de treino e validação, sem usar o conjunto de teste - que deve ser reservado para a avaliação final. É importante verificar se foi assim mesmo que você executou o exepeimento e explicar esta metodologia aqui.}
 
 Regarding models, the analysis includes several families of regressors:
 
@@ -199,7 +197,7 @@ Regarding models, the analysis includes several families of regressors:
     \item \textbf{Linear Regression, Polynomial Regression}~\cite{hastie2009elements}\\
     These models create foundational baselines to capture the relationship between features and memory usage.
     Linear regression indicates whether memory usage scales directly with any of the features.
-    Polynomial regression extends linear models with higher-order terms to account for \EBRP{mild}{polynomial} nonlinearities.
+    Polynomial regression extends linear models with higher-order terms to account for polynomial nonlinearities.
     Caution is required since purely linear fits underfit complex relationships, and high-degree polynomials risk overfitting.
 
     \item \textbf{Decision Trees}~\cite{breiman1984classification}, \textbf{Random Forest}~\cite{breiman2001random}, \textbf{\ac{XGBoost}}~\cite{chen2016xgboost}\\
@@ -328,9 +326,8 @@ Section~\ref{sec:pmc-results} elaborates on these experimental outcomes and comp
 
         \end{tikzpicture}
     }
-    \caption{Schematic of the memory prediction \EBRPD{pipeline}{experiment}.
+    \caption{Schematic of the memory prediction experiment.
     It includes synthetic data generation, containerized profiling, feature extraction, and regression model training.
-    \EB{Feature Construction $\rightarrow$ Feature Extraction?}
     \label{fig:pmc_datapipeline}
     }
 \end{figure}

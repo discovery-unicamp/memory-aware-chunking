@@ -18,11 +18,11 @@ A single shell script, \texttt{scripts/experiment.sh}\cite{delucca2025experiment
     \item Creation of Docker volumes for intermediate and output data storage.
     \item Generation of synthetic \ac{3D} seismic volumes, as described in Section\ref{sec:pmc-materials-and-methods}.
     \item Execution of seismic operators within containers, using \texttt{EXPERIMENT\_N\_RUNS} runs per input shape configuration.
-    \item Memory profiling using \texttt{TraceQ}, which captured \ac{RSS} measurements over time.
+    \item Memory profiling using \traceq, which captured \ac{RSS} measurements over time.
     \item Extraction and consolidation of peak memory values, shape metadata, and execution logs into structured \texttt{.csv} files.
 \end{enumerate}
 
-The script looped over all permutations of \texttt{(inlines, xlines, samples)}, parsing \texttt{TraceQ} \EB{Lembrar de padronizar o termo \traceq} outputs and joining them with shape metadata.
+The script looped over all permutations of \texttt{(inlines, xlines, samples)}, parsing \traceq outputs and joining them with shape metadata.
 The final output consisted of a consolidated dataset for model fitting.
 
 \subsection{Synthetic Data Generation and Real-Data Validation}
@@ -37,7 +37,6 @@ This method enabled a controlled exploration of both common and extreme input co
 \paragraph{Netherlands F3 Dataset~\cite{f3dataset}.}
 The standard Netherlands F3 seismic volume ($651$ $\times$ $951$ $\times$ $462$) served as a real-data validation benchmark.
 Memory usage predictions from the trained models were compared against actual measurements on this dataset, enabling evaluation of model generalization to real-world data.
-\EB{Indicar um respositório de onde o leitor possa baixar este dado para reproduzir seu trabalho.}
 
 \subsection{Containerized Seismic Operators and Memory Profiling}
 \label{subsec:containerized-seismic-operators-and-memory-profiling}
@@ -46,8 +45,8 @@ Each shape configuration was processed in a dedicated Docker container with excl
 Three memory-intensive seismic operators were evaluated: \emph{Envelope}, \emph{\ac{GST3D}}, and a \emph{3D Gaussian Filter}.
 These operators were treated as black-box transformations that received seismic volumes and returned transformed data, with no internal modifications or visibility into their implementation.
 
-The container startup routine activated \texttt{TraceQ}, which monitored the Python process and recorded \ac{RSS} snapshots at regular intervals.
-Upon operator completion, \texttt{TraceQ} wrote a \texttt{.prof} file containing the memory usage timeline.
+The container startup routine activated \traceq, which monitored the Python process and recorded \ac{RSS} snapshots at regular intervals.
+Upon operator completion, \traceq wrote a \texttt{.prof} file containing the memory usage timeline.
 This design minimized noise from external processes and ensured that each memory profile reflected the specific behavior of the evaluated operator and input shape.
 
 \subsection{Data Consolidation}
@@ -70,7 +69,7 @@ This merged dataset was stored in structured \ac{CSV} files under \texttt{OUTPUT
 The entire experiment is publicly available at a Github repository~\cite{delucca2025experiment2}.
 This repository contains source code, setup instructions, and automation scripts that orchestrate data generation, processing, and profiling.
 All artifacts for this experiment resides in \texttt{experiments/02-predicting-memory-consumption-from-input-shapes}.
-A detailed \texttt{README.md} file describes environment requirements, including Docker, and explains how to run each step. \EB{Revisar o PDF para identificar violações de margem como esta do README.md.}
+A detailed \texttt{README.md} file describes environment requirements, including Docker, and explains how to run each step.
 
 The \texttt{scripts/experiment.sh} script~\cite{delucca2025experiment2script} automates the entire pipeline.
 Users must install Docker, clone the repository, and execute \texttt{experiment.sh} to reproduce every stage of data processing and analysis.
