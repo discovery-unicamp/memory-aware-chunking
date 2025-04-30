@@ -1,440 +1,197 @@
 \chapter{Related Work}
 \label{ch:related-work}
 
-\ac{HPC} workloads often face uncertain memory requirements.
-Users frequently overestimate memory to avoid job failure, which wastes resources and prolongs queue wait times~\cite{tanash2021ampro}.
-Underestimation can trigger \ac{OOM} errors or lead to excessive garbage collection pauses~\cite{myung2021}.
-Research on predicting memory usage for \ac{HPC} and scientific applications spans \ac{ML} models that analyze job logs, shape-based predictors for data-intensive frameworks, and methods that integrate with schedulers and workflow systems.
-The following analysis covers techniques for memory profiling, predictive modeling (especially with data shape or engineered features), integration with parallel frameworks such as Spark~\cite{zaharia2010spark} or Dask~\cite{rocklin2015dask}, and implications for resource-aware scheduling and chunking.
-Research also addresses challenges like containerized execution and system-level tracing.
-The following section summarizes key works by highlighting research goals, methodology, datasets, modeling techniques, and relevance to a Python-based memory prediction approach (for instance, using tensor shapes and empirical validation in Dask).
-Finally, you can find a concise comparison of the discussed works is presented in Table~\ref{tab:related-work}.
+\ac{HPC} workloads often present uncertain memory requirements, leading to either overestimation—which wastes resources and prolongs queue times~\cite{tanash2021ampro}—or underestimation, which can cause \ac{OOM} errors or excessive garbage collection~\cite{myung2021}.
+Research on memory usage prediction in \ac{HPC} environments includes a range of \ac{ML}-based models that leverage log data, shape-based approaches for data-intensive frameworks, and adaptive methods that integrate with parallel schedulers and workflow systems.
+Several studies also address containerized execution and system-level profiling.
+
+The following sections review key research efforts, highlighting their objectives, approaches, and limitations.
+The final part of this chapter, along with Table~\ref{tab:related-work-compare}, clarifies the main differences between previous work and the focus of this thesis.
 
 
-\section{Helping \ac{HPC} Users Specify Job Memory Requirements}
+\section{Helping HPC Users Specify Job Memory Requirements}
 \label{sec:rw-helping-hpc-users}
 
-One early approach by Rodrigues \etal~\cite{rodrigues2016} introduced a tool to help \ac{HPC} users predict job memory needs via \ac{ML}.
-The goal was to relieve users from guesswork in specifying memory for batch jobs on \ac{LSF}, \ac{PBS}/\ac{TORQUE} schedulers and thereby improve cluster utilization.
-This tool mines batch scheduler log data (job resource requests and actual usage) to train predictive models.
-Key features include job metadata available before execution, \eg, user ID, number of requested processors, submission time (week day), job name or working directory (which can hint at the application).
-The authors convert certain textual features (like directory or project names) into numeric or one-hot encoded features, and even add derived features such as submission weekday.
-The memory usage (peak \ac{RSS}) of each completed job is discretized into bins (\eg, 512 \ac{MiB} increments) to frame it as a classification problem, which also simplifies scheduler integration by limiting the number of distinct predicted values.
+Rodrigues \etal~\cite{rodrigues2016} introduced a tool that employs \ac{ML} to improve how \ac{HPC} users request memory.
+It classifies job memory usage (peak \ac{RSS}) into bins based on features such as user ID, number of requested processors, submission weekday, and job name.
+This classification scheme simplifies integration into batch schedulers (\ac{LSF}, \ac{PBS}/\ac{TORQUE}) by limiting the range of predicted memory requests.
+The models tested included \ac{SVM}, \ac{MLP}, and random forests, combined in an ensemble voting strategy.
+Reported accuracy reached up to 98\%.
 
-They evaluated multiple \ac{ML} models, including \ac{SVM}, \ac{MLP}, $k$-nearest neighbors, and random forests, on thousands of past jobs from two production \ac{HPC} systems.
-Rather than picking a single best model, the tool employs an ensemble voting scheme: it retains the top-$N$ models (by validation accuracy) and, at prediction time, each model votes on a memory bin for the new job, with votes weighted by prior accuracy.
-This ensemble predictor achieved high accuracy in identifying the correct memory bin.
-In tests, the ensemble’s accuracy reached up to ~98\% on one system (an x86 cluster) and around ~94\% on another (a POWER8 cluster).
-In practice, this means the tool correctly classified most jobs’ memory needs, greatly reducing misestimation.
-The tool was implemented as a \ac{CLI} that users can invoke when preparing their job scripts, and it can be integrated with existing job submission \ac{GUI} (\eg, IBM Spectrum \ac{LSF}’s interface).
-
-This work demonstrated that mining historical data can effectively predict memory usage and help users set memory requests more precisely, improving both system throughput and user experience.
-Notably, the authors observed that waiting-time or runtime prediction techniques used in \ac{HPC} schedulers did not directly translate to memory prediction, necessitating this specialized \ac{ML} approach.
-The focus was on job-level predictions using only scheduler logs, no instrumentation of application code, making it a fully offline, automated solution that learns from past jobs.
-This approach is complementary to a shape-based method: rather than using first-principles about the application’s data, it leverages patterns in prior runs.
-A potential limitation is that novel applications (or new users with no history) are harder to predict, but the ensemble and inclusion of features like job name or user help generalize to similar jobs.
-Overall, Rodrigues \emph{et al.'s} tool laid a foundation by integrating \ac{ML} predictors with batch scheduling, an approach later works build upon with larger data and modern algorithms.
+This study demonstrated that large-scale logs can inform accurate memory bin prediction.
+Its main limitation arises from dependence on historical scheduler data and job-level resolution.
+As a result, new users or novel workflows are harder to handle.
+The work also lacks container overhead consideration, assuming a relatively static, bare-metal environment.
+By contrast, the approach in this thesis focuses on shape-based, per-task prediction within Python frameworks, allowing more granular control over memory usage and chunk sizes.
 
 
 \section{Survey of Memory Management Techniques for HPC and Cloud}
 \label{sec:rw-survey-hpc-cloud}
 
-To put these prediction efforts in context, Pupykina and Agosta~\cite{pupykina2019} provide a broad survey of memory management techniques spanning traditional \ac{HPC} and emerging cloud-\ac{HPC} convergence.
-They note that new classes of \ac{HPC} workloads (such as real-time data analytics and \ac{HPC} in the cloud) and increasingly heterogeneous hardware architectures (\eg, multi-tier memory with \ac{NVRAM}, \ac{GPU}s with separate memory) demand renewed memory management solutions.
-The survey covers techniques across the system stack: from \ac{OS}-level memory sharing (segmentation, paging) to user-level memory allocation strategies, and policies in cluster job schedulers and cloud hypervisors.
-For example, traditional \ac{HPC} clusters rely on static memory partitioning per job (with user-specified limits), whereas cloud environments introduce virtualization and containerization with dynamic memory ballooning and \ac{cgroup}-enforced limits.
-The survey likely highlights how virtualization can overcommit memory and use live migration or ballooning to adjust, whereas \ac{HPC} jobs typically get dedicated memory nodes, bridging these paradigms is non-trivial.
+Pupykina and Agosta~\cite{pupykina2019} provided a broad survey of memory management strategies spanning \ac{HPC} and cloud systems, including \ac{OS}-level techniques (paging, segmentation), cloud hypervisor memory ballooning, and container overheads (\ac{cgroup}).
+This survey identified the growing complexity of heterogeneous architectures, containerization, and cloud-\ac{HPC} convergence.
+It also emphasized the importance of predictive mechanisms to avoid memory contention in multi-tenant or overcommitted settings.
 
-One key aspect relevant to this review is memory usage prediction as part of proactive resource management.
-The survey discusses techniques to predict memory demand to avoid overload on physical machines.
-Such prediction in cloud settings can inform when to migrate or scale \ac{VM} to prevent memory contention.
-In \ac{HPC}, prediction helps schedule jobs to nodes with sufficient memory or advise users on requests.
-Pupykina and Agosta also touch on containerization: they compare virtual machine vs. Docker container overheads on memory access and performance.
-For instance, Docker containers share the host \ac{OS} kernel, usually with less overhead than \ac{VM}s, but still impose isolation that can affect memory locality and accounting.
-This is important because as \ac{HPC} centers adopt container technologies (\eg, Singularity or Docker for reproducible environments), monitoring and predicting memory per containerized workload becomes a challenge.
-System-level tracing must distinguish each container’s usage, and container orchestration frameworks (Kubernetes~\cite{kubernetes}, etc.) need accurate resource profiles to schedule pods on \ac{HPC} clusters effectively.
-The survey likely enumerates tools and research for memory tracing (such as Linux \ac{cgroup}, performance counters) and memory-aware scheduling.
-It underscores that while \ac{HPC} and cloud have distinct approaches historically, the lines are blurring, and a unified approach to memory management, including predictive models, is needed.
-This survey does not present a new model, but it synthesizes state-of-the-art techniques up to 2019.
-This broad perspective is useful to ensure solutions account for trends like heterogeneous memory hardware and containerized execution.
-It reminds us that accuracy of prediction isn’t the only concern, integration into real systems (batch schedulers, cloud managers) and handling of system-level details (\ac{NUMA} effects, shared caches, \etc.) are equally important.
-In summary, Pupykina and Agosta provide the landscape in which specific memory prediction models operate, highlighting the need for intelligent memory management as \ac{HPC} evolves towards exascale and cloud integration.
+Since it was a survey rather than an implementation, it did not present any particular modeling technique or comprehensive evaluation.
+It instead highlighted the challenges of container overhead and system-level tracing, which the present thesis addresses through careful container-based measurement of Python memory usage, in contrast to the broader, high-level discussion in the survey.
 
 
 \section{Practical Prediction for Large Memory Jobs in HPC}
 \label{sec:rw-practical-prediction}
 
+Li \etal~\cite{li2019} tackled large-memory \ac{HPC} jobs by splitting the prediction model into two stages.
+A classifier first flags whether a job likely belongs to a high-memory category.
+If it is classified as such, a dedicated regressor is applied.
+This strategy improved accuracy for the subset of extreme memory jobs and reduced total training costs by focusing on relevant job partitions.
 
-Li \etal~\cite{li2019} address a particular challenge: jobs with unusually large memory usage in \ac{HPC} clusters.
-Their insight is that while many prior models train a single predictor over all jobs, in practice \ac{HPC} admins are especially concerned with the subset of jobs that consume very high memory (since these are the jobs that can crash nodes or tie up resources).
-Moreover, training on all jobs can be problematic because small-memory jobs dominate the log data, potentially biasing a model and reducing accuracy for the tail of large-memory jobs.
-The authors made several observations from production \ac{LSF} cluster traces:
-(1) only a small fraction of jobs are “large memory jobs,” but they account for a sizable portion of total memory consumed;
-(2) users often greatly overestimate memory for those jobs (sometimes requesting an entire node’s \ac{RAM} when only a fraction is used);
-(3) small-memory jobs typically have short runtimes, whereas large-memory jobs may be longer;
-and (4) including too many small jobs in training can hurt the prediction quality for large ones.
-
-To tackle this, Li \etal propose a two-step prediction method focused on large-memory jobs.
-First, a classifier predicts whether an incoming job is likely to be a “large memory” job or not.
-This could be a binary classification using features from the job submission (user, project, requested resources, \etc.) to detect patterns indicative of high memory use.
-If the job is predicted to be large-memory, a specialized regression model then predicts the amount of memory it will use, trained only on historical large-memory jobs.
-By isolating this subset, the regression can learn the behavior of memory-intensive applications without interference from the many small jobs.
-Conversely, if a job is predicted to be small, a separate model (or simply a default low memory value) can be used, but the primary contribution is improving large-job estimates.
-They evaluated this approach on real job logs from IBM Spectrum \ac{LSF} clusters (multiple sites), using a typical Random Forest model for classification and regression.
-The results showed a significant improvement: for nearly 90\% of large memory jobs, the prediction error was reduced by up to 40\% compared to a one-size-fits-all model.
-In other words, the specialized predictor was much more accurate on the important high-memory cases.
-Additionally, by filtering the training dataset, they reduced model training cost by more than 30 while still focusing on the most critical data.
-This is a practical win-win: faster model training and better accuracy where it matters most.
-
-This work is relevant to memory-aware scheduling because it means the scheduler (or user guidance system) can pay special attention to jobs likely to need a lot of memory.
-For example, if the classifier flags a job as large-memory, the scheduler might schedule it on a node with more available \ac{RAM} or not pack it with other memory-heavy jobs.
-The approach also complements a shape-based regressor: while Li \etal do not explicitly use data sizes or program characteristics, they implicitly group jobs by “type” (large-memory patterns).
-In a Python context, one might analogously first detect if a task will be data-intensive (\eg, based on array sizes) and then apply a detailed model.
-The two-step method highlights an important point: segmenting the prediction problem can yield better accuracy.
-If in a Dask workflow some tasks (like certain tensor operations) are known to dominate memory, it might be worth modeling them separately from trivial tasks.
-Li \textit{et al.}’s use of historical logs is an offline empirical validation approach – they need past data for similar jobs.
-A shape-based approach could achieve something similar by using domain knowledge (input sizes) to identify heavy tasks even without extensive history.
-Both approaches share the goal of minimizing those dangerous under-estimates for memory-hungry jobs.
-In summary, this paper contributes a practical enhancement to \ac{ML}-based predictors by tailoring them to large memory jobs, yielding substantial accuracy gains and demonstrating awareness of real-world job mix issues in \ac{HPC} scheduling.
+Their approach relies on job logs (user ID, requested resources) rather than shape or data-level features.
+It addresses outlier cases effectively but does not introduce shape-based modeling or container-level overhead.
+The present thesis uses a different strategy by directly modeling the memory footprint from array or tensor shapes, enabling runtime adjustments (e.g., smaller chunk sizes) for data-intensive Python tasks.
 
 
 \section{Predictive Resource Management for Scientific Workflows}
 \label{sec:rw-predictive-resource-management}
 
-Carl Witt’s dissertation~\cite{witt2020} takes a comprehensive look at predicting resources for scientific workflow tasks and integrating those predictions into scheduling decisions.
-Scientific workflows (\eg, astronomy image pipelines or bioinformatics workflows) consist of many tasks with data dependencies, often executed on \ac{HPC} clusters or cloud batch systems.
-Users of workflow systems typically still must specify resource requirements (memory, \ac{CPU}s, runtime) for each task or use conservative defaults, which, as Witt notes, limits performance and usability.
-Witt’s work differs from others by explicitly combining resource prediction with scheduling, rather than treating prediction as a separate pre-processing step.
-This integrated perspective required addressing how prediction errors influence scheduling outcomes (for instance, a runtime underestimate might delay downstream tasks, while an overestimate wastes resources).
+Carl Witt’s dissertation~\cite{witt2020} centers on resource prediction in scientific workflow systems and integrates these predictions into scheduling decisions.
+A distinguishing feature is the feedback-based methodology that updates models after each workflow task completes, thus reducing the impact of mispredictions.
+The dissertation also stresses the asymmetric cost of underestimating memory, which can cause task failures and resubmissions.
 
-The dissertation has several key contributions.
-First, it provides a thorough literature overview of peak memory usage prediction in batch processing environments, summarizing prior \ac{ML} approaches, common features, evaluation metrics, and datasets.
-This is directly relevant to this thesis, as it catalogs what features others have used (\eg, input sizes, application names, \etc.) and how models have been evaluated (accuracy, \ac{RMSE}, impact on scheduling).
-This overview covers works like Rodrigues \etal~\cite{rodrigues2016} and others in \ac{HPC} memory prediction, positioning Witt’s subsequent contributions.
-Second, Witt proposes a novel scheduling technique that uses prediction to improve decisions.
-Specifically, a static workflow scheduling method identifies which scheduling decisions (\eg, task-to-node assignments or task ordering) could be improved by having better resource estimates.
-This might involve statistical analysis to decide when to trust the predictions or when uncertainty is too high and a more conservative approach is needed.
-Third, he introduces a feedback-based approach where the workflow engine uses runtime measurements to continuously update the prediction models and adjust resource allocations in subsequent tasks.
-For example, if a task’s observed peak memory differs from predicted, the model can learn from this and the scheduler can adapt for remaining workflow tasks – creating a closed-loop system.
-Extensive simulation experiments were conducted to evaluate how such feedback loops and prediction accuracy affect overall performance.
-Finally, Witt develops a custom prediction model that accounts for the asymmetric costs of over- vs. under-estimating memory.
-In batch scheduling, underestimation (not allocating enough memory) can be far more costly – it can crash a task or cause requeueing – whereas overestimation simply wastes resources but lets the job run.
-Witt’s model incorporates this by penalizing under-prediction more heavily, effectively aiming to minimize the risk of fatal under-allocation while still curbing gross overallocation.
-It also considers the “follow-up costs” of prediction errors, meaning the ripple effects on the workflow schedule (\eg, a delayed task might idle other tasks).
-Such a model could be implemented via a custom loss function in training or a post-processing adjustment to predictions (\eg, predict a high percentile of usage distribution).
-
-Witt’s work is particularly relevant to Python-based workflows and Dask for a few reasons.
-Dask orchestrates tasks on distributed resources similarly to a workflow engine on a scheduler.
-The idea of a feedback loop – measuring a task’s memory at runtime and adjusting future chunk sizes or task placement – aligns well with how one might manage memory in an iterative data processing pipeline.
-Also, the emphasis on peak memory usage prediction and treating scheduling+prediction holistically provides a blueprint: it’s not enough to predict memory accurately in isolation; one must consider how those predictions will be used by a scheduler (or Dask’s task scheduler) to actually improve performance.
-The notion of an asymmetric cost is also crucial for chunk sizing: overshooting a chunk such that it exceeds memory can be catastrophic (worker crash), whereas undershooting a chunk (smaller chunks than optimal) merely adds overhead.
-Thus, a prediction model for Dask could similarly bias towards safety (underestimation of memory requirements is discouraged).
-Witt’s approach likely required detailed profiling of workflow tasks (perhaps instrumenting workflow runs to get per-task memory, \ac{I/O}, \etc.), which is analogous to doing small-scale experiments in a Python context – a form of empirical validation.
-In summary, this dissertation provides a system-level view: it not only devises new prediction models but also integrates them into scheduling algorithms and evaluates the end-to-end impact, making it a rich resource for designing memory-aware chunking and scheduling in distributed Python workflows.
+Although Witt’s work covers a broad range of workflows (bioinformatics, astronomy, etc.) and delves into scheduling policies, it does not focus on container overhead or specifically on shape-driven tasks such as multidimensional array operations in Python.
+The feedback loop is conceptually similar to the iterative refinements used here, but the focus of this thesis is to achieve accurate, shape-based memory modeling at the operator level (e.g., Gaussian filtering), combined with careful container-based measurement.
 
 
-\section{\ac{ML} Based Memory Prediction for Apache Spark}
+\section{\ac{ML}-Based Memory Prediction for Apache Spark}
 \label{sec:rw-spark-prediction}
 
-While the above works focus on \ac{HPC} batch jobs, Myung and Choi~\cite{myung2021} target memory usage in data-parallel operations on Apache Spark, a popular framework for distributed data processing.
-Spark is often used for large-scale data analytics and \ac{ML}, where memory is a key performance factor due to its in-memory processing model.
-The authors point out the same dilemma: giving Spark executors too little memory causes failures or heavy garbage collection, whereas giving too much yields diminishing returns and waste.
-Uniquely, they aim to predict the “efficient memory” size for a given Spark workload before running it, based on workload type and input data volume.
-In a cloud setting, this translates to choosing an optimal \ac{VM} memory size to rent (saving cost) or configuring Spark’s memory settings to avoid waste.
+Myung and Choi~\cite{myung2021} addressed memory misconfiguration in Spark, treating the size of each data element (record) and workload type as key features.
+They observed that Spark’s iterative processing often keeps the peak memory usage relatively stable, so element size rather than overall dataset size is the main predictor.
+Their model combined analytical insight with \ac{ML} (Lasso, Ridge, MLP) to estimate peak memory usage with around 95--99\% accuracy.
 
-A central contribution of this paper is an analysis of Spark’s memory usage pattern during a series of transformations.
-Spark processes data in partitions and pipelines transformations, which means at any given time only a subset of data is in memory.
-The authors define the \ac{MUM} during a workload $W$ – which is essentially the peak memory usage that isn’t freed by garbage collection at runtime.
-Through profiling, they discover that \ac{MUM}(W) depends primarily on the size of each data element and the workload type, but not on the total number of elements.
-In other words, if you double the number of data records (partitions), Spark will process them iteratively without increasing the peak memory footprint, as long as the per-element size and transformation logic remain the same (Spark doesn’t load all data into memory at once by design).
-This is a crucial insight: to predict memory, one can focus on the “shape” of one data item and the algorithm, rather than the entire dataset size.
-This aligns with a shape-based prediction philosophy.
-They demonstrated this empirically: \eg, for WordCount, K-Means, Logistic Regression, and a \ac{CNN} workload, increasing the size of each record (from 100 \ac{KB} to 1000 \ac{KB}) increased peak memory quasi-linearly, whereas increasing the number of records had negligible effect once one partition at a time was processed.
-
-Based on this, Myung and Choi propose a parametric memory model using the element size as input.
-They define a set of feature transformations of the \ac{SoE}: \eg, \ac{SoE} itself, $\sqrt{\text{\ac{SoE}}}$, $\log(\text{\ac{SoE}})$, $\sqrt{\text{\ac{SoE}}}\cdot \log(\text{\ac{SoE}})$, \etc., as basis terms.
-The idea is to fit a function of the element size that predicts \ac{MUM}.
-They consider several \ac{ML} algorithms to learn the coefficients: Lasso regression, Ridge regression (for linear models with regularization), Random Forest, and a \ac{MLP}.
-To avoid overfitting and unnecessary complexity, they perform feature selection by trying all combinations of those SoE-based terms and using leave-one-out cross-validation to pick the best subset.
-Hyperparameters for each model type were tuned via grid search (they provide tables of chosen parameters for reproducibility).
-The models are trained on a small sample of data for the workload and then used to predict memory for larger input sizes – an approach of profiling on smaller input and extrapolating, which is a form of empirical validation that keeps overhead low.
-Indeed, the overhead to build the model was at most 44\% of the actual job execution time; considering you might amortize this by reusing the model for repeated runs, it’s a reasonable cost.
-
-In their experiments, they applied this to various workloads (including a deep learning model on Spark MLlib) and obtained predictions within ~95-99\% accuracy of the actual required memory.
-For example, even with up to 100 \ac{GB} input data, the predicted values were very close to observed peaks – WordCount memory prediction was at least 94.4\% accurate and a \ac{CNN}-based workload up to 99.7\% accurate in one scenario.
-Such high accuracy demonstrates that their shape-based features captured the memory scaling behavior effectively.
-As a result of right-sizing memory, they report that using the predicted efficient memory can improve memory utilization by up to 1.89$\times$ compared to Spark’s default memory allocation (which might be oversized).
-This means less memory waste and potentially the freed memory can be used to run more tasks in parallel or reduce cloud costs.
-
-Considering the goal of this thesis, this paper is a strong validation of shape-based regressors.
-Dask, like Spark, often processes large arrays or dataframes in chunks.
-Myung and Choi essentially predicted memory from the dimensions of one chunk (the “element” in Spark’s case was like a record or vector).
-In Python contexts, an “element” could be a NumPy array slice or pandas partition – the concept is analogous.
-The fact that Spark’s peak memory was independent of the number of partitions is similar to saying: if Dask processes chunk by chunk, the peak memory is a function of chunk size, not total dataset size (assuming no full dataset operations).
-This justifies the following modeling approach: measuring memory for one chunk and extrapolating to how larger chunks would behave.
-Additionally, their use of multiple \ac{ML} algorithms and cross-validation to find the best model indicates that simple regressors can work when the functional form is well-chosen.
-Perhaps a polynomial or log-linear model on input array size will work for many Python operations; if not, an ensemble or neural net can be tried.
-Another notable aspect is the integration: while not implemented as a product, one could imagine a Spark optimizer using this model to automatically tune memory or choose a spill strategy.
-Similarly, in Dask, one could integrate a predictor to decide chunk sizes or when to spill data to disk.
-Lastly, this work didn’t explicitly consider container overhead (Spark can run on \ac{YARN}~\cite{vavilapalli2013apache} or Kubernetes, which adds some overhead), but since they validated on actual Spark deployments, their predictions inherently included any Java \ac{VM} overhead.
-For more complex environments, one might need to add a safety margin.
-In conclusion, Myung and Choi illustrate a successful marriage of analytical modeling and \ac{ML} for memory prediction, specifically leveraging data “shape” features – a very relevant precedent for the shape-based prediction approach.
+This study validated the usefulness of shape-based predictors, a principle closely aligned with the direction pursued here.
+However, it remained Spark-specific and did not explicitly account for container overhead or HPC schedulers.
+Dask, in particular, processes partitioned or chunked data similarly to Spark, but with different runtime and scheduling characteristics.
+The current thesis adopts a similar shape-based logic for Python tasks but integrates additional container-oriented measurements and HPC constraints.
 
 
 \section{AMPRO-HPCC: Predicting Job Resources on Slurm Clusters}
 \label{sec:rw-ampro-hpcc}
 
-Mohammed Tanash \etal~\cite{tanash2021ampro} developed AMPRO-HPCC, a tool targeting Slurm-managed \ac{HPC} clusters for predicting both memory and runtime of jobs.
-Like Rodrigues \etal~\cite{rodrigues2016}, this is aimed at guiding \ac{HPC} users to request appropriate resources, but AMPRO-HPCC distinguishes itself by the scale of data and algorithms used.
-The authors had access to an extensive historical log (Slurm sacct records) from the Kansas State University \ac{HPC} cluster “Beocat”, comprising about 17.6 million job entries (Jan 2019–Mar 2021).
-Each entry includes the resources requested and the actual usage (peak memory, runtime, \etc.) for a finished job.
-The motivation is the familiar one: users tend to overestimate to avoid job kills, leading to low utilization and longer queue times.
-AMPRO-HPCC is described as a fully-offline, automated, and open-source \ac{ML} tool that can be run by \ac{HPC} centers to generate predictive models and by users to query those models for their new jobs.
+Tanash \etal~\cite{tanash2021ampro} developed AMPRO-HPCC, using large volumes of Slurm accounting data (17.6 million jobs) and \ac{ML} techniques (LightGBM, random forests) to predict memory and runtime on \ac{HPC} clusters.
+LightGBM achieved an $R^2$ of about 0.72 for memory usage, and the tool is integrated with Slurm to guide users on appropriate memory requests.
 
-On the modeling side, they implemented six supervised \ac{ML} models using scikit-learn and LightGBM~\cite{ke2017lightgbm}.
-They ultimately found that LightGBM yielded the best memory predictions ($R\texttwosuperior \approx 0.72$), while Random Forest performed best for runtime ($R\texttwosuperior \approx 0.74$).
-These $R^2$ values, around 0.72 for memory, indicate the model explains ~72\% of the variance in actual memory usage – a respectable accuracy given the heterogeneity of 17 million jobs.
-(Memory usage might be harder to predict than time in some cases, or vice versa; here memory’s best model had slightly lower $R^2$ than time’s best).
-The use of gradient boosting (LightGBM) is notable: boosting can capture complex nonlinear relationships and handle mixed feature types well, which is useful since their features likely included categorical attributes (user, account, job partition, \etc.) and numerical ones (requested resources, \etc.).
-The scale of data enabled them to train robust models and even detect subtle patterns.
-
-In deployment, AMPRO-HPCC works in two parts:
-(i) an admin/training phase, where the historical log is cleaned and used to train models, and
-(ii) a user-facing component, which can parse a new job script or submission parameters and output recommended memory and time.
-Integration with Slurm is achieved by reading the job submission (perhaps via a wrapper command or script) and then suggesting resources – it’s not (yet) that Slurm itself automatically adjusts the resources, but users are given guidance.
-Their results showed that if such predictions are applied, the cluster could see significantly reduced average wait and turnaround times for jobs.
-Essentially, right-sizing memory means jobs occupy nodes for the appropriate amount of resources, allowing the scheduler to pack more jobs concurrently and to start backfilled jobs sooner.
-They also note improved utilization and even decreased power consumption as side effects (power is lower when idle nodes are reduced and when jobs don’t unnecessarily tie up large \ac{RAM} sticks).
-
-Compared to Rodrigues \etal~\cite{rodrigues2016}, AMPRO-HPCC deals with a much larger dataset and uses more modern \ac{ML} (ensemble methods) – it reflects the progress in the field.
-Interestingly, Rodrigues \etal~\cite{rodrigues2016} framed it as classification; Tanash \etal treat it as regression (predict continuous memory/time, evaluated by R²).
-This implies the model can predict an exact number (which might then be rounded to the nearest Slurm consumable unit).
-Both approaches have merit; classification (bins) simplifies evaluation and scheduler handling, while regression can capture fine distinctions.
-For this thesis, AMPRO-HPCC shows how feature-engineering and large-scale training can yield general models that work across many applications.
-However, it also underscores that those models primarily leverage patterns in historical usage and user behavior; they might incorporate things like the job name or project as features, which effectively serve as a proxy for “application type”.
-In a Python Dask scenario, one might not have such broad logs covering many different codes – one might instead focus on a specific application or pipeline.
-There, a shape-based approach could be more directly informative.
-Yet, if the user’s work involves many workflows, an aggregated approach like AMPRO could be useful.
-
-On the point of containerization and system-level tracing: Beocat’s jobs may run in singularity containers, but the Slurm sacct log records overall job memory usage regardless.
-One challenge is that if a job spawns multiple processes or uses a multi-node allocation, collecting a single “max \ac{RSS}” might require summing or picking the max across tasks.
-Tools like AMPRO rely on the cluster’s accounting correctness.
-In more granular systems (like Dask on Kubernetes), one might have to aggregate memory usage across many worker processes or containers.
-While AMPRO-HPCC doesn’t explicitly discuss container overhead, it provides a template for mining system-level metrics (from \ac{cgroup} or logs) and applying \ac{ML}.
-The success of LightGBM also suggests that tree-based models handle high-dimensional, possibly sparse feature spaces well – useful if one incorporates many indicator features (\eg, flags for certain modules or libraries used by the job).
-
-In summary, AMPRO-HPCC demonstrates a production-ready \ac{ML} solution for \ac{HPC} resource prediction: it leverages big data for training, achieves fairly high accuracy (enough to meaningfully reduce misallocations), and integrates with user workflows.
-This reinforces that \ac{ML} approaches are practical at scale, and it invites extension, such as incorporating it directly into the scheduler (to auto-adjust user requests) or adapting it to frameworks like Dask where tasks could be treated similarly to jobs for prediction purposes.
+Despite the large-scale results, AMPRO-HPCC relies on historical records rather than analytical or shape-based modeling.
+It also does not provide detailed handling of container overhead.
+The work demonstrates that \ac{ML} can succeed at scale, but it does not differentiate sub-job tasks (e.g., Dask-based array computations).
+The approach here focuses on per-task shape attributes to predict memory demands, enabling chunk-level resource control for distributed Python workloads.
 
 
 \section{Memory Usage Prediction via Feature Engineering}
 \label{sec:rw-feature-engineering}
 
+Newaz and Mollah~\cite{newaz2023} investigated memory usage prediction on Titan (Oak Ridge National Lab), using the \ac{RUR} dataset.
+They found that features like user ID and application name strongly correlate with memory usage, motivating heavy feature engineering (e.g., one-hot encoding of top apps, user clustering).
+Their classification approach achieved about 90\% exact bin accuracy and over 95\% accuracy within one bin of the true value.
 
-The most recent work in this review is by Newaz and Mollah~\cite{newaz2023}, who focus on memory usage prediction for \ac{HPC} workloads using feature engineering.
-Their study is distinguished by an in-depth exploration of which features are most predictive of memory use, using a large dataset from a real supercomputer.
-They utilized data from the Titan supercomputer (Oak Ridge National Lab) – specifically, the \ac{RUR} dataset, which contains per-job resource usage metrics on Titan’s production workload.
-Titan was a heterogeneous Cray system (with \ac{CPU}s and \ac{GPU}s), and it ran a wide variety of scientific applications.
-The authors emphasize that \ac{HPC} centers run “applications of varying scale and domain concurrently”, and users often grossly over-allocate memory just in case.
-Their goal was to analyze this large dataset to find meaningful features and build \ac{ML} models that can tightly estimate a job’s memory requirement, thereby improving utilization.
-
-A key finding from their exploratory data analysis was that memory usage patterns correlate strongly with the user who ran the job and the application (executable) being run.
-This makes intuitive sense: each scientific code (\eg, a weather model vs. a molecular dynamics simulation) has its own memory profile, and individual users might use these codes at particular scales or with particular input sizes.
-They noted that simply looking at generic variables (like \ac{CPU} hours, \etc.) without identifying the user and app left a lot of variance unexplained.
-Thus, they heavily engineered features to incorporate this information – for example, one-hot encoding the top applications, clustering users by behavior, or similar techniques.
-They also likely used features from the \ac{RUR} data such as node count, \ac{CPU} time, \ac{I/O} metrics, \etc., and derived higher-level features or aggregated by user.
-Table 1 in their paper summarizes the raw features available (\eg, job size, job duration, \etc.), and Table 2 gives statistical insights that guided feature creation.
-After feature engineering, they selected the most relevant features for modeling (possibly using correlation analysis and domain knowledge).
-
-For modeling, they treat it as a classification problem where the goal is to predict the class of a job’s maximum memory usage.
-Using classification (as also done by Rodrigues \etal~\cite{rodrigues2016}) allows them to report accuracy in terms of the percentage of jobs whose memory bin was correctly predicted.
-They trained two types of models: Random Forest and \ac{XGBoost}, and achieved very high accuracy.
-On a held-out validation set, the Random Forest correctly predicted the exact memory bin for about 89\% of jobs, and \ac{XGBoost} for about 90\%.
-Moreover, they introduce a tolerant metric: within ±1 class of the true memory usage.
-By that measure, over 98\% of users (so nearly all users) saw at least 95\% of their jobs predicted within one bin of the actual usage.
-In practical terms, being off by one class might mean, for example, predicting 2 \ac{GB} when the job used 1.5 \ac{GB} (adjacent bins) – which is a very acceptable outcome.
-This result is impressive given Titan’s workload diversity.
-It indicates that their feature engineering captured the factors that drive memory consumption differences between jobs.
-
-The mention of “users have 95\% or better average prediction accuracy within one class” also suggests they examined the model’s performance per user.
-This is important for fairness – you wouldn’t want the model to predict well for some users but consistently badly for others.
-Their approach seems to generalize across users, which is a testament to including “user” as a feature in a balanced way or perhaps grouping similar users.
-
-This work reinforces several points relevant to memory prediction research.
-First, it shows the power of feature engineering: by incorporating categorical identifiers (user, application) and potentially other usage metrics, one can significantly improve prediction.
-In a Python-based scenario, one might not have multiple users, but “application” could translate to the specific function or algorithm being executed.
-For example, a Dask workflow might involve tasks from different libraries (\eg, NumPy, pandas, custom code); encoding the task type could boost prediction accuracy.
-Second, the use of ensemble tree models (Random Forest and \ac{XGBoost}) echoes other works (LightGBM~\cite{ke2017lightgbm} in AMPRO~\cite{tanash2021ampro}, Random Forest in others) – these models handle mixed data types and non-linear interactions well, which is useful when combining features like “number of \ac{MPI} processes” and “executable name”.
-For a shape-based approach, if a simple regression doesn’t capture all effects, a gradient boosting model could be a powerful alternative, especially if there are subtle interactions (maybe between array shape and algorithm type).
-
-Another insight is that despite the broad application range, they achieved high accuracy by essentially grouping by application/user implicitly.
-This is somewhat complementary to the shape-based idea: one can think of each distinct code or user as having its own internal scaling behavior (its own shape-to-memory function).
-The model then has to learn all these behaviors.
-A purely shape-based approach would instead require knowing the formula for each code’s memory usage.
-Newaz and Mollah’s model learns those formulas from data.
-For a specific user’s workflow, you could simplify the problem by focusing on fewer “applications” (maybe just one codebase, but with different input sizes), which might yield even higher accuracy.
-In fact, their paper notes that adding more independent variables generally improved accuracy – indicating that more detailed instrumentation (maybe reading input sizes or other counters) could push accuracy even further.
-
-Finally, the work was done on a Cray \ac{HPC} system without mention of containers – Titan jobs ran on the host \ac{OS}.
-However, the methodology could extend to containerized runs if one treats container ID similar to user ID for grouping, or ensure that features capture the necessary info.
-System-level tracing on Titan was done via \ac{RUR}, which collected data at job end.
-In a modern cluster with containers, one would rely on metrics from the resource manager or inside-container agents to gather similar data.
-This highlights a challenge: getting the right data for features.
-Titan’s \ac{RUR} conveniently provided per-job peak memory.
-In a Dask cluster, you might need to aggregate per-task or per-worker memory stats to an analogous form.
-But if that is solved, the modeling techniques here are directly applicable.
-
-In conclusion, Newaz and Mollah demonstrate that with rich historical data and careful feature design, extremely high prediction accuracy is possible for \ac{HPC} memory usage.
-For this thesis, this implies that combining a priori features (like input sizes, algorithm identifiers) with learned patterns (from prior runs) is a powerful strategy.
-It also underscores verifying models per-user or per-application to ensure generality, something that could be important if the user’s memory predictor will be used by others or on varied workloads.
+This approach highlights how extensive historical logs and feature engineering can yield high accuracy.
+However, it remains focused on user-level or application-level grouping and does not rely on explicit shape modeling or container introspection.
+By contrast, the method in this thesis learns memory usage from the size of input arrays or tensors and applies it to per-chunk tasks, which is particularly suited to Python data analytics and seismic workloads.
 
 
 \section{Discussion: Towards Memory-Aware Scheduling and Chunking}
 \label{sec:rw-discussion}
 
-Across these works, complementary strategies tackle the same fundamental problem: unpredictable memory usage in complex workloads.
-Many rely on \ac{ML} on historical data, while others leverage analytical insight into data shapes or program behavior.
-For a Python-centric approach (\eg, memory-aware chunking in Dask workflows), key takeaways and contrasts are:
-
-\begin{itemize}
-    \item
-    \textbf{Shape-based Modeling is Validated:}
-    Myung and Choi’s~\cite{myung2021} Spark study explicitly showed that data shape/size can drive memory needs independent of total data volume.
-    This finding supports the thesis idea of using shapes (dimensions of arrays, sizes of inputs) as features for prediction.
-    In Dask, it is often possible to estimate the size of a chunk or the intermediate results of a task from the input array shapes.
-    The Spark model’s success (over 95\% accuracy) with a few transformed features of element size indicates that simple regressors can work when guided by domain understanding.
-    Building regressors based on data shapes aligns with this strategy, essentially treating a Dask task like a Spark transformation on a partition.
-    A crucial nuance involves ensuring the task execution model remains similar (processing chunk-by-chunk).
-    Dask typically processes chunks one at a time (per worker), so peak memory per task depends on chunk size, much like Spark’s per-partition processing.
-    A model predicting memory from chunk size (and possibly algorithm type) can be highly effective.
-
-    \item
-    \textbf{Feature Engineering vs. First-Principles:}
-    \ac{HPC} log-based works (Rodrigues \etal~\cite{rodrigues2016}, Tanash \etal~\cite{tanash2021ampro}, Newaz and Mollah~\cite{newaz2023}) rely on correlations in historical data (for example, “job name X usually uses about Y \ac{GB}).
-    These approaches do not require understanding code internals, which helps with black-box applications but demands large training sets.
-    Using input shape appears more grounded in first-principles (for example, a matrix multiplication of size N~\times~N might use $N^2$ space) combined with empirical tuning.
-    This approach predicts for new tasks with no exact history by leveraging algorithmic memory complexity, which resembles analytical modeling.
-    However, purely analytical methods may overlook constant factors or overheads, so empirical calibration (running a small example) often helps.
-    Myung and Choi's method~\cite{myung2021} deduced a formula and then calibrated it with a few experiments.
-    A similar empirical validation in Dask might involve running a sample task on a smaller chunk to measure memory usage and then scaling the prediction for full chunks.
-    This hybrid of analytical plus empirical approaches appears throughout these works (Myung and Choi~\cite{myung2021}, Witt’s feedback approach~\cite{witt2020}, and others).
-
-    \item
-    \textbf{Use of Historical Data and Online Learning:}
-    If the Python workflow repeats (for instance, a daily \ac{ETL} job or a parameter sweep running similar tasks many times), logging task memory usage and training an \ac{ML} model (like LightGBM or \ac{XGBoost} as in Newaz and Mollah~\cite{newaz2023} and Tanash \etal~\cite{tanash2021ampro}) can significantly improve prediction accuracy over time.
-    Carl Witt’s feedback-based model~\cite{witt2020} suggests online learning – continuously updating predictions with runtime measurements.
-    In Dask, the scheduler could initially use a rough shape-based estimate and then refine future estimates as tasks complete (for example, if the system predicts 500 \ac{MB} but observes 600 \ac{MB}, adjust accordingly).
-    This dynamic approach also enables adaptive chunking: if tasks consistently exceed memory predictions, the system can reduce chunk size on the fly for the remaining tasks.
-    Most surveyed papers train offline, but Witt~\cite{witt2020} examined online feedback in simulation and noted improved resource allocation when predictions incorporated runtime measurements.
-
-    \item
-    \textbf{Integration with Schedulers:}
-    Memory prediction ultimately aims to influence scheduling or resource allocation.
-    In \ac{HPC} batch systems, prediction guides user requests or helps scheduler packing algorithms.
-    In Dask, it determines how many tasks run concurrently or how data is chunked.
-    Many surveyed works integrated with existing frameworks (for example, Rodrigues \etal~\cite{rodrigues2016} and Tanash \etal~\cite{tanash2021ampro} built \ac{CLI} tools that connect to job submission on batch schedulers, while Witt~\cite{witt2020} created a custom scheduler for workflow task placement).
-    This indicates that simply predicting memory usage is not enough; designs must incorporate how to use the predictions effectively.
-    In Dask, this might involve assigning priorities or constraints based on predicted memory, preventing the scheduler from packing too many high-memory tasks onto one worker, or splitting tasks that exceed a worker’s capacity.
-    Chunking represents a scheduling decision: choosing the unit of work.
-    If the predictor indicates that a single task on the entire dataset would use 32 \ac{GB}, the system might break it into four smaller 8 \ac{GB} chunks to fit in memory.
-    This process resembles how a batch scheduler rejects a job that requests more \ac{RAM} than any node possesses, forcing the user to subdivide the problem.
-    This thesis could implement a component that automatically picks chunk sizes by increasing chunk size until predicted memory usage hovers just below a threshold (trial-and-error with the prediction model).
-    Literature suggests that a well-tuned predictor can be accurate enough to trust in automation.
-
-    \item
-    \textbf{Handling Containers and Overheads:}
-    A modern challenge arises when tasks run in containers (for example, each Dask worker runs inside a Kubernetes-managed container).
-    Containerization can aid memory tracking through \ac{cgroup} but also adds overhead, such as the processes inside the container.
-    Overheads can lead to \ac{OOM} kills if the container’s limit is reached before the actual host memory limit.
-    A predictor must clarify whether it estimates application memory usage or container memory usage (including overhead).
-    In \ac{HPC} log-based studies, minimal overhead often appeared because jobs ran on bare metal or used low-overhead containers like Singularity.
-    In a cloud setting, a safety factor might be necessary.
-    For example, if a Python task is predicted to use 4 \ac{GB} and the container overhead is around 5\%, requesting 4.2 \ac{GB} prevents \ac{OOM} kills.
-    None of these papers explicitly measure container overhead, so practitioners must validate this aspect in their environment.
-    System-level tracing also matters: Linux’s \texttt{/usr/bin/time -v} (which reports max \ac{RSS}) or Slurm’s \ac{cgroup} controller were used for ground truth in several works.
-    In Dask, instrumenting workers to record max \ac{RSS} for each task process (via sampling memory usage or Python’s \texttt{tracemalloc}, with some performance cost) offers a similar approach.
-    Lessons from these studies can guide effective tracing and overhead estimation.
-
-    \item
-    \textbf{Overestimation vs Underestimation:}
-    Many authors emphasize that underestimating memory is riskier than overestimating.
-    In \ac{HPC}, a job that exceeds its memory allocation can be killed.
-    Dask may experience similar issues, such as worker crashes or excessive swapping.
-    Carl Witt’s approach~\cite{witt2020} addresses this by incorporating asymmetric cost, for instance, predicting not just a single value but a high percentile (for example, the 95th percentile) of memory usage.
-    Although Myung’s~\cite{myung2021} paper reports over 95\% accuracy, a margin of safety can still be wise (as Witt suggests).
-    A model might include a buffer or predict a distribution.
-    Methods like quantile regression or Bayesian techniques can produce upper-bound estimates directly.
-    Alternatively, calibration might involve aiming for a desired \ac{OOM} risk (for example, 5\%) and multiplying predictions by a factor that historically achieves that safety margin.
-    The literature shows a wide range of strategies: Rodrigues \etal~\cite{rodrigues2016} binned predictions (implicitly adding a buffer), Li \etal~\cite{li2019} prioritized large jobs to reduce errors there, and Witt~\cite{witt2020} framed it as a cost-optimization problem.
-    Depending on the scope, a straightforward buffer may suffice, or cost-sensitive learning could be explored.
-
-\end{itemize}
-
-In conclusion, this body of research demonstrates that memory usage prediction is feasible and valuable for \ac{HPC} and distributed computing (see also Table~\ref{tab:related-work}).
-Techniques range from pure data-driven \ac{ML} on past jobs to hybrid analytical-\ac{ML} models using domain features.
-Integrating these predictions into schedulers or chunking strategies produces tangible benefits: higher utilization, lower wait times, and fewer failures.
-For Python-based workloads and Dask, these studies provide both inspiration and caution.
-\textbf{Inspiration} arises from evidence that high accuracy emerges by blending shape features with historical data, allowing automated resource tuning.
-\textbf{Caution} arises from practical challenges like measurement overhead, container nuances, and potential system disruption caused by prediction errors.
-Studies such as Myung’s~\cite{myung2021} (which used cross-validation for feature selection) and Witt’s~\cite{witt2020} (which introduced feedback loops) highlight proven models like random forests and LightGBM.
-Applying these ideas can advance memory-aware scheduling for Dask workflows.
-Ultimately, the convergence of \ac{HPC} batch system insights and big data framework strategies supports efficient scientific computing, allocating “just right” memory for each task and enabling robust, scalable analysis of ever-growing datasets.
-
-\Table~\ref{tab:related-work} summarizes the main work discussed in this chapter.
+Several distinct strategies address the challenge of unpredictable memory usage in complex \ac{HPC} and distributed computing environments.
+Some approaches leverage log-based \ac{ML}, while others use a shape-based philosophy that relates input dimensions to memory allocations.
+The present work adopts a shape-based method in Python settings (e.g., Dask) and incorporates detailed container-aware measurement.
+Table~\ref{tab:related-work-compare} compares the main characteristics of each approach, along with the contributions of this thesis.
 
 \begin{table}[htbp]
     \centering
     \footnotesize
     \renewcommand{\arraystretch}{1.15}
-    \caption{Comparison of HPC Memory Prediction Approaches}
-    \label{tab:related-work}
-    \begin{tabular}{p{1.9cm}p{2.2cm}p{2.6cm}p{3.0cm}p{3.2cm}}
+    \caption{Comparison of related approaches and key features.
+    \ac{ML}-based indicates whether machine learning is a core part of the method.
+    Shape-based refers to explicit modeling of data dimensions.
+    Cntainer Overhead identifies whether container or cgroup-level metrics are used.
+    Evaluate on Dask indicates whether the technique was validated in a Dask setting.}
+    \label{tab:related-work-compare}
+    \begin{tabular}{p{2.3cm}p{2.3cm}p{1.3cm}p{1.6cm}p{1.8cm}p{1.8cm}}
         \toprule
-        \textbf{Reference} & \textbf{Focus} & \textbf{Data} & \textbf{Approach} & \textbf{Evaluation} \\
+        \textbf{Reference}
+        & \textbf{Focus}
+        & \textbf{\ac{ML}-based}
+        & \textbf{Shape-based}
+        & \textbf{Container Overhead}
+        & \textbf{Evaluate on Dask} \\
         \midrule
+        Rodrigues \etal~\cite{rodrigues2016}
+        & Memory classification for HPC batch jobs
+        & Yes
+        & No
+        & No
+        & No \\
 
-        \textbf{Rodrigues \etal~\cite{rodrigues2016}}
-        & \ac{HPC} job memory specification for batch systems
-        & Scheduler logs from 2 \ac{HPC} clusters: user ID, job name, \etc.
-        & Classification into 512\,\ac{MB} bins; ensemble (\ac{SVM}, \ac{MLP}, \etc.)
-        & 94--98\% accuracy; integrated as an offline \ac{CLI} for users; helps refine memory requests \\
+        Pupykina \etal~\cite{pupykina2019}
+        & Survey of HPC/cloud memory mgmt
+        & No
+        & No
+        & Partial (discussion only)
+        & No \\
 
-        \textbf{Pupykina and Agosta~\cite{pupykina2019}}
-        & Survey of memory management across \ac{HPC} and cloud
-        & N/A (literature survey)
-        & Explores \ac{OS}-level, container, hypervisor approaches, \ac{cgroup}
-        & No direct model; highlights container overhead, cloud vs.\ \ac{HPC} gap, future unified mgmt. \\
+        Li \etal~\cite{li2019}
+        & Large-memory HPC jobs
+        & Yes
+        & No
+        & No
+        & No \\
 
-        \textbf{Li \etal~\cite{li2019}}
-        & Targeting large-memory \ac{HPC} jobs
-        & \ac{HPC} logs (\ac{LSF}); identifies outlier high-mem tasks
-        & Two-step \ac{ML}: classify large memory then apply specialized regression
-        & Up to 40\% error reduction on large-memory subset; shows focusing on tail jobs improves accuracy \\
+        Witt~\cite{witt2020}
+        & Workflow scheduling + prediction
+        & Yes
+        & Partial
+        & No
+        & Partial \\
 
-        \textbf{Witt~\cite{witt2020}}
-        & Scientific workflow scheduling with resource prediction
-        & Workflow tasks (bio, astro, \etc.) on \ac{HPC}, dynamic resource usage
-        & Custom model w/ penalty for underestimation; feedback loop updates after each task
-        & Evaluated in simulation; integrates scheduling + prediction; suggests adaptive chunking for Python/Dask \\
+        Myung and Choi~\cite{myung2021}
+        & Spark executor memory
+        & Yes
+        & Yes
+        & Not explicit
+        & No \\
 
-        \textbf{Myung and Choi~\cite{myung2021}}
-        & Memory configuration in Spark data-parallel workloads
-        & Spark \ac{ML} tasks (K-means, \ac{CNN}, \etc.); measure \ac{SoE}
-        & Hybrid analytical + \ac{ML} (Ridge, Lasso, \ac{MLP}) fitting memory to \ac{SoE}
-        & 95--99\% accuracy; shape-based approach validated; concept parallels chunk-based Dask prediction \\
+        Tanash \etal~\cite{tanash2021ampro}
+        & Large-scale Slurm log analysis
+        & Yes
+        & No
+        & Not explicit
+        & No \\
 
-        \textbf{Tanash \etal~\cite{tanash2021ampro}}
-        & Predict mem/time for jobs on Slurm \ac{HPC} clusters
-        & 17.6M Slurm job records; user logs, requested vs.\ actual usage
-        & Supervised regression (Random Forest, LightGBM, etc.)
-        & $R^2 \approx 0.72$ for mem; AMPRO-HPCC tool integrated w/ Slurm submission; large-scale data-driven \\
+        Newaz and Mollah~\cite{newaz2023}
+        & Feature eng. on Titan HPC logs
+        & Yes
+        & No
+        & No
+        & No \\
 
-        \textbf{Newaz and Mollah~\cite{newaz2023}}
-        & Feature-engineered \ac{HPC} memory classification
-        & Titan supercomputer logs (\ac{RUR}); user/app are key features
-        & Classification (Random Forest, \ac{XGBoost}) into memory bins
-        & $\sim$90\% exact accuracy, $>$95\% within $\pm 1$ bin; high accuracy via strong feature engineering \\
-
+        \textbf{This Work}
+        & Shape-driven memory prediction for Python HPC tasks
+        & Yes
+        & Yes
+        & Yes
+        & Yes \\
         \bottomrule
     \end{tabular}
 \end{table}
+
+The table indicates that most prior works are \ac{ML}-based but rarely adopt a shape-based approach (an exception is Myung and Choi~\cite{myung2021}, focused on Spark).
+Few studies account for container overhead, and none validate on Dask in a comprehensive manner.
+The method proposed in this thesis differs by explicitly modeling memory usage from input data shapes, incorporating container-level metrics, and demonstrating its effectiveness on Dask-based workloads.
+
+These features align with the increasing prevalence of Python and containerized \ac{HPC} pipelines, where chunk-level control and dynamic scheduling play a crucial role.
+Furthermore, the design integrates shape-based regressors with a measurement library that precisely logs peak memory usage, supporting automated chunk resizing and preventing \ac{OOM} errors.
+This design draws inspiration from the lessons in Myung and Choi~\cite{myung2021} regarding shape-driven predictions but extends the strategy to containerized Python tasks and HPC scheduling constraints.
+
+Several techniques from the literature guided specific aspects of this work.
+Some ideas were adapted from Rodrigues \etal~\cite{rodrigues2016} and Tanash \etal~\cite{tanash2021ampro} regarding offline ML model building, although the target here is more granular (per-task) and shape-oriented rather than aggregate job logs.
+Methods from Witt~\cite{witt2020} inspired a feedback loop concept for refining predictions, which is valuable when handling multiple tasks iteratively.
+Overall, the approach in this thesis synthesizes shape-based modeling, container-aware measurement, and a flexible chunking system for Dask, bridging important gaps identified in previous work.

@@ -58,7 +58,7 @@ and (v) finalize executing another Python script for exploratory data analysis.
 Each run deposits output \ac{CSV} files and profiles in designated \texttt{OUTPUT\_DIR} subdirectories.
 
 \vspace{1em}
-\begin{lstlisting}[style=bashstyle,caption={Excerpts from \texttt{experiment.sh}~\cite{delucca2025experiment2script} that orchestrate Docker-based runs. Variables like \texttt{DATASET\_FINAL\_SIZE} and \texttt{DATASET\_STEP\_SIZE} define shape ranges for dataset generation.}, label={lst:exp_sh}]
+\begin{lstlisting}[style=bashstyle,caption={Excerpts from \texttt{experiment.sh}~\footnote{Experiment Script. Available at \url{https://github.com/discovery-unicamp/memory-aware-chunking/blob/main/experiments/02-predicting-memory-consumption-from-input-shapes/scripts/experiment.sh}. Accessed: 2025-04-29.} that orchestrate Docker-based runs. Variables like \texttt{DATASET\_FINAL\_SIZE} and \texttt{DATASET\_STEP\_SIZE} define shape ranges for dataset generation.}, label={lst:exp_sh}]
 #!/usr/bin/env sh
 TIMESTAMP="$(date +%Y%m%d%H%M%S)"
 CPUSET_CPUS="0"
@@ -136,7 +136,7 @@ These features capture various ways shape correlates with peak memory usage.
 Listing~\ref{lst:results_py} shows how this phase generates and transforms these features.
 
 \begin{lstlisting}[style=pythonstyle,
-    caption={Feature extraction excerpt from \texttt{collect\_results.py}~\cite{delucca2025experiment2resultscollection}. Additional derived metrics capture polynomial or ratio-based growth.},
+    caption={Feature extraction excerpt from \texttt{collect\_results.py}~\footnote{Results. Available at \url{https://github.com/discovery-unicamp/memory-aware-chunking/blob/main/experiments/02-predicting-memory-consumption-from-input-shapes/experiment/collect_results.py}. Accessed: 2025-04-29.}. Additional derived metrics capture polynomial or ratio-based growth.},
     label={lst:results_py}]
 df_features["volume"] = (
     df_features["inlines"]

@@ -52,6 +52,11 @@ The contributions of this thesis can be summarized as follows:
     A method is presented to reduce the profiling effort required, so multiple full-scale executions become unnecessary.
     The strategy isolates key data points or shapes to accurately capture operator memory behavior with minimal overhead, enabling simpler integration with real-world \ac{HPC} pipelines.
 
+    \item \textbf{\traceq: A Memory Profiling and Visualization Tool.}
+    This thesis introduces \traceq, a lightweight library designed to collect memory usage traces with minimal overhead.
+    It provides both low-level logs and high-level visualizations of peak and intermediate memory consumption, assisting developers and researchers in identifying bottlenecks.
+    In conjunction with the predictive model, \traceq simplifies and accelerates the creation of operator-specific memory profiles.
+
     \item \textbf{Memory-Aware Auto-Chunking.}
     A memory-aware chunking algorithm is proposed that adopts the predictive model’s estimates to set chunk sizes in Dask automatically.
     This approach reduces guesswork when partitioning data, mitigates \ac{OOM} failures, and avoids conservative over-allocation.

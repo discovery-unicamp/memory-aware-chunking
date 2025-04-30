@@ -3,7 +3,7 @@
 
 A reliable memory measurement workflow in Python requires consistent isolation, precise resource configuration, and lightweight instrumentation.
 This section explains the recommended strategy, then demonstrates its accuracy and reproducibility via a single validation experiment.
-Detailed discussions of pitfalls appear in Appendix~\ref{ch:appendix-challenges-and-pitfalls-in-accurate-memory-measurement}, and relevant scripts and data reside in the project’s GitHub repository~\cite{delucca2025experiment1}.
+Detailed discussions of pitfalls appear in Appendix~\ref{ch:appendix-challenges-and-pitfalls-in-accurate-memory-measurement}, and relevant scripts and data reside in the project’s GitHub repository~\footnote{Experiment Folder. Available at \url{https://github.com/discovery-unicamp/memory-aware-chunking/blob/main/experiments/01-measuring-memory-usage-of-python-programs}. Accessed: 2025-04-29.}.
 
 \subsection{Strategy Overview}
 \label{subsec:strategy-overview}
@@ -130,7 +130,7 @@ Finally, Figure~\ref{fig:memory_history} provides a representative time‑series
         \caption{Max memory comparison}
         \label{fig:sub-maxmem}
     \end{subfigure}
-    \caption{TraceQ collects more samples without inflating peak memory usage.
+    \caption{TraceQ collects more samples without inflating peak memory usage.}
     \label{fig:fig-sub-points}
 \end{figure}
 

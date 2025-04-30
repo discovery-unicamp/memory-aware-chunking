@@ -13,7 +13,7 @@ All experiments were executed on a single \ac{HPC} node at the \ac{UNICAMP} Disc
 A Python-based container environment managed via Docker provided reproducibility and isolation.
 Docker containers pinned to specific \ac{CPU} cores (\texttt{–cpuset-cpus=0}) maintained execution consistency and minimized process interference.
 
-A single shell script, \texttt{scripts/experiment.sh}\cite{delucca2025experiment2script}, orchestrated the full workflow, including:
+A single shell script, \texttt{scripts/experiment.sh}\footnote{Experiment Script. Available at \url{https://github.com/discovery-unicamp/memory-aware-chunking/blob/main/experiments/02-predicting-memory-consumption-from-input-shapes/scripts/experiment.sh}. Accessed: 2025-04-29.}, orchestrated the full workflow, including:
 \begin{enumerate}
     \item Creation of Docker volumes for intermediate and output data storage.
     \item Generation of synthetic \ac{3D} seismic volumes, as described in Section\ref{sec:pmc-materials-and-methods}.
@@ -66,14 +66,14 @@ This merged dataset was stored in structured \ac{CSV} files under \texttt{OUTPUT
 \subsection{Reproducibility}
 \label{subsec:reproducibility}
 
-The entire experiment is publicly available at a Github repository~\cite{delucca2025experiment2}.
+The entire experiment is publicly available at a Github repository~\footnote{Experiment Folder. Available at \url{https://github.com/discovery-unicamp/memory-aware-chunking/blob/main/experiments/02-predicting-memory-consumption-from-input-shapes}. Accessed: 2025-04-29.}.
 This repository contains source code, setup instructions, and automation scripts that orchestrate data generation, processing, and profiling.
 All artifacts for this experiment resides in \texttt{experiments/02-predicting-memory-consumption-from-input-shapes}.
 A detailed \texttt{README.md} file describes environment requirements, including Docker, and explains how to run each step.
 
-The \texttt{scripts/experiment.sh} script~\cite{delucca2025experiment2script} automates the entire pipeline.
+The \texttt{scripts/experiment.sh} script~\footnote{Experiment Script. Available at \url{https://github.com/discovery-unicamp/memory-aware-chunking/blob/main/experiments/02-predicting-memory-consumption-from-input-shapes/scripts/experiment.sh}. Accessed: 2025-04-29.} automates the entire pipeline.
 Users must install Docker, clone the repository, and execute \texttt{experiment.sh} to reproduce every stage of data processing and analysis.
-The \texttt{notebooks/} directory~\cite{delucca2025experiment2notebooks} includes Jupyter notebooks for data exploration, model training, hyperparameter tuning, and error diagnostics.
+The \texttt{notebooks/} directory~\footnote{Notebooks Folder. Available at \url{https://github.com/discovery-unicamp/memory-aware-chunking/blob/main/experiments/02-predicting-memory-consumption-from-input-shapes/notebooks}. Accessed: 2025-04-29.} includes Jupyter notebooks for data exploration, model training, hyperparameter tuning, and error diagnostics.
 This structure provides reproducibility and supports extensibility.
 Users can modify input shapes, seismic operators, or container settings without altering the orchestration logic.
 All components—containers, execution scripts, and analytical workflows—remain integrated to promote transparent evaluation and straightforward experimentation.
