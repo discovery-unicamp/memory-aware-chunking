@@ -41,24 +41,27 @@ Table~\ref{tab:performance_summary} highlights the best-performing model per ope
     \label{tab:performance_summary}
 \end{table}
 
-Figure~\ref{fig:actual_vs_predicted} confirms that these models closely align with actual memory values.
+Figures~\cref{fig:actual_vs_predicted_envelope,fig:actual_vs_predicted_gst3d,fig:actual_vs_predicted_gaussian} confirms that these models closely align with actual memory values.
 
-\begin{figure*}[htbp]
+\begin{figure}[htbp]
     \centering
-    \begin{subfigure}[t]{0.32\textwidth}
-        \includegraphics[width=\textwidth]{assets/images/05/actual_vs_predicted_by_model_envelope}
-        \caption{Envelope}
-    \end{subfigure}
-    \hfill
-    \begin{subfigure}[t]{0.32\textwidth}
-        \includegraphics[width=\textwidth]{assets/images/05/actual_vs_predicted_by_model_gst3d}
-        \caption{\ac{GST3D}}
-    \end{subfigure}
-    \hfill
-    \begin{subfigure}[t]{0.32\textwidth}
-        \includegraphics[width=\textwidth]{assets/images/05/actual_vs_predicted_by_model_gaussian-filter}
-        \caption{Gaussian Filter}
-    \end{subfigure}
-    \caption{Actual vs. predicted memory usage. Strong alignment across most models, especially for Envelope and Gaussian Filter.}
-    \label{fig:actual_vs_predicted}
-\end{figure*}
+    \includegraphics[width=\textwidth]{assets/images/05/actual_vs_predicted_by_model_envelope}
+    \caption{Actual vs. predicted memory usage for Envelope. Strong alignment observed.}
+    \label{fig:actual_vs_predicted_envelope}
+\end{figure}
+\clearpage
+
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=\textwidth]{assets/images/05/actual_vs_predicted_by_model_gst3d}
+    \caption{Actual vs. predicted memory usage for \ac{GST3D}. Strong alignment observed.}
+    \label{fig:actual_vs_predicted_gst3d}
+\end{figure}
+\clearpage
+
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=\textwidth]{assets/images/05/actual_vs_predicted_by_model_gaussian-filter}
+    \caption{Actual vs. predicted memory usage for Gaussian Filter. Strong alignment observed.}
+    \label{fig:actual_vs_predicted_gaussian}
+\end{figure}

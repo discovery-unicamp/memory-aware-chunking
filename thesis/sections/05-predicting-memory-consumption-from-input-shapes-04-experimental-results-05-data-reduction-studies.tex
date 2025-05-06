@@ -31,22 +31,22 @@ Figure~\ref{fig:cross_data_reduction_and_residual} shows \ac{RMSE} and residual 
 \subsubsection{Operator-Wise Performance Trends}
 \label{subsec:operator-wise-sample-size-analysis}
 
-Figures~\ref{fig:residual_metrics_by_sample_size_operators} and~\ref{fig:metrics_evolution_sample_size_operators} analyze performance by operator.
+Figures~\cref{fig:residual_metrics_by_sample_size_operators,fig:metrics_evolution_sample_size_envelope,fig:metrics_evolution_sample_size_gst3d,fig:metrics_evolution_sample_size_gaussian} analyze performance by operator.
 Errors grow rapidly below 30 samples, but remain low for 40--50.
 
 \begin{figure*}[htbp]
     \centering
-    \begin{subfigure}[t]{0.32\textwidth}
+    \begin{subfigure}[t]{0.48\textwidth}
         \includegraphics[width=\textwidth]{assets/images/05/residual_metrics_by_sample_size_envelope}
         \caption{Envelope}
     \end{subfigure}
     \hfill
-    \begin{subfigure}[t]{0.32\textwidth}
+    \begin{subfigure}[t]{0.48\textwidth}
         \includegraphics[width=\textwidth]{assets/images/05/residual_metrics_by_sample_size_gaussian-filter}
         \caption{Gaussian Filter}
     \end{subfigure}
     \hfill
-    \begin{subfigure}[t]{0.32\textwidth}
+    \begin{subfigure}[t]{0.48\textwidth}
         \includegraphics[width=\textwidth]{assets/images/05/residual_metrics_by_sample_size_gst3d}
         \caption{\ac{GST3D}}
     \end{subfigure}
@@ -54,25 +54,28 @@ Errors grow rapidly below 30 samples, but remain low for 40--50.
     \label{fig:residual_metrics_by_sample_size_operators}
 \end{figure*}
 
-\begin{figure*}[htbp]
+\begin{figure}[htbp]
     \centering
-    \begin{subfigure}[t]{0.32\textwidth}
-        \includegraphics[width=\textwidth]{assets/images/05/metrics_evolution_by_sample_size_envelope}
-        \caption{Envelope}
-    \end{subfigure}
-    \hfill
-    \begin{subfigure}[t]{0.32\textwidth}
-        \includegraphics[width=\textwidth]{assets/images/05/metrics_evolution_by_sample_size_gaussian-filter}
-        \caption{Gaussian Filter}
-    \end{subfigure}
-    \hfill
-    \begin{subfigure}[t]{0.32\textwidth}
-        \includegraphics[width=\textwidth]{assets/images/05/metrics_evolution_by_sample_size_gst3d}
-        \caption{\ac{GST3D}}
-    \end{subfigure}
-    \caption{Evolution of \ac{RMSE}, \ac{MAE}, $R^2$, and accuracy as sample size decreases. Performance remains stable down to ~30 samples.}
-    \label{fig:metrics_evolution_sample_size_operators}
-\end{figure*}
+    \includegraphics[width=0.88\textwidth]{assets/images/05/metrics_evolution_by_sample_size_envelope}
+    \caption{Evolution of \ac{RMSE}, \ac{MAE}, $R^2$, and accuracy for the Envelope operator as sample size decreases. Performance remains stable down to ~30 samples.}
+    \label{fig:metrics_evolution_sample_size_envelope}
+\end{figure}
+\clearpage
+
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=0.88\textwidth]{assets/images/05/metrics_evolution_by_sample_size_gaussian-filter}
+    \caption{Evolution of \ac{RMSE}, \ac{MAE}, $R^2$, and accuracy for the Gaussian Filter as sample size decreases. Performance remains stable down to ~30 samples.}
+    \label{fig:metrics_evolution_sample_size_gaussian}
+\end{figure}
+\clearpage
+
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=0.88\textwidth]{assets/images/05/metrics_evolution_by_sample_size_gst3d}
+    \caption{Evolution of \ac{RMSE}, \ac{MAE}, $R^2$, and accuracy for \ac{GST3D} as sample size decreases. Performance remains stable down to ~30 samples.}
+    \label{fig:metrics_evolution_sample_size_gst3d}
+\end{figure}
 
 \subsubsection{Score Comparisons and Sweet Spot Around 30 Samples}
 \label{subsec:score-comparisons-and-sweet-spot}
@@ -82,17 +85,17 @@ Above that range, model performance saturates and does not improve significantly
 
 \begin{figure*}[htbp]
     \centering
-    \begin{subfigure}[t]{0.32\textwidth}
+    \begin{subfigure}[t]{0.48\textwidth}
         \includegraphics[width=\textwidth]{assets/images/05/score_by_sample_size_envelope}
         \caption{Envelope}
     \end{subfigure}
     \hfill
-    \begin{subfigure}[t]{0.32\textwidth}
+    \begin{subfigure}[t]{0.48\textwidth}
         \includegraphics[width=\textwidth]{assets/images/05/score_by_sample_size_gaussian-filter}
         \caption{Gaussian Filter}
     \end{subfigure}
     \hfill
-    \begin{subfigure}[t]{0.32\textwidth}
+    \begin{subfigure}[t]{0.48\textwidth}
         \includegraphics[width=\textwidth]{assets/images/05/score_by_sample_size_gst3d}
         \caption{\ac{GST3D}}
     \end{subfigure}
