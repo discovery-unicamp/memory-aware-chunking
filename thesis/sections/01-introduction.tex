@@ -14,7 +14,14 @@ Distributed platforms such as Dask~\cite{rocklin2015dask} facilitate horizontal 
 This level of concurrency substantially reduces execution time but carries important risks if resource demands are underestimated.
 Dask's default chunking heuristics do not factor in the memory requirements of specific operators or data types.
 They distribute data primarily based on file-block boundaries or user-defined size targets.
-This approach can lead to an overfragmented pipeline, where overhead from excessively many tasks slows the job, or conversely, oversize chunks, where memory usage exceeds the available capacity and triggers \ac{OOM} errors.
+As shown in Figure~\ref{fig:chunking-example}, chunk configurations can vary widely, and choosing sizes naively can lead to an overfragmented pipeline, where overhead from excessively many tasks slows the job, or conversely, oversize chunks, where memory usage exceeds available capacity and triggers \ac{OOM} errors.
+
+\begin{figure}[ht]
+    \centering
+    \includegraphics[width=0.95\textwidth]{assets/images/01/chunking-example}
+    \caption{Example of seismic data chunking. Each colored rectangle indicates a potential chunk configuration, illustrating how different chunk sizes and shapes can influence memory usage in the processing pipeline.}
+    \label{fig:chunking-example}
+\end{figure}
 
 These challenges motivate the development of more reliable strategies for anticipating memory usage.
 When the computation is \emph{memory-intensive}, knowledge of memory requirements is critical, because one miscalculation can crash a job or underutilize the system.
