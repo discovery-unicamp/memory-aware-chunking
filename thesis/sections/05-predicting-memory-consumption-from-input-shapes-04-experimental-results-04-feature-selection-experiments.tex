@@ -38,7 +38,7 @@ This supports the hypothesis that volume alone may be sufficient for a reliable 
 The feature selection procedure applies a stepwise elimination strategy:
 
 \begin{enumerate}
-    \item Rank features using SelectKBest based on their individual predictive power.
+    \item Rank features using SelectKBest, which is a simple yet effective scikit-learn method~\cite{pedregosa2011scikit} that scores each feature according to a chosen statistical test and retains only the highest-scoring one.
     \item Iteratively remove features starting with the least relevant.
     \item Track changes in \ac{RMSE}, $R^2$, accuracy, and score.
     \item Repeat until only feature remains.

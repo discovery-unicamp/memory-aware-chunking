@@ -130,7 +130,7 @@ Above that range, model performance saturates and does not improve significantly
 \subsubsection{Conclusions on Data Pruning}
 \label{subsec:data-reduction-conclusions}
 
-Model accuracy remains high with only 30--40 samples per operator.
-This supports practical deployment of memory estimators using small training datasets.
-\ac{GST3D} is more sensitive, while Envelope and Gaussian Filter remain robust with fewer data samples.
-Volume extremes provide valuable learning signal, but some middle-volume coverage improves stability.
+Thirty to forty samples per operator reliably yield accurate peak‐memory predictions under volume‐centric assumptions, reflecting a strong balance between dataset size and model performance.
+Volume extremes provide valuable learning signals, but including a modest range of middle‐volume configurations enhances stability, especially for \ac{GST3D}, which exhibits greater sensitivity to severe down‐sampling.
+Envelope and Gaussian Filter models remain robust with fewer data points, demonstrating resilient predictive power even under aggressive sample reduction.
+These findings confirm that moderate data pruning offers a practical path to deploying memory estimators in scenarios with limited training data while preserving the accuracy required for real‐world applications.

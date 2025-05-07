@@ -22,6 +22,14 @@ These synthetic datasets mimic actual seismic data and span diverse volumes to r
 
 \vspace{1em}
 \noindent
+\textbf{Why Synthetic Data Does Not Add Bias.}
+Some concerns may arise about whether synthetic datasets reflect actual operational data.
+To address these concerns, the methodology includes a validation step using the publicly available F3 real seismic dataset.
+The results show that memory-consumption patterns and shape-to-usage relationships derived from synthetic volumes closely match those observed in real seismic data.
+This consistency confirms that the measured trends remain valid in both controlled (synthetic) and real-world conditions, thereby mitigating any risk of bias introduced by synthetic data.
+
+\vspace{1em}
+\noindent
 \textbf{Phase 2: Memory Profiling.}
 A shell script schedules container-based jobs to run seismic operators on each generated dataset.
 Chapter~\ref{ch:measuring-memory-consumption} describes the \ac{HPC}-like constraints and the rationale for isolating each job to reduce interference.
