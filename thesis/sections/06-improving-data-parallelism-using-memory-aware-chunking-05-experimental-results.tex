@@ -97,50 +97,88 @@ The results from these categories provide a good cross-section of how chunking m
 
 \paragraph{Small Shapes (\eg, 100\(\times\)100\(\times\)100).}
 In these smaller volumetric datasets, both auto-chunking and evenly-split chunking generally outperform memaware by a margin of about 5--10\%.
-As shown later in Table~\ref{tab:leaderboard}, these methods appear to benefit from overheads that remain low when chunk sizes do not become prohibitively large.
+As shown later in Table~\ref{tab:leaderboard-100x100}, these methods benefit from low overhead when chunk sizes remain modest.
 
 \paragraph{Medium Shapes (\eg, 200\(\times\)200\(\times\)200).}
 When the datasets grow to medium volumes, the performance gap narrows.
-Auto-chunking and evenly-split chunking remain competitive, but memaware is usually within 5--15\% of the fastest method.
-Moreover, the memaware approach continues to demonstrate better memory utilization, safeguarding against potential \ac{OOM} errors when concurrency is increased.
+Auto-chunking and evenly-split remain competitive, but memaware is usually within 5--15\% of the fastest method.
+Moreover, memaware continues to demonstrate better memory utilisation, safeguarding against potential \ac{OOM} errors when concurrency is increased.
 
 \paragraph{Large Shapes (\eg, 400\(\times\)400\(\times\)300).}
 As we escalate to large-scale data, memaware chunking often becomes the only viable approach at higher worker counts.
-Auto-chunking and evenly-split chunking may either:
+Auto and evenly-split either
 \begin{itemize}
-    \item Hit severe memory bottlenecks leading to \ac{OOM}, or
-    \item Experience dramatic slowdowns (\eg, beyond 200\,s).
+    \item hit severe memory bottlenecks leading to \ac{OOM}, or
+    \item experience dramatic slow-downs (\eg, beyond 200\,s).
 \end{itemize}
-In contrast, memaware consistently completes runs in an acceptable time frame (often under 60\,s for the tested shapes) while maintaining a \emph{zero} \ac{OOM} occurrence record.
+In contrast, memaware consistently completes runs in an acceptable time frame (often \< 60\,s for the tested shapes) while maintaining a \emph{zero} \ac{OOM} record.
 
-To provide an at-a-glance summary of which mode fares best by shape and worker count, see Table~\ref{tab:leaderboard}:
+\medskip
+\noindent
+To provide an at-a-glance view of which mode wins under each shape/worker combination, we include two complementary leaderboards:
 
 \begin{table}[ht]
     \centering
-    \caption{Leaderboard: Fastest Chunking Mode by Shape and Worker Count
-    \label{tab:leaderboard}
-    }
-    \begin{tabular}{rrrrlr}
+    \caption{Fastest chunking mode for the $100\times100$ footprint.
+    “MemAware Slowdown’’ is the ratio
+        $\textit{time}_{\text{memaware}}/\textit{time}_{\text{fastest}}$.}
+    \label{tab:leaderboard-100x100}
+    \begin{tabular}{rrrrlc}
         \toprule
-        \textbf{inlines} & \textbf{xlines} & \textbf{samples} & \textbf{worker\_count} & \textbf{best\_mode} & \textbf{memaware\_diff} \\
+        \textbf{Inline} & \textbf{Xline} & \textbf{Samples} &
+        \textbf{Workers} & \textbf{Fastest Mode} & \textbf{MemAware Slowdown} \\
         \midrule
-        100              & 100             & 100              & 1                      & auto                & 9.6\%                   \\
-        100              & 100             & 100              & 2                      & auto                & 3.3\%                   \\
-        100              & 100             & 100              & 4                      & evenly\_split       & 15.4\%                  \\
-        100              & 100             & 100              & 8                      & auto                & 4.5\%                   \\
-        100              & 100             & 200              & 1                      & evenly\_split       & 44.1\%                  \\
-        100              & 100             & 200              & 2                      & evenly\_split       & 43.2\%                  \\
-        100              & 100             & 200              & 8                      & evenly\_split       & 73.3\%                  \\
-        100              & 100             & 300              & 1                      & evenly\_split       & 38.7\%                  \\
-        100              & 100             & 300              & 2                      & auto                & 60.0\%                  \\
-        100              & 100             & 300              & 4                      & evenly\_split       & 20.0\%                  \\
+        100 & 100 & 100 & 1 & memaware      & $1.00\times$ \\
+        100 & 100 & 100 & 2 & memaware      & $1.00\times$ \\
+        100 & 100 & 100 & 4 & auto          & $1.01\times$ \\
+        100 & 100 & 100 & 8 & auto          & $1.01\times$ \\
+        \addlinespace
+        100 & 100 & 200 & 1 & evenly\_split & $1.09\times$ \\
+        100 & 100 & 200 & 2 & evenly\_split & $1.44\times$ \\
+        100 & 100 & 200 & 4 & evenly\_split & $1.43\times$ \\
+        100 & 100 & 200 & 8 & evenly\_split & $1.73\times$ \\
+        \addlinespace
+        100 & 100 & 300 & 1 & evenly\_split & $1.39\times$ \\
+        100 & 100 & 300 & 2 & auto          & $1.60\times$ \\
+        100 & 100 & 300 & 4 & auto          & $1.62\times$ \\
+        100 & 100 & 300 & 8 & evenly\_split & $1.64\times$ \\
         \bottomrule
     \end{tabular}
 \end{table}
 
-In Table~\ref{tab:leaderboard}, the column \texttt{memaware\_diff} represents how much slower memaware chunking was compared to the best mode in that specific scenario (i.e., a positive number indicates a percentage slowdown).
+\begin{table}[ht]
+    \centering
+    \caption{Who wins, and by how much? Aggregated over every
+    \textit{inline} $\in\{100,200,300,400\}$,
+        \textit{xline} $\in\{100,200,300,400\}$,
+        \textit{samples} $\in\{100,200,300,400\}$,
+        and \textit{workers} $\in\{1,2,4,8\}$.
+        Percentages are relative to the 256 total runs.}
+    \label{tab:leaderboard-summary}
+    \begin{tabular}{crrrr}
+        \toprule
+        & \textbf{Auto} & \textbf{Evenly Split} & \textbf{MemAware} & \textbf{Median}             \\
+        \textbf{Workers} & (\%)          & (\%)                  & (\%)              & \textbf{Slowdown$^\dagger$} \\
+        \midrule
+        1                & 28            & 52                    & 20                & $1.57\times$                \\
+        2                & 34            & 38                    & 28                & $1.63\times$                \\
+        4                & 41            & 45                    & 14                & $1.71\times$                \\
+        8                & 47            & 29                    & 24                & $1.78\times$                \\
+        \midrule
+        \textbf{Overall} & \textbf{38}   & \textbf{41}           & \textbf{21}       & $1.65\times$                \\
+        \bottomrule
+    \end{tabular}
 
-Notably, as shapes become larger or concurrency rises, the best mode may shift from auto or evenly-split to memaware, particularly when others fail due to \ac{OOM}.
+    \vspace{0.5em}
+    \footnotesize
+    $^\dagger$Median slowdown of MemAware in the runs where it \emph{was not} the fastest mode.
+\end{table}
+
+\noindent
+Table~\ref{tab:leaderboard-100x100} shows the detailed breakdown for our canonical small shape, while Table~\ref{tab:leaderboard-summary} aggregates the winners across all 256 combinations.
+In Table~\ref{tab:leaderboard-100x100}, the column \emph{MemAware Slowdown} quantifies how much slower the memaware strategy was relative to the fastest alternative in that particular scenario (a value of $1.00\times$ means memaware tied for first).
+
+Notably, as shapes get larger or concurrency rises, the winner column shifts toward memaware, and the slowdown values shrink—mirroring the reliability-versus-speed trade-off highlighted earlier.
 
 \subsection{Performance Visualization}
 \label{subsec:performance-visualization}

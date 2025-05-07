@@ -63,7 +63,16 @@ When a profiling command such as \texttt{traceq profile script.py –metric memo
     \item Generates a comprehensive profiling report, including trace metadata and serialized measurement data.
 \end{enumerate}
 
-This workflow ensures accurate tracking of memory dynamics, enabling insightful analysis of memory behavior in Python applications.
+This workflow, as illustrated in Figure~\ref{fig:traceq_sequence}, ensures accurate tracking of memory dynamics, enabling insightful analysis of memory behavior in Python applications.
+
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=\textwidth]{assets/images/04/traceq_sequence_diagram}
+    \caption{
+        This sequence diagram illustrates the overall purpose and architecture of TraceQ’s profiling pipeline: it shows how a user-initiated profiling request is handled through a modular, asynchronous workflow—loading configuration, initializing the tracing engine, spawning a dedicated profiling process, and using an inter-process queue to collect, parse, and persist detailed profiling data—thereby enabling efficient, low-overhead memory tracing.%
+    }
+    \label{fig:traceq_sequence}
+\end{figure}
 
 \subsection{Usage Examples}
 \label{sec:mmc-traceq-examples}
