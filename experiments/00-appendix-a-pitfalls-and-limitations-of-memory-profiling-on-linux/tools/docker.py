@@ -3,12 +3,11 @@ import subprocess
 import time
 from typing import Tuple, Any
 
+import docker
+from docker import DockerClient
 from docker.models.containers import Container
 from docker.models.images import Image
 from loguru import logger
-
-import docker
-from docker import DockerClient
 
 __all__ = [
     "get_vfs_client",
@@ -21,7 +20,7 @@ __all__ = [
 def build_image(image_name: str, client: DockerClient) -> Image:
     logger.info("Building TraceQ image...")
     traceq_image, _ = client.images.build(
-        path="../../../../libs/traceq",
+        path="../../../libs/traceq",
         tag="traceq",
         rm=True,
     )
@@ -30,7 +29,7 @@ def build_image(image_name: str, client: DockerClient) -> Image:
     logger.info("Building experiment image...")
 
     experiment_image, _ = client.images.build(
-        path="../",
+        path="../.bak/",
         tag=image_name,
         rm=True,
     )
