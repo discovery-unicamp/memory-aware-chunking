@@ -4,7 +4,7 @@
 Accurate measurement of Python applications' memory usage presents significant challenges.
 Python’s internal memory manager and operating system abstractions each introduce complexities and potential inaccuracies.
 This section highlights key issues, providing a foundational overview.
-For an in-depth examination, refer to Appendix~\ref{ch:appendix-challenges-and-pitfalls-in-accurate-memory-measurement}.
+For an in-depth examination, refer to Appendix~\ref{ch:appendix-challenges-pitfalls}.
 
 \subsection{Dynamic Memory and Garbage Collection}
 \label{subsec:mmc-challenges-gc}
@@ -72,7 +72,7 @@ Therefore, a rigorous measurement strategy addressing Python’s dynamic memory 
 \subsection{Detailed Exploration in the Appendix}
 \label{subsec:mmc-challenges-appendix-ref}
 
-For an extensive exploration of these challenges, particularly \ac{OS} memory management, as well as advanced Python and \ac{OS} features, consult Appendix~\ref{ch:appendix-challenges-and-pitfalls-in-accurate-memory-measurement}.
+For an extensive exploration of these challenges, particularly \ac{OS} memory management, as well as advanced Python and \ac{OS} features, consult Appendix~\ref{ch:appendix-challenges-pitfalls}.
 The appendix offers comprehensive insights into each factor's implications for memory metrics, alongside strategies for isolating or mitigating their impact during experimental setups.
 
 The subsequent section introduces best practices derived from understanding these challenges, emphasizing environment isolation, and validation through container-specific tools to enhance the reliability of Python memory profiling in practical applications.

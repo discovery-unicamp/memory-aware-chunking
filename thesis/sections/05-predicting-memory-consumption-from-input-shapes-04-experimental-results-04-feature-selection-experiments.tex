@@ -105,7 +105,7 @@ Residual metrics and scores remain stable throughout feature reduction.
         \caption{Score for Envelope during reduction}
     \end{subfigure}
     \caption{Cross‐operator feature sensitivity analysis:
-        (a) Mean $\delta$\ac{RMSE} when excluding each predictor for Envelope (blue), Gaussian Filter (orange), and \ac{GST3D} (green), showing that raw volume—and its log‐transformed variants—are the most critical features.
+        (a) Mean $\Delta$\ac{RMSE} when excluding each predictor for Envelope (blue), Gaussian Filter (orange), and \ac{GST3D} (green), showing that raw volume—and its log‐transformed variants—are the most critical features.
         (b) Model $R^2$ as a function of the number of predictors—added in order of importance—demonstrating that volume alone explains nearly all variance, with subsequent features providing only marginal improvements.}
     \label{fig:feature_selection_overview_part2}
 \end{figure*}
@@ -132,7 +132,7 @@ Figures~\ref{fig:feature_impact_operator_subplots}--\ref{fig:residual_metrics_by
         \includegraphics[width=\textwidth]{assets/images/05/feature_impact_gst3d}
         \caption{\ac{GST3D}}
     \end{subfigure}
-    \caption{Average $\delta$\ac{RMSE} when excluding each predictor for (a) Envelope, (b) Gaussian Filter, and (c) \ac{GST3D}. Bars show the increase in prediction error upon removal of each feature, revealing that the raw volume input—and its log‐transformed variants—cause the largest performance drop across all operators, underscoring volume’s critical importance.}
+    \caption{Average $\Delta$\ac{RMSE} when excluding each predictor for (a) Envelope, (b) Gaussian Filter, and (c) \ac{GST3D}. Bars show the increase in prediction error upon removal of each feature, revealing that the raw volume input—and its log‐transformed variants—cause the largest performance drop across all operators, underscoring volume’s critical importance.}
     \label{fig:feature_impact_operator_subplots}
 \end{figure*}
 
