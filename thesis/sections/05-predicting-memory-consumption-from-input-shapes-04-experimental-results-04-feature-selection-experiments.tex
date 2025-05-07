@@ -28,7 +28,7 @@ This supports the hypothesis that volume alone may be sufficient for a reliable 
         \includegraphics[width=\textwidth]{assets/images/05/memory_vs_volume_regression_gaussian-filter}
         \caption{Gaussian Filter}
     \end{subfigure}
-    \caption{Memory usage vs. volume with regression fits. Each operator displays strong linearity.}
+    \caption{Observed average peak memory usage (markers) and fitted linear regression lines (solid red) versus input volume ($\text{inlines}\times\text{xlines}\times\text{samples}$) for (a) Envelope, (b) \ac{GST3D}, and (c) Gaussian Filter. Near‐zero intercepts and consistent slopes across all three plots confirm a strong, operator‐agnostic linear relationship between data volume and memory consumption.}
     \label{fig:memory_vs_volume_regression_subplots}
 \end{figure*}
 
@@ -61,7 +61,7 @@ Performance remains stable with just the volume feature.
         Gaussian Filter   & Elastic Net       & 1                   & 0.001 / 0.999              \\
         \hline
     \end{tabular}
-    \caption{Revised RMSE and $R^2$ after reducing feature count from 25 to just 1,
+    \caption{Revised \ac{RMSE} and $R^2$ after reducing feature count from 25 to just 1,
         based on latest CSV data.
         \label{tab:feature_selection_minimal_impact}
     }
@@ -70,14 +70,14 @@ Performance remains stable with just the volume feature.
 \subsubsection{Impact on RMSE, R\texorpdfstring{$^2$}{2}, and Residuals}
 \label{subsec:impact-on-rmse-r2-and-residuals}
 
-Figure~\ref{fig:feature_selection_overview_part1} shows the average RMSE and $R^2$ as features are removed.
+Figure~\ref{fig:feature_selection_overview_part1} shows the average \ac{RMSE} and $R^2$ as features are removed.
 Performance never drops significantly, even when reducing to a single feature.
 
 \begin{figure*}[htbp]
     \centering
     \begin{subfigure}[t]{0.49\textwidth}
         \includegraphics[width=\textwidth]{assets/images/05/feature_impact}
-        \caption{Average RMSE change}
+        \caption{Average \ac{RMSE} change}
     \end{subfigure}
     \hfill
     \begin{subfigure}[t]{0.49\textwidth}
@@ -85,8 +85,10 @@ Performance never drops significantly, even when reducing to a single feature.
         \caption{Change in $R^2$}
     \end{subfigure}
     \caption{Effect of removing features. Volume is the most critical predictor.
-    \label{fig:feature_selection_overview_part1}
+        (a) Mean $\Delta$\ac{RMSE} when excluding each predictor for Envelope (blue), Gaussian Filter (orange), and \ac{GST3D} (green), showing that removing the raw volume feature—and its log‐transformed variants—causes the largest error increase.
+        (b) Model $R^2$ as a function of the number of input features—added in order of importance—demonstrating that volume alone explains almost all variance, with additional predictors providing negligible improvement.
     }
+    \label{fig:feature_selection_overview_part1}
 \end{figure*}
 
 Residual metrics and scores remain stable throughout feature reduction.
@@ -102,7 +104,9 @@ Residual metrics and scores remain stable throughout feature reduction.
         \includegraphics[width=\textwidth]{assets/images/05/score_by_number_of_features_envelope}
         \caption{Score for Envelope during reduction}
     \end{subfigure}
-    \caption{Minimal degradation in residuals and scores with fewer predictors.}
+    \caption{Cross‐operator feature sensitivity analysis:
+        (a) Mean $\delta$\ac{RMSE} when excluding each predictor for Envelope (blue), Gaussian Filter (orange), and \ac{GST3D} (green), showing that raw volume—and its log‐transformed variants—are the most critical features.
+        (b) Model $R^2$ as a function of the number of predictors—added in order of importance—demonstrating that volume alone explains nearly all variance, with subsequent features providing only marginal improvements.}
     \label{fig:feature_selection_overview_part2}
 \end{figure*}
 
@@ -128,7 +132,7 @@ Figures~\ref{fig:feature_impact_operator_subplots}--\ref{fig:residual_metrics_by
         \includegraphics[width=\textwidth]{assets/images/05/feature_impact_gst3d}
         \caption{\ac{GST3D}}
     \end{subfigure}
-    \caption{Performance drop when features are removed. Volume is most important across all operators.}
+    \caption{Average $\delta$\ac{RMSE} when excluding each predictor for (a) Envelope, (b) Gaussian Filter, and (c) \ac{GST3D}. Bars show the increase in prediction error upon removal of each feature, revealing that the raw volume input—and its log‐transformed variants—cause the largest performance drop across all operators, underscoring volume’s critical importance.}
     \label{fig:feature_impact_operator_subplots}
 \end{figure*}
 
@@ -148,7 +152,7 @@ Figures~\ref{fig:feature_impact_operator_subplots}--\ref{fig:residual_metrics_by
         \includegraphics[width=\textwidth]{assets/images/05/residual_metrics_by_number_of_features_gst3d}
         \caption{\ac{GST3D}}
     \end{subfigure}
-    \caption{Residual stability during feature removal. \ac{GST3D} sees slightly more fluctuation.}
+    \caption{Residual‐error stability during iterative feature removal for (a) Envelope, (b) Gaussian Filter, and (c) \ac{GST3D}. Markers denote \ac{MAE} (circles) and \ac{RMSE} (squares) as predictors are dropped in order of decreasing importance; the shaded band indicates error variability. All three operators exhibit minimal change in residuals when features beyond volume are removed, with \ac{GST3D} showing slightly greater fluctuation during the first few removals.}
     \label{fig:residual_metrics_by_number_of_features_operator_subplots}
 \end{figure*}
 

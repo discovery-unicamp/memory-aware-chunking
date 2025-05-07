@@ -28,10 +28,8 @@ Larger volumes lead to more consistent memory consumption, whereas smaller volum
         \includegraphics[width=\textwidth]{assets/images/05/peak_memory_by_volume_gaussian-filter}
         \caption{Gaussian Filter}
     \end{subfigure}
-    \caption{Peak memory usage vs. $Volume~(\text{inlines} \times \text{xlines} \times \text{samples})$ for Envelope, \ac{GST3D}, and Gaussian Filter.
-    Each operator displays approximate linear scaling. Variability is higher in smaller volumes.
+    \caption{Peak memory usage (solid markers, left axis) and coefficient of variation (dashed lines, right axis) as functions of input volume ($\text{inlines}\times\text{xlines}\times\text{samples}$) for (a) Envelope, (b) \ac{GST3D}, and (c) Gaussian Filter. All three operators exhibit near‐linear scaling of memory with increasing volume, while \ac{CV} is highest at smaller volumes and diminishes as volume grows.}
     \label{fig:peak_memory_facet}
-    }
 \end{figure*}
 
 Execution times follow a similar trend.
@@ -54,7 +52,7 @@ This reinforces that input shape, especially total volume, is the dominant facto
         \includegraphics[width=\textwidth]{assets/images/05/execution_time_by_volume_gaussian-filter}
         \caption{Gaussian Filter}
     \end{subfigure}
-    \caption{Execution time by volume. Each operator demonstrates a growth trend, suggesting that volume captures most of the computational effort.}
+    \caption{Execution time (solid markers) and variability (shaded band) as functions of input volume ($\text{inlines}\times\text{xlines}\times\text{samples}$) for (a) Envelope, (b) \ac{GST3D}, and (c) Gaussian Filter. All three operators exhibit near‐linear growth in runtime with increasing volume, with \ac{GST3D} showing the tightest consistency and Envelope and Gaussian Filter displaying greater dispersion at higher volumes.}
     \label{fig:execution_time_by_volume_facet}
 \end{figure*}
 
@@ -76,7 +74,7 @@ Since we can see a clear linear pattern, Table~\ref{tab:scaling_slopes_summary} 
         \includegraphics[width=\textwidth]{assets/images/05/cross_peak_memory_by_volume}
         \caption{Peak memory vs. volume}
     \end{subfigure}
-    \caption{Combined memory and execution time vs. volume for all operators. All metrics scale nearly linearly.}
+    \caption{Cross‐operator comparison of (a) execution time and (b) peak memory usage as functions of input volume ($\text{inlines}\times\text{xlines}\times\text{samples}$) for \ac{GST3D}, Envelope, and Gaussian Filter. All three operators exhibit near‐linear scaling in both runtime and memory footprint as data volume increases.}
     \label{fig:ex_peak_mu_facet}
 \end{figure*}
 
@@ -84,11 +82,11 @@ Since we can see a clear linear pattern, Table~\ref{tab:scaling_slopes_summary} 
     \centering
     \begin{tabular}{lcc}
         \hline
-        \textbf{Operator} & \textbf{Memory Slope (GB/volume)} & \textbf{$R^2$} \\
+        \textbf{Operator} & \textbf{Memory Slope (\ac{GB}/volume)} & \textbf{$R^2$} \\
         \hline
-        Envelope          & 0.000026                          & 0.997          \\
-        \ac{GST3D}        & 0.000226                          & 0.999          \\
-        Gaussian Filter   & 0.000008                          & 0.995          \\
+        Envelope          & 0.000026                               & 0.997          \\
+        \ac{GST3D}        & 0.000226                               & 0.999          \\
+        Gaussian Filter   & 0.000008                               & 0.995          \\
         \hline
     \end{tabular}
     \caption{Updated linear regression slope and $R^2$ for peak memory vs.\ volume, based on the new data.}
@@ -114,7 +112,9 @@ The accompanying heatmap (part~(b)) visually confirms this uniformity: increasin
         \includegraphics[width=\textwidth]{assets/images/05/memory_usage_inlines_xlines_samples_heatmap_envelope}
         \caption{2D heatmap of shape dimension combinations}
     \end{subfigure}
-    \caption{Envelope memory usage decomposed by dimensions. Each axis contributes similarly.}
+    \caption{Envelope memory usage decomposed by configuration parameters:
+        (a) 3D line plot of memory consumption (\ac{GB}, z-axis) over time (\ac{s}, x-axis) and data volume (inlines × xlines × samples, y-axis), showing a consistent ramp-up to peak usage followed by tear-down for each configuration.
+        (b) 3D scatter of peak memory usage (\ac{GB}, color-coded) across all combinations of inlines (x-axis), xlines (y-axis), and samples (z-axis), illustrating that each dimension contributes comparably to the overall memory footprint.}
     \label{fig:memory_usage_by_configuration_envelope}
 \end{figure*}
 
@@ -128,24 +128,22 @@ Two possible causes explain this discrepancy:
 
 \begin{figure*}[htbp]
     \centering
-    \begin{subfigure}[t]{0.88\textwidth}
+    \begin{subfigure}[t]{0.8\textwidth}
         \includegraphics[width=\textwidth]{assets/images/05/memory_safety_margin_envelope}
         \caption{Envelope}
     \end{subfigure}
     \hfill
-    \begin{subfigure}[t]{0.88\textwidth}
+    \begin{subfigure}[t]{0.8\textwidth}
         \includegraphics[width=\textwidth]{assets/images/05/memory_safety_margin_gst3d}
         \caption{\ac{GST3D}}
     \end{subfigure}
     \hfill
-    \begin{subfigure}[t]{0.88\textwidth}
+    \begin{subfigure}[t]{0.8\textwidth}
         \includegraphics[width=\textwidth]{assets/images/05/memory_safety_margin_gaussian-filter}
         \caption{Gaussian Filter}
     \end{subfigure}
-    \caption{Memory safety margins comparing mean and 95\% percentile.
-    Overheads in initial runs or shape-induced variability can inflate peak usage within the same volume bin.
+    \caption{Peak memory safety margins by volume bin: each bar pair shows the mean (blue) and 95th‐percentile (orange) peak memory usage for each range of input volume (inlines × xlines × samples) in (a) Envelope, (b) \ac{GST3D}, and (c) Gaussian Filter. Initialization overheads and shape‐induced variability produce wider margins at smaller volumes, which tighten as data size grows.}
     \label{fig:memory_safety_margin}
-    }
 \end{figure*}
 
 To investigate whether varying shape dimensions (while fixing the same total volume) leads to large memory differences, Figure~\ref{fig:memory_by_volume_aspect} bins each operator's memory usage by volume and aspect-ratio ranges.
@@ -163,21 +161,21 @@ The spikes in Figure~\ref{fig:memory_safety_margin} thus represent comparatively
 
 \begin{figure*}[htbp]
     \centering
-    \begin{subfigure}[t]{0.88\textwidth}
+    \begin{subfigure}[t]{0.8\textwidth}
         \includegraphics[width=\textwidth]{assets/images/05/memory_by_volume_aspect_envelope}
         \caption{Envelope}
     \end{subfigure}
     \hfill
-    \begin{subfigure}[t]{0.88\textwidth}
+    \begin{subfigure}[t]{0.8\textwidth}
         \includegraphics[width=\textwidth]{assets/images/05/memory_by_volume_aspect_gst3d}
         \caption{\ac{GST3D}}
     \end{subfigure}
     \hfill
-    \begin{subfigure}[t]{0.88\textwidth}
+    \begin{subfigure}[t]{0.8\textwidth}
         \includegraphics[width=\textwidth]{assets/images/05/memory_by_volume_aspect_gaussian-filter}
         \caption{Gaussian Filter}
     \end{subfigure}
-    \caption{Memory usage by volume bin and aspect ratio. The boxes overlap substantially in each bin, indicating that varying shape dimensions (at fixed volume) does not drive the 95\% percentile gap shown in Figure\,\ref{fig:memory_safety_margin}.}
+    \caption{Memory usage distributions by volume bin and aspect‐ratio category for (a) Envelope, (b) \ac{GST3D}, and (c) Gaussian Filter. Within each fixed‐volume bin, boxplots for aspect‐ratio ranges (<0.5, 0.5–1, 1–2, 2–5, >5) overlap extensively, indicating that shape dimensions have minimal influence on the 95th‐percentile peak memory beyond overall data volume.}
     \label{fig:memory_by_volume_aspect}
 \end{figure*}
 
@@ -194,7 +192,7 @@ Nonetheless, when all dimensions increase, memory grows accordingly.
 \begin{figure}[htbp]
     \centering
     \includegraphics[width=0.9\textwidth]{assets/images/05/memory_vs_dimensions_pairplot_gst3d}
-    \caption{Pairwise correlations for \ac{GST3D}. Memory usage rises with any dimension.}
+    \caption{Pairwise relationships among inlines, xlines, samples, and captured memory usage for \ac{GST3D}. The diagonal panels show marginal distributions, while off‐diagonal scatterplots—with fitted regression lines—highlight the strong, approximately linear increase in memory consumption as each dimension grows.}
     \label{fig:memory_vs_dimensions_pairplot_gst3d}
 \end{figure}
 
@@ -209,11 +207,11 @@ All operators reflect the volume-based trend discussed previously.
     \centering
     \begin{tabular}{lccc}
         \hline
-        \textbf{Operator} & \textbf{Volume Range}    & \textbf{Peak Mem. (GB)} & \textbf{Exec. Time (s)} \\
+        \textbf{Operator} & \textbf{Volume Range}    & \textbf{Peak Mem. (\ac{GB})} & \textbf{Exec. Time (s)} \\
         \hline
-        Envelope          & $10^6 \to 5.1\times10^8$ & 0.13 – 13.45            & 0.19 – 32.03            \\
-        \ac{GST3D}        & $10^6 \to 5.1\times10^8$ & 0.33 – 115.64           & 0.80 – 402.30           \\
-        Gaussian Filter   & $10^6 \to 5.1\times10^8$ & 0.11 – 3.92             & 0.17 – 46.23            \\
+        Envelope          & $10^6 \to 5.1\times10^8$ & 0.13 – 13.45                 & 0.19 – 32.03            \\
+        \ac{GST3D}        & $10^6 \to 5.1\times10^8$ & 0.33 – 115.64                & 0.80 – 402.30           \\
+        Gaussian Filter   & $10^6 \to 5.1\times10^8$ & 0.11 – 3.92                  & 0.17 – 46.23            \\
         \hline
     \end{tabular}
     \caption{Resource usage summary for Envelope, \ac{GST3D}, and Gaussian Filter. Volume is in number of elements.}

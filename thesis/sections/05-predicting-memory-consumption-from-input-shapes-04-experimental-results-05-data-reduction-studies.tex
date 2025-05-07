@@ -24,7 +24,9 @@ Figure~\ref{fig:cross_data_reduction_and_residual} shows \ac{RMSE} and residual 
         \includegraphics[width=\textwidth]{assets/images/05/residual_metrics_by_sample_size}
         \caption{Residual metrics vs. sample size}
     \end{subfigure}
-    \caption{Model performance under data reduction. Moderate pruning preserves accuracy. Severe reduction leads to error spikes.}
+    \caption{Cross‐operator sensitivity to data reduction:
+        (a) \ac{RMSE} for Envelope (blue), \ac{GST3D} (orange), and Gaussian Filter (green) versus number of retained samples, illustrating that prediction accuracy remains stable until extreme down‐sampling ($<\approx$20 samples) causes sharp \ac{RMSE} increases—especially for \ac{GST3D}.
+        (b) Corresponding \ac{MAE} (circles) and \ac{RMSE} (squares) residual metrics with shaded variability bands, showing that moderate sample pruning has negligible effect on error, while severe reduction yields pronounced spikes in both measures.}
     \label{fig:cross_data_reduction_and_residual}
 \end{figure*}
 
@@ -50,14 +52,14 @@ Errors grow rapidly below 30 samples, but remain low for 40--50.
         \includegraphics[width=\textwidth]{assets/images/05/residual_metrics_by_sample_size_gst3d}
         \caption{\ac{GST3D}}
     \end{subfigure}
-    \caption{Residual metrics by operator. Lower performance below 30 samples.}
+    \caption{Residual‐error metrics (\ac{MAE} shown as circles, \ac{RMSE} as squares) versus retained sample count for (a) Envelope, (b) Gaussian Filter, and (c) \ac{GST3D}. Shaded bands indicate variability across trials. All operators maintain low, stable residuals once at least ~30 samples are retained, with errors and variance rising sharply under more severe down‐sampling.}
     \label{fig:residual_metrics_by_sample_size_operators}
 \end{figure*}
 
 \begin{figure}[htbp]
     \centering
     \includegraphics[width=0.88\textwidth]{assets/images/05/metrics_evolution_by_sample_size_envelope}
-    \caption{Evolution of \ac{RMSE}, \ac{MAE}, $R^2$, and accuracy for the Envelope operator as sample size decreases. Performance remains stable down to ~30 samples.}
+    \caption{Peak‐memory prediction performance versus retained sample count for the Envelope operator: \ac{RMSE} (top‐left) and \ac{MAE} (top‐right) initially spike under extreme down‐sampling ($<$30 samples) but settle to stable, low‐error levels once $\geq$30 samples are kept; $R^2$ (bottom‐left) rapidly approaches 1.0; and prediction accuracy (bottom‐right) remains at 100\%, demonstrating robust model performance under moderate sample reduction.}
     \label{fig:metrics_evolution_sample_size_envelope}
 \end{figure}
 \clearpage
@@ -65,7 +67,7 @@ Errors grow rapidly below 30 samples, but remain low for 40--50.
 \begin{figure}[htbp]
     \centering
     \includegraphics[width=0.88\textwidth]{assets/images/05/metrics_evolution_by_sample_size_gaussian-filter}
-    \caption{Evolution of \ac{RMSE}, \ac{MAE}, $R^2$, and accuracy for the Gaussian Filter as sample size decreases. Performance remains stable down to ~30 samples.}
+    \caption{Peak‐memory prediction performance versus retained sample count for the Gaussian Filter operator: \ac{RMSE} (top‐left) and \ac{MAE} (top‐right) remain very low and exhibit only minor spikes under extreme down‐sampling, $R^2$ (bottom‐left) stays effectively at 1.0 across all sample sizes, and prediction accuracy (bottom‐right) is uniformly 100\%, indicating exceptional stability even with aggressive data pruning.}
     \label{fig:metrics_evolution_sample_size_gaussian}
 \end{figure}
 \clearpage
@@ -73,7 +75,7 @@ Errors grow rapidly below 30 samples, but remain low for 40--50.
 \begin{figure}[htbp]
     \centering
     \includegraphics[width=0.88\textwidth]{assets/images/05/metrics_evolution_by_sample_size_gst3d}
-    \caption{Evolution of \ac{RMSE}, \ac{MAE}, $R^2$, and accuracy for \ac{GST3D} as sample size decreases. Performance remains stable down to ~30 samples.}
+    \caption{Peak‐memory prediction performance versus retained sample count for the \ac{GST3D} operator: \ac{RMSE} (top‐left) and \ac{MAE} (top‐right) show greater variability at very low sample counts but converge to low, stable errors once $\geq$30 samples are retained; $R^2$ (bottom‐left) quickly climbs to near unity; and prediction accuracy (bottom‐right) remains perfect, confirming the model’s resilience under sample reduction.}
     \label{fig:metrics_evolution_sample_size_gst3d}
 \end{figure}
 
@@ -99,7 +101,7 @@ Above that range, model performance saturates and does not improve significantly
         \includegraphics[width=\textwidth]{assets/images/05/score_by_sample_size_gst3d}
         \caption{\ac{GST3D}}
     \end{subfigure}
-    \caption{Model score vs. sample count. Scores remain high for $\geq 30$ samples.}
+    \caption{Model performance score ($R^2$) versus retained sample count for (a) Envelope, (b) Gaussian Filter, and (c) \ac{GST3D}. All three operators maintain near‐optimal scores across moderate down‐sampling, with only slight score variability when the sample count falls below $\sim$30, demonstrating robust predictive power under data reduction.}
     \label{fig:score_by_sample_size_operators}
 \end{figure*}
 

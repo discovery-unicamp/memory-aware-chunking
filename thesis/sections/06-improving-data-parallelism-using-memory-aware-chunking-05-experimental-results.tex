@@ -158,7 +158,9 @@ To better illustrate the empirical differences in runtime and memory profiles, F
         \includegraphics[width=\textwidth]{assets/images/06/200_200_200_memory_usage}
         \caption{Memory Usage for $200\times200\times200$}
     \end{subfigure}
-    \caption{Performance metrics for a representative medium-sized dataset. Each box-and-whisker depicts the range of execution times (left) or peak memory usage (right) observed across different runs and worker configurations.}
+    \caption{Effect of chunking strategy on parallel performance for a $200\times200\times200$ dataset:
+        (a) Mean execution time (solid lines) with shaded variability for auto (blue), evenly\_split (orange), and memaware (green) chunking modes across 1, 2, 4, 6, and 8 workers—demonstrating flat scaling up to four workers, with memaware incurring extra overhead beyond that point.
+        (b) Mean peak memory usage (solid lines) and variability under the same conditions, showing that memaware chunking increases the memory footprint at higher worker counts, while auto and evenly\_split remain comparatively stable.}
     \label{fig:performance_200}
 \end{figure*}
 
@@ -173,7 +175,9 @@ To better illustrate the empirical differences in runtime and memory profiles, F
         \includegraphics[width=\textwidth]{assets/images/06/400_400_300_memory_usage}
         \caption{Memory Usage for $400\times400\times300$}
     \end{subfigure}
-    \caption{Performance metrics for a large-sized dataset. Memaware chunking tends to remain well below the memory constraints, whereas auto and evenly-split chunking risk \ac{OOM} in some runs.}
+    \caption{Impact of chunking strategy on parallel performance for a $400\times400\times300$ dataset:
+        (a) Mean execution time (solid lines) with shaded variability for auto (blue), evenly\_split (orange), and memaware (green) modes across 1–8 workers—showing that memaware incurs increasing overhead at higher worker counts while auto and evenly\_split plateau after two workers.
+        (b) Mean peak memory usage (solid lines) and variability under the same conditions, illustrating that memaware chunking keeps memory well within limits, whereas auto and evenly\_split approaches approach or exceed available memory (risking OOM) as worker count grows.}
     \label{fig:performance_400}
 \end{figure*}
 

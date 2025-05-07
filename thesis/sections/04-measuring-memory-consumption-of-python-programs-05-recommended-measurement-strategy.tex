@@ -113,7 +113,7 @@ Finally, Figure~\ref{fig:memory_history} provides a representative time‑series
         \caption{Kernel density estimates}
         \label{fig:sub-kde}
     \end{subfigure}
-    \caption{Plots illustrating the close similarity between native and \traceq measurements.}
+    \caption{Comparison of memory‐usage measurements between native tools and TraceQ. (a) Boxplots of baseline tools (psutil, tracemalloc, kernel, resource) versus their TraceQ counterparts, showing medians, quartiles, and outliers. (b) Empirical cumulative distribution functions of native and TraceQ kernel samples, illustrating how memory‐use probabilities accumulate across observed values. (c) Step‐by‐step time series of native kernel versus TraceQ measurements, demonstrating their close alignment over the sampling period. (d) Kernel density estimates for native and TraceQ kernel data, highlighting the similarity in their underlying distribution shapes.}
     \label{fig:fig-sub-comparison}
 \end{figure}
 
@@ -130,14 +130,16 @@ Finally, Figure~\ref{fig:memory_history} provides a representative time‑series
         \caption{Max memory comparison}
         \label{fig:sub-maxmem}
     \end{subfigure}
-    \caption{TraceQ collects more samples without inflating peak memory usage.}
+    \caption{Instrumentation throughput and overhead for native tools vs.\ TraceQ.
+        (a) Number of samples gathered by each base mechanism (kernel, psutil, resource, tracemalloc) under original versus TraceQ instrumentation—showing that TraceQ boosts sampling count by 3–5×.
+        (b) Peak memory usage recorded by each method, demonstrating that TraceQ’s higher sampling density incurs negligible additional memory overhead.}
     \label{fig:fig-sub-points}
 \end{figure}
 
 \begin{figure}[!ht]
     \centering
     \includegraphics[width=0.75\textwidth]{assets/images/04/memory_history_no_traceq}
-    \caption{Representative memory trace over time for a single trial.}
+    \caption{Time‐series comparison of baseline (no TraceQ) memory measurements over a single trial. Each curve shows the memory footprint (in \ac{MB}) recorded at each sampling step by one of the native tools—kernel, psutil, resource, and tracemalloc—highlighting their characteristic ramp-up, steady-state plateau, and tear-down phases.}
     \label{fig:memory_history}
 \end{figure}
 
