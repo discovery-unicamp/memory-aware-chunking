@@ -20,9 +20,7 @@ RUN pip install --upgrade pip && \
 FROM base AS final
 
 RUN apt-get update && \
-    apt-get install -y supervisor procps cgroup-tools && \
-    apt-get clean && \
-    rm -rf /var/lib/apt/lists/*
+    apt-get install -y supervisor procps cgroup-tools
 
 WORKDIR /app
 

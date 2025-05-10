@@ -68,7 +68,7 @@ def load_segy(segy_file_path: str) -> np.ndarray:
         return segyio.tools.cube(segyfile)
 
 
-def render_random_inline(segy_data: np.ndarray) -> None:
+def render_random_inline(segy_data: np.ndarray, output_dir: str = None) -> None:
     num_inlines = segy_data.shape[0]
     random_inline_idx = random.randint(0, num_inlines - 1)
 
@@ -78,6 +78,13 @@ def render_random_inline(segy_data: np.ndarray) -> None:
     plt.xlabel("Crossline")
     plt.ylabel("Samples")
     plt.colorbar(label="Amplitude")
+
+    if output_dir:
+        os.makedirs(output_dir, exist_ok=True)
+        output_path = os.path.join(output_dir, f"inline_{random_inline_idx}.pdf")
+        plt.savefig(output_path)
+        logger.info(f"Random inline {random_inline_idx} saved to {output_path}")
+
     plt.show()
 
 

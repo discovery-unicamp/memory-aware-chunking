@@ -12,14 +12,14 @@ It also describes various experiments, including the generation of synthetic sei
 Accurate memory measurement in Python is often challenging, especially in scientific computing and \ac{HPC} contexts.
 Resource allocation in these environments directly affects performance, scalability, and cost-effectiveness.
 A clear understanding of an application’s memory consumption informs decisions on how to best allocate hardware resources and can reveal inefficiencies in data handling or algorithmic structure.
-However, several aspects of Python’s runtime behavior, as well as external operating system optimizations, introduce complexity into the measurement process.
+However, several aspects of Python’s runtime behavior, as well as external \ac{OS} optimizations, introduce complexity into the measurement process.
 
 Python manages memory dynamically.
 Its interpreter frequently allocates and deallocates memory through reference counting, augmented by cyclical garbage collection.
 These mechanisms do not necessarily free memory immediately upon object deletion.
 This can lead to transient peaks in usage that inflate measured consumption.
 In addition, libraries such as NumPy or TensorFlow can allocate memory outside of Python’s garbage collector, making purely Python-centric approaches insufficient to capture the total footprint.
-Operating systems also introduce complexities like \ac{COW}, memory compression (e.g., zram~\cite{zram}), and caching optimizations that obscure application-level usage.
+\ac{OS} also introduce complexities like \ac{COW}, memory compression (e.g., zram~\cite{zram}), and caching optimizations that obscure application-level usage.
 
 When memory measurements are gathered in shared or interactive environments (e.g., Jupyter notebooks), previously allocated objects might linger unexpectedly in memory from prior executions.
 These artifacts can bias results unless the environment is carefully reset or fully isolated between runs.
@@ -34,7 +34,7 @@ Thus, both the methodology for data collection and the environment in which the 
 \label{subsec:appendix-dynamic-allocation}
 
 Python’s dynamic allocation routines and internal memory manager can introduce significant variability in memory consumption.
-Garbage collection occurs periodically and does not necessarily release memory back to the operating system as soon as objects become unreferenced.
+Garbage collection occurs periodically and does not necessarily release memory back to the \ac{OS} as soon as objects become unreferenced.
 Additionally, Python’s memory allocator (\texttt{pymalloc}) may cause internal fragmentation, resulting in unoccupied regions of memory that remain allocated but unavailable for reuse by other processes.
 
 Fragmentation is a particular concern when large structures are allocated and deallocated multiple times in unpredictable sequences.
@@ -55,7 +55,7 @@ This kind of carryover can be particularly misleading if experiments are run in 
 \subsection{Operating System and Container-Level Effects}
 \label{subsec:appendix-os-effects}
 
-Modern operating systems include virtual memory systems that abstract physical RAM into a continuous address space for processes.
+Modern \ac{OS} include virtual memory systems that abstract physical RAM into a continuous address space for processes.
 Features like \ac{COW} can postpone actual memory usage until writes occur.
 Linux systems also offer zswap~\cite{zswap} or zram~\cite{zram} to compress memory pages, which complicates direct measurements of usage at the process level.
 
@@ -67,9 +67,9 @@ Nevertheless, containers also rely on the host kernel’s memory management subs
 \subsection{Caching Mechanisms and Reused Objects}
 \label{subsec:appendix-caching}
 
-At both the Python interpreter and operating system level, various caches can persist across multiple runs of a program.
+At both the Python interpreter and \ac{OS} level, various caches can persist across multiple runs of a program.
 For example, Python maintains internal caches of small integers, certain strings, and recently deallocated memory blocks.
-The operating system may cache disk blocks in \ac{RAM}.
+The \ac{OS} may cache disk blocks in \ac{RAM}.
 These caches are beneficial for performance, but they interfere with straightforward memory measurement because they introduce unaccounted usage that fluctuates unpredictably over time.
 
 Third-party libraries, particularly large-scale numeric frameworks, also maintain internal buffers and caches.
@@ -101,12 +101,12 @@ This notebook focuses on generating synthetic seismic datasets.
 A synthetic seismic volume is created in \ac{SEG-Y} format with dimensions such as \mbox{$100 \times 100 \times 100$}, ensuring consistency across experiments.
 The shape is logged, and inline slices of the volume are displayed as grayscale heatmaps to validate the coherence of the synthetic data.
 
-%\begin{figure}[h]
-%    \centering
-%    \includegraphics[width=0.6\textwidth]{placeholder-data-generation}
-%    \caption{Example placeholder showing a grayscale heatmap of one inline section from a synthetic 3D seismic dataset.}
-%    \label{fig:appendix-data-generation}
-%\end{figure}
+\begin{figure}[h]
+    \centering
+    \includegraphics[width=\textwidth]{assets/images/appendix-a/inline_63}
+    \caption{Example of one inline section from a synthetic 3D seismic dataset.}
+    \label{fig:appendix-data-generation}
+\end{figure}
 
 As seen in Figure~\ref{fig:appendix-data-generation}, darker shades correspond to lower amplitudes and lighter shades to higher amplitudes.
 Although the data is synthetically generated, the layered patterns resemble real-world seismic reflectors.
@@ -116,170 +116,291 @@ No external interferences or prior memory usage lingered here since each dataset
 \subsection{Notebook 2: Execution Environment and Isolation}
 \label{subsec:appendix-notebook-execution-environment}
 
-The second notebook examines how Docker containers can be leveraged to isolate experiments and eliminate memory contamination between consecutive runs.
-Repeated Docker executions of a moderately sized seismic operation were performed—often an envelope extraction routine.
+Notebook 2 examines how containerization influences memory usage and page-fault behavior in repeated seismic envelope runs.
+The primary goal is to compare multiple strategies—such as \ac{CPU} affinity, switching to the \texttt{vfs} storage driver, dropping page caches, and forcing garbage collection—to see which combination yields the most consistent performance across runs.
+Early experiments show that restarting containers alone does not remove large first-run spikes caused by library loading, just-in-time compilation, and file-system caching.
+Later sections reveal that combining \ac{CPU} affinity and cache drops consistently eliminates those fluctuations, ensuring minimal variance in both memory usage and page faults.
 
-Memory usage in each run was logged, showing peaks ranging from roughly \mbox{4.9 GB} to \mbox{5.8 GB} across multiple iterations.
-Because each test was executed in a fresh container, memory states from previous runs did not carry over.
-Repeated runs demonstrated consistent peak measurements, confirming that container-based isolation effectively prevents memory cross-contamination.
+\vspace{1em}
+\noindent\textbf{Baseline Observations and Various Strategies.}
+This notebook explored multiple methods to mitigate first-run spikes in memory usage and page-fault counts.
+Figure~\ref{fig:unoptimized_comparison}(a) shows a significant first-run memory spike when no special measures are applied.
+Figure~\ref{fig:unoptimized_comparison}(b) highlights a similarly large spike in peak minor page faults, with early runs hitting nearly 72{,}000 faults while later iterations drop closer to 30{,}000–50{,}000.
+Both charts underscore the baseline bias that arises without controls.
 
-Although the notebook primarily presents numeric logs, an imagined plot of memory usage versus iteration count would show a relatively narrow distribution of peak values across 30 or more runs, demonstrating reproducibility.
+\begin{figure}[h]
+    \centering
+    \subfloat[
+        \textbf{Peak Memory Usage (No Optimizations).}
+        The first run is close to 5.9\ac{GB}, then settles near 6.00–6.02\ac{GB}.
+        This gap signals the library-loading overhead and unconstrained page-cache effects.
+    ]{
+        \includegraphics[width=0.88\textwidth]{assets/images/appendix-a/peak_memory_usage_across_runs_using_vfs}
+    }
+    \quad
+    \subfloat[
+        \textbf{Peak Minor Page Faults (No Optimizations).}
+        The earliest run soars above 70{,}000 faults, whereas later runs hover in a lower band.
+        The coefficient of variation exceeds 30\%, reflecting volatile page-fault patterns.
+    ]{
+        \includegraphics[width=0.88\textwidth]{assets/images/appendix-a/peak_minor_page_faults_across_runs_using_vfs}
+    }
+    \caption{
+        Memory usage and page-fault patterns during repeated container runs without extra constraints.
+        Large first-run spikes occur in both metrics, then recede in subsequent executions.
+    }
+    \label{fig:unoptimized_comparison}
+\end{figure}
 
-%\begin{figure}[h]
-%    \centering
-%    \includegraphics[width=0.7\textwidth]{placeholder-container-iterations}
-%    \caption{Placeholder illustration of peak memory usage across repeated containerized runs.}
-%    \label{fig:appendix-container-iterations}
-%\end{figure}
+\vspace{1em}
+\noindent\textbf{Combining CPU Affinity and Cache Drops.}
+Pinning the container to a single \ac{CPU} core and clearing file-system caches before each run produced more uniform results.
+Figures~\cref{fig:peak_memory_usage,fig:peak_memory_usage} confirm this stabilized environment.
+Panel~(a) shows a tight distribution of peak memory usage, with most runs in the 6.00–6.01\ac{GB} range and negligible outliers.
+Panel~(b) depicts run-by-run peak values near 6.01\ac{GB}, a standard deviation of only \(\pm0.01\ac{GB}\), and a \ac{CV} around 0.20\%.
+These measurements indicate minimal memory drift across repeated executions.
+
+\begin{figure}[h]
+    \centering
+    \subfloat[
+        \textbf{Distribution of Peak Memory Usage (Controlled).}
+        A histogram of peak values (in \ac{GB}) from 30 runs.
+        Most samples cluster around 6.00–6.01\ac{GB}, with few outliers.
+        The narrow spread confirms consistency when \ac{CPU} affinity and cache dropping are applied.
+    ]{
+        \includegraphics[width=0.88\textwidth]{assets/images/appendix-a/distribution_of_peak_memory_usage}
+    }
+    \quad
+    \subfloat[
+        \textbf{Peak Memory Usage Across Runs (Controlled).}
+        Each red square marks the highest memory usage for a single run.
+        The dashed line shows the mean (6.01\ac{GB}), and the shaded region shows \(\pm0.01\ac{GB}\).
+        Small deviations highlight a coefficient of variation near 0.20%.
+    ]{
+        \includegraphics[width=0.88\textwidth]{assets/images/appendix-a/peak_memory_usage_across_runs_cpu_affinity_and_dropping_caches}
+    }
+    \caption{
+        Memory usage across 30 containers runs with \ac{CPU} affinity and page-cache drops enabled.
+        Panel~(a) highlights the tight histogram distribution, and panel~(b) captures run-by-run variability.
+    }
+    \label{fig:peak_memory_usage}
+\end{figure}
+
+\vspace{1em}
+\noindent\textbf{Page-Fault Stabilization Under Controlled Conditions.}
+Figure~\ref{fig:page_faults_controlled} illustrates peak minor page faults after enabling \ac{CPU} affinity and cache drops.
+The first-run spike disappears, and nearly all runs align around 30{,}660 minor faults with a standard deviation under 8.
+This yields a coefficient of variation near 0.03\%, confirming that the combination of \ac{CPU} and cache constraints neutralizes the erratic behavior seen in Figure~\ref{fig:unoptimized_comparison}(b).
+
+\begin{figure}[h]
+    \centering
+    \includegraphics[width=0.88\textwidth]{assets/images/appendix-a/peak_minor_page_faults_across_runs_cpu_affinity_and_dropping_caches}
+    \caption{
+        Peak minor page faults with \ac{CPU} affinity and cache dropping enabled.
+        Early spikes vanish, and each run converges on nearly identical fault counts with minimal variance.
+    }
+    \label{fig:page_faults_controlled}
+\end{figure}
+
+These results confirm that container restarts alone do not guarantee perfectly consistent runs.
+Strategies such as forcing garbage collection or switching to the \texttt{vfs} Docker driver only marginally reduce first-run bias.
+\ac{CPU} affinity and cache-dropping procedures yield the greatest impact on both memory and page-fault stability.
+Strict control of the environment leads to reproducible performance logs for seismic workloads, ensuring that first-run anomalies do not skew results in subsequent container executions.
 
 \subsection{Notebook 3: Memory Profiling Across Tools}
 \label{subsec:appendix-notebook-memory-profiling}
 
-The third notebook focuses on comparing multiple measurement tools:
-\begin{itemize}
-    \item \textbf{psutil} (process-level data including RSS and VMS),
-    \item \textbf{resource} (peak memory tracking),
-    \item \textbf{tracemalloc} (object-level tracing inside Python),
-    \item \textbf{/proc filesystem} queries (OS-level insights).
-\end{itemize}
+This section examines memory usage from three vantage points.
+psutil provides process-level memory statistics.
+resource focuses on Python’s own peak resident set size (\ac{RSS}).
+Docker’s cgroup interface measures container-wide consumption.
+All profiling methods underwent multiple runs to support cross-validation and consistency checks.
+Minor discrepancies arise when external libraries (for example, NumPy) allocate memory outside Python’s control.
+These variations emphasize the importance of using several profiling perspectives to obtain a complete picture of overall memory usage.
 
-Each approach was run in parallel or in separate trials to validate consistency.
-Results showed that psutil’s reported memory usage closely aligned with Docker metrics for overall container usage, while \texttt{tracemalloc} offered granular visibility into Python-specific allocations.
-Discrepancies arose in cases where large native libraries (e.g., NumPy) performed allocations outside Python’s control.
-In such instances, the \texttt{/proc} or Docker-based measurements captured broader usage than \texttt{tracemalloc} did.
+\begin{figure}[ht]
+    \centering
+    \includegraphics[width=0.88\textwidth]{assets/images/appendix-a/profiler_memory_usage_over_time}
+    \caption{Comparison of psutil’s 90th percentile moving average (blue) and resource’s 90th percentile moving average (orange).
+    The shaded regions indicate observed variance across multiple runs.
+    Peaks, plateaus, and transitions in memory usage become visible through both metrics.}
+    \label{fig:psutil_resource_time}
+\end{figure}
 
-%\begin{figure}[h]
-%    \centering
-%    \includegraphics[width=0.65\textwidth]{placeholder-tool-comparison}
-%    \caption{Placeholder figure comparing memory usage data from different profiling tools over time.}
-%    \label{fig:appendix-tool-comparison}
-%\end{figure}
+Figure~\ref{fig:psutil_resource_time} compares the 90th percentile moving average of psutil and resource over time.
+The curves trace memory usage trends throughout the experiment, and the shaded regions highlight variability.
+Both tools show similar patterns of peak usage in most intervals.
+psutil captures broader process-level \ac{RSS}, while resource focuses on Python-specific allocations.
+This distinction often leads to resource reporting slightly lower values, especially when external libraries manage additional memory segments.
 
-When correlated with external data from Docker’s API, minor overheads introduced by high-frequency sampling in \texttt{tracemalloc} were noted.
-This overhead did not exceed a few percent of total memory usage in these tests, but it could be more significant in memory-constrained scenarios or extremely large-scale HPC jobs.
+\begin{figure}[ht]
+    \centering
+    \includegraphics[width=0.75\textwidth]{assets/images/appendix-a/peak_memory_usage_docker}
+    \caption{Peak memory usage captured by Docker’s cgroup interface.
+    Each data point represents a separate run.
+    The shaded region spans one standard deviation above and below the mean.
+    The coefficient of variation remains low, indicating stable memory demands at the container level.}
+    \label{fig:docker_cgroup}
+\end{figure}
+
+\begin{figure}[ht]
+    \centering
+    \includegraphics[width=0.75\textwidth]{assets/images/appendix-a/peak_memory_usage_psutil}
+    \caption{Peak memory usage reported by psutil across multiple runs.
+    Each red point indicates the maximum memory usage for a single run.
+    The dashed line shows the mean, and the shaded region represents the standard deviation.
+    psutil captures total resident memory, including allocations by Python and linked native libraries.}
+    \label{fig:psutil_variability}
+\end{figure}
+
+\begin{figure}[ht]
+    \centering
+    \includegraphics[width=0.75\textwidth]{assets/images/appendix-a/peak_memory_usage_resource}
+    \caption{Peak memory usage gathered by the resource module.
+    This data reflects allocations managed under Python’s memory model.
+    External allocations by native libraries may not appear in resource’s accounting, leading to lower recorded peaks than Docker or psutil in certain cases.}
+    \label{fig:resource_variability}
+\end{figure}
+
+Figure~\ref{fig:docker_cgroup}, Figure~\ref{fig:psutil_variability}, and Figure~\ref{fig:resource_variability} present three complementary perspectives on peak memory consumption.
+Docker’s cgroup interface (Figure~\ref{fig:docker_cgroup}) highlights container-wide resource usage and frequently aligns with psutil’s process-level readings (Figure~\ref{fig:psutil_variability}).
+resource (Figure~\ref{fig:resource_variability}) focuses on Python-specific allocations, sometimes leading to lower observed peaks if native libraries handle substantial amounts of memory.
+All three methods exhibit a low coefficient of variation across runs, indicating that the application’s memory usage remains relatively consistent.
+
+\begin{figure}[ht]
+    \centering
+    \includegraphics[width=0.78\textwidth]{assets/images/appendix-a/peak_memory_usage_comparison_psutil}
+    \caption{Bar chart comparing peak memory usage reported by Docker Monitor (cgroup) and psutil for ten consecutive runs.
+    Docker consistently measures a slightly higher peak, indicating that some portions of memory usage occur outside the primary Python process as recorded by psutil.}
+    \label{fig:docker_vs_psutil}
+\end{figure}
+
+\begin{figure}[ht]
+    \centering
+    \includegraphics[width=0.78\textwidth]{assets/images/appendix-a/peak_memory_usage_comparison_resource}
+    \caption{Bar chart comparing peak memory usage reported by Docker Monitor (cgroup) and the Python resource module for ten consecutive runs.
+    Docker’s usage remains higher, reflecting allocations outside Python’s direct memory model.
+    This difference highlights the impact of external libraries and system-level resources not tracked by resource.}
+    \label{fig:docker_vs_resource}
+\end{figure}
+
+Figures~\ref{fig:docker_vs_psutil} and \ref{fig:docker_vs_resource} compare Docker’s cgroup measurements to psutil and resource, respectively.
+The bar charts reveal Docker consistently reporting higher values across the same set of ten runs.
+psutil captures process-level memory allocations for Python and its linked native libraries, while Docker may account for additional overhead within the containerized environment.
+The resource module tracks only Python’s internal memory usage, so peaks appear lower when external libraries or system-level processes consume extra resources.
+These observations underscore how each tool targets a different scope of memory usage.
+psutil offers a holistic view of the Python process, resource pinpoints allocations within Python’s memory model, and Docker tracks everything taking place inside the container.
+
+Overall, psutil’s readings closely match Docker’s results when the container hosts only one primary Python process.
+resource generally returns smaller peak values due to its narrower focus.
+The choice of tool depends on the desired granularity and scope.
+The combination of all three perspectives provides a thorough understanding of how memory is distributed between Python’s internal structures, native extensions, and container-level overhead.
 
 \subsection{Notebook 4: Memory Pressure Scenarios}
 \label{subsec:appendix-notebook-memory-pressure}
 
-The final notebook applied controlled memory constraints to the same envelope extraction algorithm (and other seismic routines) to validate measured memory peaks.
-Initially, a baseline run without memory caps revealed a peak usage of about \mbox{5.33 GB}.
-Subsequent runs introduced progressive limitations: first near 5.0 GB, then 4.9 GB, and so forth.
+This notebook applies controlled memory constraints to the envelope extraction algorithm and other seismic routines in order to verify the accuracy of the measured peaks.
+Initial runs impose no memory caps, revealing a peak usage near 5.33\ac{GB}.
+Progressive limitations, such as capping memory closer to 5.0\ac{GB} or 4.9\ac{GB}, confirm that values below 5.3\ac{GB} often trigger \ac{OOM} terminations.
+These terminations align with the measured peaks and reinforce that the 5.3\ac{GB} figure represents a valid lower boundary for successful operation.
 
-Under constraints that were slightly below the observed peak, failures occurred.
-In other words, runs were terminated by Docker’s OOM killer or signaled by Python exceptions.
-These outcomes confirmed that a roughly \mbox{5.3 GB} measurement was not merely an artifact, but a true lower bound on the memory needed for successful operation under the tested conditions.
+\begin{figure}[ht]
+    \centering
+    \includegraphics[width=0.88\textwidth]{assets/images/appendix-a/memory_usage_and_page_faults}
+    \caption{Memory usage and page faults across a range of memory pressures up to 19\%.
+    Docker memory-usage (blue) and TraceQ memory-usage (cyan) decrease gradually as constraints intensify.
+    Minor and major page faults (orange) remain relatively unchanged, suggesting that moderate pressure does not substantially affect page fault rates.
+    }
+    \label{fig:memory_usage_and_page_faults}
+\end{figure}
 
-%\begin{figure}[h]
-%    \centering
-%    \includegraphics[width=0.6\textwidth]{placeholder-memory-pressure}
-%    \caption{Placeholder figure showing how the measured peak memory usage corresponds to actual memory limits that cause task failure.}
-%    \label{fig:appendix-memory-pressure}
-%\end{figure}
+Figure~\ref{fig:memory_usage_and_page_faults} illustrates memory usage and page fault behavior across progressively stricter constraints up to 19\%.
+Docker memory-usage (blue) and TraceQ memory usage (cyan) show a reduction from approximately 5.2\ac{GB} down to around 4.2\ac{GB} as the system becomes more constrained.
+Minor and major page faults, shown in orange, remain nearly constant despite the changing pressure.
+This outcome implies that memory pressure within the tested range does not introduce significant paging overhead or thrashing.
 
-By plotting memory usage over time under increasingly strict memory caps, the point of failure could be identified with high precision.
-This type of memory constraint validation supports the reliability of the initial measurements.
+\begin{figure}[ht]
+    \centering
+    \includegraphics[width=0.88\textwidth]{assets/images/appendix-a/kernel_memory_pressure}
+    \caption{Kernel memory pressure recorded under different profiles.
+    The green line (Some10) fluctuates between 6\% and 9\% in most runs, while the blue line (Full10) remains near 3--5\%.
+    Pressure levels peak around 19\% at the upper limit, though moderate variations occur across multiple trials.
+    }
+    \label{fig:memory_pressure_per_profile}
+\end{figure}
 
+Figure~\ref{fig:memory_pressure_per_profile} displays the recorded kernel memory pressure for two different profiling modes (Some10 and Full10) under incremental constraints.
+Most runs remain between 3\% and 9\%, with a maximum of 19\%.
+These moderate changes in kernel pressure do not cause abrupt shifts in memory usage or system behavior, supporting the notion that small to medium levels of pressure do not induce severe performance impacts.
 
-\section{Selected Algorithms and Their Memory Profiles}
-\label{sec:appendix-selected-algorithms}
+\begin{figure}[ht]
+    \centering
+    \includegraphics[width=0.75\textwidth]{assets/images/appendix-a/execution_time}
+    \caption{Execution time for the envelope extraction algorithm under varying memory pressures.
+    The plotted values remain within a narrow range despite changes up to 19\% memory pressure.
+    This consistency suggests that performance is not heavily affected by moderate constraint levels.
+    }
+    \label{fig:execution_time_per_profile}
+\end{figure}
 
-\subsection{Envelope}
-\label{subsec:appendix-env}
+Figure~\ref{fig:execution_time_per_profile} presents execution times in seconds under the same constrained runs.
+Values generally remain within a narrow band, even when memory pressure approaches 19\%.
+These findings indicate that moderate constraints do not significantly reduce performance in terms of runtime.
+Peak usage near 5.3\ac{GB} corresponds to an actual minimum requirement, yet small-to-medium memory limitations rarely impair overall throughput or stability.
 
-The Envelope algorithm computes the instantaneous amplitude of a seismic trace by obtaining the magnitude of the analytic signal.
-Its computational demands are relatively low and do not typically induce large memory burdens, making it a clear baseline test.
-In memory measurement exercises, Envelope provided a straightforward way to confirm that measurement tools produce stable and consistent results under light workloads.
+Constrained runs that dip below the 5.3\ac{GB} threshold produce \ac{OOM} errors or Python exceptions.
+These events confirm that the measured peak is not merely an artifact, but a genuine boundary for reliable completion of the algorithm.
+Increasingly strict memory caps pinpoint the precise level at which the task becomes infeasible.
+This final validation underscores the reliability of earlier memory measurements and demonstrates how incremental pressure affects usage, page faults, and execution time.
 
-\subsection{\ac{GST3D}}
-\label{subsec:appendix-gst3d}
-
-The \ac{GST3D} algorithm applies time-frequency analysis to three-dimensional seismic data.
-It is typically associated with heavy calculations and sizable memory allocations, since large 3D arrays must be transformed and processed repeatedly.
-Testing \ac{GST3D} revealed how memory usage can climb sharply when dealing with large seismic volumes, exposing fragmentation and garbage collection issues more readily than lightweight tasks do.
-
-\subsection{3D Gaussian Filtering}
-\label{subsec:appendix-gaussian}
-
-Three-dimensional Gaussian filtering is commonly used in signal and image processing for smoothing or noise reduction.
-It involves convolving a 3D matrix with a Gaussian kernel, which can be memory intensive for large volumes.
-Since it is not strictly a seismic algorithm, it served as a general-purpose workload for evaluating memory measurement techniques in a different domain.
-Results from 3D Gaussian filtering were consistent with those from \ac{GST3D} in terms of revealing peaks and intermediate memory usage fluctuations.
-
-
-\section{Experimental Isolation and Validation Techniques}
-\label{sec:appendix-isolation-validation}
-
-\subsection{Importance of Container Isolation}
-\label{subsec:appendix-container-isolation}
-
-All experiments were executed within Docker containers to ensure that memory usage from one experiment could not leak into the next.
-Isolation mitigated the possibility of residual allocations or delayed garbage collections from a previous test interfering with subsequent measurements.
-Each container was launched from a clean state, with dedicated CPU and memory allocations.
-This approach proved vital for generating reproducible and unbiased memory metrics, especially in repeated-run scenarios.
-
-\subsection{Cross-Verification with Docker API}
-\label{subsec:appendix-cross-verification}
-
-Each internal measurement approach (psutil, resource, tracemalloc, \texttt{/proc} inspections) was cross-validated with memory usage reported by Docker’s own metrics.
-This external vantage point allowed for the detection of measurement bias introduced by instrumentation overhead or sampling frequency.
-In general, alignment was observed within a few percentage points, but \texttt{tracemalloc} consistently reported lower values than Docker for total process usage, since tracemalloc focuses primarily on Python-level object allocations rather than system-level memory footprints.
-
-\subsection{Failure-Based Validation of Peak Usage}
-\label{subsec:appendix-failure-validation}
-
-Additional confirmation of measured peak usage was obtained by imposing memory caps just below previously recorded peaks.
-When the process failed under these constraints, it corroborated that the measured peak was genuine.
-A memory-constrained environment ensured that measurement anomalies, such as artificially high reported peaks that could be ignored by the application, were less likely.
-
-
-\section{Summary of Observed Issues and Recommendations}
-\label{sec:appendix-issues-recommendations}
-
-\subsection{Residual Memory from Previous Runs}
-\label{subsec:appendix-residual-memory}
-
-A principal source of erroneous data was memory leftover from prior runs.
-Even explicitly deleting Python objects did not guarantee immediate release of memory to the operating system.
-To address this pitfall:
-\begin{itemize}
-    \item Restarting the Python interpreter or Jupyter kernel before each measurement is recommended.
-    \item Alternatively, isolating each test in a fresh Docker container is highly effective.
-\end{itemize}
-
-\subsection{Misleading Metrics from Single-Tool Measurements}
-\label{subsec:appendix-misleading-metrics}
-
-Relying on only one measurement technique can be misleading.
-Each tool yields different perspectives:
-\begin{itemize}
-    \item Tools like \texttt{resource} capture only peak RSS, which is useful but does not reveal how usage evolves over time.
-    \item Python-level tracers like \texttt{tracemalloc} do not account for memory allocated outside the interpreter.
-    \item External system monitors (e.g., Docker, \texttt{/proc}) provide a holistic view but lack Python-specific granularity.
-\end{itemize}
-
-When computational tasks are large-scale or involve native libraries, cross-verification with multiple tools is strongly advised.
-
-\subsection{Tool Overhead and Garbage Collection Timing}
-\label{subsec:appendix-tool-overhead}
-
-Some profiling methods alter the frequency of garbage collection or add their own overhead memory usage.
-This overhead can slightly inflate measured metrics.
-If repeated sampling over short intervals is used, overhead could become more substantial.
-For memory-critical workloads, it may be necessary to reduce the sampling rate or rely on a combination of high-level external measures and carefully timed internal snapshots.
-
-\subsection{Environment Pressure and Real-World Relevance}
-\label{subsec:appendix-environment-pressure}
-
-Peak usage measured in an unconstrained environment can differ from usage measured under memory pressure.
-In actual HPC systems, resource constraints often induce different runtime behaviors, such as forced page swaps or more frequent garbage collections.
-Imposing artificial memory caps during tests, as seen in the memory pressure experiments, helps mimic real-world conditions where machine resources are finite and shared among multiple jobs.
-
-
-\section{Conclusion}
-\label{sec:appendix-conclusion}
-
-Accurate memory measurement for Python applications in HPC and scientific workflows demands an awareness of language-level abstractions, garbage collection, OS virtualization, and container-level optimizations.
-Experimental protocols that involve container isolation, multiple measurement tools, cross-verification with external monitors, and memory constraint scenarios provide a robust framework for identifying genuine memory usage.
-Nevertheless, pitfalls such as memory fragmentation, delayed garbage collection, and caching mechanisms necessitate careful planning of experimental design.
-By adopting environment isolation (e.g., Docker containers), cross-checking with several profiling tools, and validating results under artificial memory caps, the risk of misinterpretation is substantially reduced.
-It is recommended that future experiments incorporate all these layers of validation to ensure reliable insights into memory requirements and performance bottlenecks.
+%\section{Summary of Observed Issues and Recommendations}
+%\label{sec:appendix-issues-recommendations}
+%
+%\subsection{Residual Memory from Previous Runs}
+%\label{subsec:appendix-residual-memory}
+%
+%A principal source of erroneous data was memory leftover from prior runs.
+%Even explicitly deleting Python objects did not guarantee immediate release of memory to the \ac{OS}.
+%To address this pitfall:
+%\begin{itemize}
+%    \item Restarting the Python interpreter or Jupyter kernel before each measurement is recommended.
+%    \item Alternatively, isolating each test in a fresh Docker container is highly effective.
+%\end{itemize}
+%
+%\subsection{Misleading Metrics from Single-Tool Measurements}
+%\label{subsec:appendix-misleading-metrics}
+%
+%Relying on only one measurement technique can be misleading.
+%Each tool yields different perspectives:
+%\begin{itemize}
+%    \item Tools like \texttt{resource} capture only peak RSS, which is useful but does not reveal how usage evolves over time.
+%    \item Python-level tracers like \texttt{tracemalloc} do not account for memory allocated outside the interpreter.
+%    \item External system monitors (e.g., Docker, \texttt{/proc}) provide a holistic view but lack Python-specific granularity.
+%\end{itemize}
+%
+%When computational tasks are large-scale or involve native libraries, cross-verification with multiple tools is strongly advised.
+%
+%\subsection{Tool Overhead and Garbage Collection Timing}
+%\label{subsec:appendix-tool-overhead}
+%
+%Some profiling methods alter the frequency of garbage collection or add their own overhead memory usage.
+%This overhead can slightly inflate measured metrics.
+%If repeated sampling over short intervals is used, overhead could become more substantial.
+%For memory-critical workloads, it may be necessary to reduce the sampling rate or rely on a combination of high-level external measures and carefully timed internal snapshots.
+%
+%\subsection{Environment Pressure and Real-World Relevance}
+%\label{subsec:appendix-environment-pressure}
+%
+%Peak usage measured in an unconstrained environment can differ from usage measured under memory pressure.
+%In actual HPC systems, resource constraints often induce different runtime behaviors, such as forced page swaps or more frequent garbage collections.
+%Imposing artificial memory caps during tests, as seen in the memory pressure experiments, helps mimic real-world conditions where machine resources are finite and shared among multiple jobs.
+%
+%
+%\section{Conclusion}
+%\label{sec:appendix-conclusion}
+%
+%Accurate memory measurement for Python applications in HPC and scientific workflows demands an awareness of language-level abstractions, garbage collection, \ac{OS} virtualization, and container-level optimizations.
+%Experimental protocols that involve container isolation, multiple measurement tools, cross-verification with external monitors, and memory constraint scenarios provide a robust framework for identifying genuine memory usage.
+%Nevertheless, pitfalls such as memory fragmentation, delayed garbage collection, and caching mechanisms necessitate careful planning of experimental design.
+%By adopting environment isolation (e.g., Docker containers), cross-checking with several profiling tools, and validating results under artificial memory caps, the risk of misinterpretation is substantially reduced.
+%It is recommended that future experiments incorporate all these layers of validation to ensure reliable insights into memory requirements and performance bottlenecks.

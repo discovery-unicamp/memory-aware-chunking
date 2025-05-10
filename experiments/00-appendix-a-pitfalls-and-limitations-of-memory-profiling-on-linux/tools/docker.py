@@ -29,7 +29,7 @@ def build_image(image_name: str, client: DockerClient) -> Image:
     logger.info("Building experiment image...")
 
     experiment_image, _ = client.images.build(
-        path="../.bak/",
+        path="../",
         tag=image_name,
         rm=True,
     )

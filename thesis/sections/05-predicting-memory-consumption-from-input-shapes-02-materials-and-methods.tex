@@ -33,7 +33,7 @@ This consistency confirms that the measured trends remain valid in both controll
 \textbf{Phase 2: Memory Profiling.}
 A shell script schedules container-based jobs to run seismic operators on each generated dataset.
 Chapter~\ref{ch:measuring-memory-consumption} describes the \ac{HPC}-like constraints and the rationale for isolating each job to reduce interference.
-Accordingly, the script starts \ac{dind} containers pinned to specific \ac{CPU} cores through \texttt{--cpuset-cpus}.
+Accordingly, the script starts \ac{DIND} containers pinned to specific \ac{CPU} cores through \texttt{--cpuset-cpus}.
 This binding ensures comparable runs.
 The script then processes three main operators:
 
