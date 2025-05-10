@@ -1,6 +1,6 @@
 """
-Script for building datasets, training multiple regression models, and evaluating them
-for memory usage prediction (or any generic numeric target).
+Script for building datasets, training multiple regression models with hyperparameter tuning,
+and evaluating them for memory usage prediction (or any numeric target).
 
 Environment Variables (with defaults):
   - OUTPUT_DIR: The base output directory (default './out')
@@ -11,9 +11,12 @@ Environment Variables (with defaults):
   - PROFILER: The profiler name, used to pick memory usage data keys (default 'kernel')
   - TEST_SIZE: Fraction for train/test split (default '0.2')
   - ACCURACY_THRESHOLD: Threshold to compute "accuracy" in terms of relative error (default '0.1')
-  - MODELS_TO_EVALUATE: Comma-separated list of model keys (default includes many regressors)
-  - OPTUNA_TRIALS: Number of trials for the optuna "best model weighting" search (default '50')
   - SCORE_ACCEPTANCE_THRESHOLD: Threshold for model score acceptance (default '0.1')
+  - MODELS_TO_EVALUATE: Comma-separated list of model keys (default includes many regressors)
+  - OPTUNA_TRIALS: Number of trials for the optuna "best model weighting" search for
+                   score combination. Also used for hyperparameter tuning if relevant.
+                   (default '50')
+  - K_FOLDS: Number of cross-validation folds for hyperparameter tuning (default 3)
   - RANDOM_STATE: Random state seed for reproducibility (default '42')
 """
 
@@ -21,6 +24,7 @@ import json
 import os
 import pickle
 import random
+import warnings
 
 import numpy as np
 import optuna
@@ -30,13 +34,19 @@ from sklearn.ensemble import RandomForestRegressor, GradientBoostingRegressor
 from sklearn.feature_selection import SelectKBest, f_regression
 from sklearn.linear_model import LinearRegression, ElasticNet
 from sklearn.metrics import mean_squared_error, mean_absolute_error, r2_score
-from sklearn.model_selection import train_test_split
+from sklearn.model_selection import (
+    train_test_split,
+    KFold,
+    cross_val_score,
+)
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import PolynomialFeatures
 from sklearn.svm import SVR
 from sklearn.tree import DecisionTreeRegressor
 from traceq import load_profile
 from xgboost import XGBRegressor
+
+warnings.filterwarnings("ignore", category=UserWarning)
 
 # ------------------------------------------------------------------------------
 # Global Configuration (Environment Variables)
@@ -57,7 +67,11 @@ MODELS_TO_EVALUATE = os.getenv(
 OPTUNA_TRIALS = int(os.getenv("OPTUNA_TRIALS", "50"))
 RANDOM_STATE = int(os.getenv("RANDOM_STATE", "42"))
 
+# Number of cross-validation folds for hyperparameter search
+K_FOLDS = int(os.getenv("K_FOLDS", "3"))
+
 # Global model constructor lookup
+# Base constructors (default hyperparams) - used if no tuning is performed
 MODEL_CONSTRUCTORS_HASHMAP = {
     "linear_regression": lambda: LinearRegression(),
     "polynomial_regression": lambda: Pipeline(
@@ -66,12 +80,12 @@ MODEL_CONSTRUCTORS_HASHMAP = {
             ("lin_reg", LinearRegression()),
         ]
     ),
-    "decision_tree": lambda: DecisionTreeRegressor(),
-    "random_forest": lambda: RandomForestRegressor(),
-    "gradient_boosting": lambda: GradientBoostingRegressor(),
-    "xgboost": lambda: XGBRegressor(),
+    "decision_tree": lambda: DecisionTreeRegressor(random_state=RANDOM_STATE),
+    "random_forest": lambda: RandomForestRegressor(random_state=RANDOM_STATE),
+    "gradient_boosting": lambda: GradientBoostingRegressor(random_state=RANDOM_STATE),
+    "xgboost": lambda: XGBRegressor(random_state=RANDOM_STATE, use_label_encoder=False),
     "support_vector_regression": lambda: SVR(),
-    "elastic_net": lambda: ElasticNet(),
+    "elastic_net": lambda: ElasticNet(random_state=RANDOM_STATE),
 }
 
 
@@ -86,7 +100,9 @@ def main():
       3. Builds a dataset/dataframe from those profiles.
       4. Extracts features for memory usage prediction.
       5. Trains/evaluates multiple models, finds best model weights (Optuna).
+         (Now includes hyperparameter tuning for each model.)
       6. Evaluates data reduction and feature selection using the best models.
+      7. Builds a final model, respecting acceptance thresholds, feature selection, etc.
     """
     print("Collecting results...")
     print("Using args:")
@@ -101,6 +117,7 @@ def main():
     print(f"  OPTUNA_TRIALS: {OPTUNA_TRIALS}")
     print(f"  RANDOM_STATE: {RANDOM_STATE}")
     print(f"  SCORE_ACCEPTANCE_THRESHOLD: {SCORE_ACCEPTANCE_THRESHOLD}")
+    print(f"  K_FOLDS (for hyperparam tuning): {K_FOLDS}")
     print()
 
     profile_filepaths = get_profile_filepaths()
@@ -109,19 +126,20 @@ def main():
     df = build_dataframe(dataset)
     df_features = extract_features(df)
 
+    # STEP 5: find best models (with hyperparam tuning inside)
     best_models, best_weights = find_best_models(df_features)
 
+    # STEP 6: evaluate data_reduction
     data_reduction_results = evaluate_data_reduction(
-        df_features,
-        best_models,
-        best_weights,
-    )
-    feature_selection_results = evaluate_feature_selection(
-        df_features,
-        best_models,
-        best_weights,
+        df_features, best_models, best_weights
     )
 
+    # STEP 7: evaluate feature_selection
+    feature_selection_results = evaluate_feature_selection(
+        df_features, best_models, best_weights
+    )
+
+    # STEP 9: build final model
     build_final_model(
         best_models,
         df_features,
@@ -432,8 +450,8 @@ def extract_features(df):
     df_features["mean_inlines_xlines"] = (
         df_features["inlines"] + df_features["xlines"]
     ) / 2
-    # Could be improved (the 'np.std([...])' across columns is not always correct row-wise),
-    # but let's keep as is from your code:
+
+    # Quick standard deviation for inlines, xlines (example)
     df_features["std_inlines_xlines"] = np.std(
         [df_features["inlines"], df_features["xlines"]]
     )
@@ -457,13 +475,202 @@ def extract_features(df):
 
 
 # ------------------------------------------------------------------------------
-# STEP 6: Find Best Models
+# HELPER: Model Hyperparam Tuning
+# ------------------------------------------------------------------------------
+def tune_model_hyperparams(model_name, X_train, y_train):
+    """
+    Using k-fold cross-validation inside the training portion only,
+    runs an Optuna search for model-specific hyperparameters.
+    Returns the best hyperparameters as a dict.
+
+    We do not use the test set here (test set is reserved for final evaluation).
+    """
+
+    # We'll define a search space differently for each model.
+    def objective(trial):
+        if model_name == "random_forest":
+            n_estimators = trial.suggest_int("n_estimators", 50, 300, step=50)
+            max_depth = trial.suggest_int("max_depth", 2, 20)
+            model = RandomForestRegressor(
+                random_state=RANDOM_STATE,
+                n_estimators=n_estimators,
+                max_depth=max_depth,
+            )
+
+        elif model_name == "gradient_boosting":
+            n_estimators = trial.suggest_int("n_estimators", 50, 300, step=50)
+            learning_rate = trial.suggest_float("learning_rate", 0.01, 0.3, log=True)
+            max_depth = trial.suggest_int("max_depth", 2, 10)
+            model = GradientBoostingRegressor(
+                random_state=RANDOM_STATE,
+                n_estimators=n_estimators,
+                learning_rate=learning_rate,
+                max_depth=max_depth,
+            )
+
+        elif model_name == "xgboost":
+            n_estimators = trial.suggest_int("n_estimators", 50, 300, step=50)
+            learning_rate = trial.suggest_float("learning_rate", 0.01, 0.3, log=True)
+            max_depth = trial.suggest_int("max_depth", 2, 10)
+            model = XGBRegressor(
+                random_state=RANDOM_STATE,
+                n_estimators=n_estimators,
+                learning_rate=learning_rate,
+                max_depth=max_depth,
+                use_label_encoder=False,
+            )
+
+        elif model_name == "support_vector_regression":
+            C = trial.suggest_float("C", 0.5, 5.0, log=True)
+            epsilon = trial.suggest_float("epsilon", 1e-3, 0.5, log=True)
+            kernel = trial.suggest_categorical("kernel", ["rbf"])
+            model = SVR(C=C, epsilon=epsilon, kernel=kernel)
+
+        elif model_name == "elastic_net":
+            alpha = trial.suggest_float("alpha", 1e-4, 1.0, log=True)
+            l1_ratio = trial.suggest_float("l1_ratio", 0.0, 1.0)
+            model = ElasticNet(
+                alpha=alpha, l1_ratio=l1_ratio, random_state=RANDOM_STATE
+            )
+
+        elif model_name == "decision_tree":
+            max_depth = trial.suggest_int("max_depth", 2, 20)
+            min_samples_split = trial.suggest_int("min_samples_split", 2, 20)
+            model = DecisionTreeRegressor(
+                random_state=RANDOM_STATE,
+                max_depth=max_depth,
+                min_samples_split=min_samples_split,
+            )
+
+        elif model_name == "polynomial_regression":
+            degree = trial.suggest_int("degree", 2, 4)
+            model = Pipeline(
+                [
+                    (
+                        "poly_features",
+                        PolynomialFeatures(degree=degree, include_bias=False),
+                    ),
+                    ("lin_reg", LinearRegression()),
+                ]
+            )
+
+        elif model_name == "linear_regression":
+            # No real hyperparams for basic linear regression (could skip tuning).
+            # We'll just keep it as is:
+            return 0.0  # trivial – not much to tune
+
+        else:
+            # If not recognized or no hyperparam space, just skip
+            return 0.0
+
+        # For each trial, we evaluate with cross_val_score (R^2 or negative RMSE, etc.)
+        kf = KFold(n_splits=K_FOLDS, shuffle=True, random_state=RANDOM_STATE)
+        scores = cross_val_score(
+            model, X_train, y_train, scoring="r2", cv=kf, n_jobs=-1
+        )
+        return np.mean(scores)
+
+    # If model_name not recognized, return empty
+    if model_name not in [
+        "random_forest",
+        "gradient_boosting",
+        "xgboost",
+        "support_vector_regression",
+        "elastic_net",
+        "decision_tree",
+        "polynomial_regression",
+    ]:
+        # No tuning for linear_regression or unknown
+        return {}
+
+    study = optuna.create_study(direction="maximize")
+    study.optimize(objective, n_trials=OPTUNA_TRIALS)
+
+    return study.best_params
+
+
+def build_model_from_params(model_name, best_params):
+    """
+    Given a model name and a set of best_params discovered by tune_model_hyperparams,
+    build and return a model instance with those hyperparams.
+    If best_params is empty or unrecognized, build from MODEL_CONSTRUCTORS_HASHMAP.
+    """
+    # If no best_params, just return base constructor
+    if not best_params:
+        return MODEL_CONSTRUCTORS_HASHMAP[model_name]()
+
+    if model_name == "random_forest":
+        return RandomForestRegressor(
+            random_state=RANDOM_STATE,
+            n_estimators=best_params["n_estimators"],
+            max_depth=best_params["max_depth"],
+        )
+    elif model_name == "gradient_boosting":
+        return GradientBoostingRegressor(
+            random_state=RANDOM_STATE,
+            n_estimators=best_params["n_estimators"],
+            learning_rate=best_params["learning_rate"],
+            max_depth=best_params["max_depth"],
+        )
+    elif model_name == "xgboost":
+        return XGBRegressor(
+            random_state=RANDOM_STATE,
+            n_estimators=best_params["n_estimators"],
+            learning_rate=best_params["learning_rate"],
+            max_depth=best_params["max_depth"],
+            use_label_encoder=False,
+        )
+    elif model_name == "support_vector_regression":
+        return SVR(
+            C=best_params["C"],
+            epsilon=best_params["epsilon"],
+            kernel=best_params["kernel"],
+        )
+    elif model_name == "elastic_net":
+        return ElasticNet(
+            alpha=best_params["alpha"],
+            l1_ratio=best_params["l1_ratio"],
+            random_state=RANDOM_STATE,
+        )
+    elif model_name == "decision_tree":
+        return DecisionTreeRegressor(
+            random_state=RANDOM_STATE,
+            max_depth=best_params["max_depth"],
+            min_samples_split=best_params["min_samples_split"],
+        )
+    elif model_name == "polynomial_regression":
+        return Pipeline(
+            [
+                (
+                    "poly_features",
+                    PolynomialFeatures(
+                        degree=best_params["degree"], include_bias=False
+                    ),
+                ),
+                ("lin_reg", LinearRegression()),
+            ]
+        )
+    else:
+        # Fallback
+        return MODEL_CONSTRUCTORS_HASHMAP[model_name]()
+
+
+# ------------------------------------------------------------------------------
+# STEP 6: Find Best Models (Including Hyperparameter Tuning)
 # ------------------------------------------------------------------------------
 def find_best_models(df_features, models_to_evaluate=MODELS_TO_EVALUATE):
     """
     Trains/evaluates each model in `models_to_evaluate` for each operator,
+    performing:
+        - train/test split (once per operator),
+        - hyperparameter tuning (k-fold on the training portion),
+        - final train on entire train set with best hyperparams,
+        - final test evaluation,
     storing metrics and picking the best combination of weight parameters (via Optuna).
     Returns a dict of best_models for each operator, and best_weights for each operator.
+
+    We also store a 'model_tuning.csv' with the best hyperparams for each model/operator,
+    plus the final test metrics in 'model_metrics.csv' per operator.
     """
     print("---------- STEP 6: Evaluating models")
     invalid_models = [
@@ -473,93 +680,105 @@ def find_best_models(df_features, models_to_evaluate=MODELS_TO_EVALUATE):
         raise ValueError(f"Invalid models specified: {invalid_models}")
 
     operators = df_features["operator"].unique()
-    enabled_models = [
-        (mname, MODEL_CONSTRUCTORS_HASHMAP[mname]()) for mname in models_to_evaluate
-    ]
+    enabled_models = [(mname) for mname in models_to_evaluate]
 
     best_models = {op: None for op in operators}
     best_weights = {op: None for op in operators}
 
+    # We'll keep track of hyperparam tuning in a global DataFrame
+    all_tuning_rows = []
+
     for operator in operators:
+        print(f"\n=== Operator: {operator} ===")
         df_op = df_features[df_features["operator"] == operator]
         operator_output_dir = f"{OPERATORS_DIR}/{operator}"
+        os.makedirs(operator_output_dir, exist_ok=True)
+
+        # We do a single train/test split for this operator
+        X = df_op.drop(columns=["operator", "avg_peak_memory_usage"])
+        y = df_op["avg_peak_memory_usage"]
+
+        X_train, X_test, y_train, y_test = train_test_split(
+            X, y, test_size=TEST_SIZE, random_state=RANDOM_STATE
+        )
 
         operator_train_results = {}
-        for model_name, model_instance in enabled_models:
-            print(f"Evaluating model for {operator}: {model_name}")
+
+        for model_name in enabled_models:
+            print(f"\n--- Evaluating model for {operator}: {model_name} ---")
+
+            # 1) Hyperparam Tuning on X_train, y_train
+            best_params = tune_model_hyperparams(model_name, X_train, y_train)
+
+            # Keep track of them in 'all_tuning_rows'
+            tuning_row = {
+                "operator": operator,
+                "model_name": model_name,
+                "best_params": json.dumps(best_params),
+            }
+            all_tuning_rows.append(tuning_row)
+
+            # 2) Build final model with best_params, retrain on entire train portion
+            final_model = build_model_from_params(model_name, best_params)
+            final_model.fit(X_train, y_train)
+
+            # 3) Evaluate on test set
+            rmse, mae, r2, accuracy, residuals, y_pred = get_model_metrics(
+                final_model, X_test, y_test
+            )
+
+            train_result = {
+                "model_name": model_name,
+                "model": final_model,
+                "best_params": best_params,
+                "data": {
+                    "X": X,  # entire operator data
+                    "X_train": X_train,
+                    "X_test": X_test,
+                    "y": y,
+                    "y_train": y_train,
+                    "y_test": y_test.to_list(),
+                    "y_pred": y_pred.tolist(),
+                    "residuals": residuals.to_list(),
+                },
+                "metrics": {
+                    "rmse": rmse,
+                    "mae": mae,
+                    "r2": r2,
+                    "accuracy": accuracy,
+                },
+            }
+            operator_train_results[model_name] = train_result
+
+            # Save intermediate data
             model_output_dir = f"{operator_output_dir}/models/{model_name}"
             os.makedirs(model_output_dir, exist_ok=True)
-
-            train_result = train_model(model_name, model_instance, df_op)
-            operator_train_results[model_name] = train_result
             save_train_result(train_result, model_output_dir)
 
+        # Save hyperparam tuning info
+        tuning_df = pd.DataFrame(all_tuning_rows)
+        tuning_out = f"{operator_output_dir}/results/model_tuning.csv"
+        tuning_df[tuning_df["operator"] == operator].to_csv(tuning_out, index=False)
+        print(f"Saved hyperparam tuning info for operator '{operator}' -> {tuning_out}")
+
+        # 4) Choose best model from operator_train_results by a combined score approach
         chosen_model, chosen_weights = find_best_model(
             operator_train_results, operator_output_dir
         )
         best_models[operator] = chosen_model
         best_weights[operator] = chosen_weights
 
-    print("Finished evaluating models. Best models per operator:")
+    # After the loop, also store a global 'model_tuning.csv' across all operators
+    if all_tuning_rows:
+        all_tuning_df = pd.DataFrame(all_tuning_rows)
+        all_tuning_df_out = f"{RESULTS_DIR}/model_tuning.csv"
+        all_tuning_df.to_csv(all_tuning_df_out, index=False)
+        print(f"\nGlobal hyperparam tuning info saved to {all_tuning_df_out}")
+
+    print("\nFinished evaluating models. Best models per operator:")
     print(json.dumps(best_models, indent=4))
     print()
     return best_models, best_weights
-
-
-def train_model(
-    model_name,
-    model,
-    df_op,
-    random_state=RANDOM_STATE,
-    test_size=TEST_SIZE,
-):
-    """
-    Splits data into train/test, fits the model (iteratively reweighting underestimates),
-    then computes RMSE/MAE/R2/Accuracy. Returns a dict with the trained model object,
-    data subsets, and metrics.
-    """
-    X = df_op.drop(columns=["operator", "avg_peak_memory_usage"])
-    y = df_op["avg_peak_memory_usage"]
-
-    X_train, X_test, y_train, y_test = train_test_split(
-        X,
-        y,
-        test_size=test_size,
-        random_state=random_state,
-    )
-
-    model.fit(X_train, y_train)
-
-    rmse, mae, r2, accuracy, residuals, y_pred = get_model_metrics(
-        model,
-        X_test,
-        y_test,
-    )
-
-    print(
-        f"Results for {model_name}: "
-        f"RMSE={rmse:.4f}, MAE={mae:.4f}, R2={r2:.4f}, Accuracy={accuracy:.2%}"
-    )
-
-    return {
-        "model": model,
-        "data": {
-            "X": X,
-            "X_train": X_train,
-            "X_test": X_test,
-            "y": y,
-            "y_train": y_train,
-            "y_test": y_test.to_list(),
-            "y_pred": y_pred.tolist(),
-            "residuals": residuals.to_list(),
-        },
-        "metrics": {
-            "rmse": rmse,
-            "mae": mae,
-            "r2": r2,
-            "accuracy": accuracy,
-        },
-    }
 
 
 def get_model_metrics(model, X_test, y_test, acc_threshold=ACCURACY_THRESHOLD):
@@ -575,36 +794,72 @@ def get_model_metrics(model, X_test, y_test, acc_threshold=ACCURACY_THRESHOLD):
     within_tolerance = (np.abs((y_pred - y_test) / y_test) <= acc_threshold) | (
         y_pred >= y_test
     )
-
     accuracy_val = np.mean(within_tolerance)
     residuals = y_test - y_pred
 
     return rmse_val, mae_val, r2_val, accuracy_val, residuals, y_pred
 
 
+def save_train_result(train_result, output_dir):
+    """
+    Saves the model training data and pickled model to the specified output_dir.
+    """
+    print(f"Saving data for model '{train_result['model_name']}' to {output_dir}...")
+    os.makedirs(output_dir, exist_ok=True)
+    # Data
+    save_model_train_data(train_result, output_dir)
+    # Model
+    save_model(train_result, output_dir)
+
+
+def save_model_train_data(train_result, output_dir):
+    """
+    Saves X/X_train/X_test/y/y_train as CSV, plus residuals/predictions.
+    """
+    print("Saving model train data (CSV)...")
+    data = train_result["data"]
+
+    data["X"].to_csv(f"{output_dir}/X.csv", index=False)
+    data["X_train"].to_csv(f"{output_dir}/X_train.csv", index=False)
+    data["X_test"].to_csv(f"{output_dir}/X_test.csv", index=False)
+    data["y"].to_csv(f"{output_dir}/y.csv", index=False)
+    data["y_train"].to_csv(f"{output_dir}/y_train.csv", index=False)
+
+    pd.DataFrame(data["y_test"]).to_csv(f"{output_dir}/y_test.csv", index=False)
+    pd.DataFrame(data["residuals"]).to_csv(f"{output_dir}/residuals.csv", index=False)
+    pd.DataFrame(data["y_pred"]).to_csv(f"{output_dir}/y_pred.csv", index=False)
+
+
+def save_model(train_result, output_dir):
+    """
+    Pickles the trained model object to 'model.pkl'.
+    """
+    print(f"Saving model object to {output_dir}...")
+    model_obj = train_result["model"]
+    with open(f"{output_dir}/model.pkl", "wb") as f:
+        pickle.dump(model_obj, f)
+
+
 def find_best_model(train_results, operator_output_dir, n_trials=OPTUNA_TRIALS):
     """
-    Uses Optuna to find the best scoring weight parameters for accuracy, rmse, mae, r2.
+    Uses Optuna to find the best scoring weight parameters for accuracy, rmse, mae, r2
+    across all models for this operator.
     Saves a 'model_metrics.csv' with each model's computed score.
     Returns (best_model_name, best_weights).
     """
     metrics_map = {mn: res["metrics"] for mn, res in train_results.items()}
 
     study = optuna.create_study(direction="maximize")
-    study.optimize(lambda trial: objective(trial, metrics_map), n_trials=n_trials)
+    study.optimize(lambda trial: objective_score(trial, metrics_map), n_trials=n_trials)
     best_params = study.best_params
 
     metric_results = []
     for model_name, mm in metrics_map.items():
-        # Reconstruct train data
         data_portion = train_results[model_name]["data"]
         score_val = calculate_model_score(
-            mm["accuracy"],
-            mm["rmse"],
-            mm["mae"],
-            mm["r2"],
-            best_params,
+            mm["accuracy"], mm["rmse"], mm["mae"], mm["r2"], best_params
         )
+        bestp = train_results[model_name]["best_params"]
 
         metric_results.append(
             {
@@ -617,6 +872,7 @@ def find_best_model(train_results, operator_output_dir, n_trials=OPTUNA_TRIALS):
                 "residuals": data_portion["residuals"],
                 "y_pred": data_portion["y_pred"],
                 "y_test": data_portion["y_test"],
+                "hyperparams": json.dumps(bestp),
                 **best_params,
             }
         )
@@ -628,19 +884,20 @@ def find_best_model(train_results, operator_output_dir, n_trials=OPTUNA_TRIALS):
 
     # Pick best model by highest score
     best_row = df_metrics.loc[df_metrics["score"].idxmax()]
-    print(f"Best model for {operator_output_dir}: {best_row['model_name']}")
+    print(f"\nBest model for {operator_output_dir}: {best_row['model_name']}")
     print(f"  Accuracy: {best_row['accuracy']:.2%}")
-    print(f"  RMSE: {best_row['rmse']}")
-    print(f"  MAE: {best_row['mae']}")
-    print(f"  R2: {best_row['r2']}")
+    print(f"  RMSE: {best_row['rmse']:.4f}")
+    print(f"  MAE: {best_row['mae']:.4f}")
+    print(f"  R2: {best_row['r2']:.4f}")
 
     return best_row["model_name"], best_params
 
 
-def objective(trial, metrics_map):
+def objective_score(trial, metrics_map):
     """
     Optuna objective function: param search for weighting of accuracy, RMSE, MAE, R2.
     The goal is to maximize the sum of weighted model metrics across all models.
+    We do NOT do hyperparameter tuning here; we do meta-scoring weights for final model selection.
     """
     acc_weight = trial.suggest_float("accuracy_weight", 1.0, 2.0)
     rmse_weight = trial.suggest_float("rmse_weight", 0.5, 1.5)
@@ -662,7 +919,7 @@ def objective(trial, metrics_map):
 def calculate_model_score(acc, rmse, mae, r2, weights):
     """
     Utility to compute a single "score" from accuracy, RMSE, MAE, R^2
-    given the weighting parameters discovered by Optuna.
+    given the weighting parameters discovered by Optuna in objective_score().
     """
     return (
         weights["accuracy_weight"] * acc
@@ -714,28 +971,45 @@ def evaluate_data_reduction(df_features, best_models, best_weights, min_size=10)
         )
 
         model_name = best_models[operator]
-        build_model = MODEL_CONSTRUCTORS_HASHMAP[model_name]
-        model = build_model()
         weights = best_weights[operator]
 
+        # We do NOT re-tune hyperparams in each iteration; we assume the best hyperparams are chosen already.
+        # We'll just reuse the "build_model_from_params" approach with the best hyperparams stored in
+        # the previously found 'model_metrics.csv' for the best model.
+        best_model_params = None
+        mm_csv = f"{output_dir}/results/model_metrics.csv"
+        if os.path.exists(mm_csv):
+            mm_df = pd.read_csv(mm_csv)
+            best_model_row = mm_df[mm_df["model_name"] == model_name].iloc[0]
+            # parse hyperparams from JSON
+            best_model_params = json.loads(best_model_row["hyperparams"])
+
         while len(df_op) >= min_size:
-            train_res = train_model(model_name, model, df_op)
-            m = train_res["metrics"]
-            data_portion = train_res["data"]
-            score_val = calculate_model_score(
-                m["accuracy"], m["rmse"], m["mae"], m["r2"], weights
+            # Re-split or do a single train/test with the current subset?
+            X = df_op.drop(columns=["operator", "avg_peak_memory_usage"])
+            y = df_op["avg_peak_memory_usage"]
+
+            X_train, X_test, y_train, y_test = train_test_split(
+                X, y, test_size=TEST_SIZE, random_state=RANDOM_STATE
             )
+
+            final_model = build_model_from_params(model_name, best_model_params)
+            final_model.fit(X_train, y_train)
+            rmse, mae, r2, accuracy, residuals, y_pred = get_model_metrics(
+                final_model, X_test, y_test
+            )
+            score_val = calculate_model_score(accuracy, rmse, mae, r2, weights)
 
             row = {
                 "num_samples": len(df_op),
                 "model_name": model_name,
-                "rmse": m["rmse"],
-                "mae": m["mae"],
-                "r2": m["r2"],
-                "accuracy": m["accuracy"],
-                "residuals": data_portion["residuals"],
-                "y_pred": data_portion["y_pred"],
-                "y_test": data_portion["y_test"],
+                "rmse": rmse,
+                "mae": mae,
+                "r2": r2,
+                "accuracy": accuracy,
+                "residuals": residuals,
+                "y_pred": y_pred,
+                "y_test": y_test,
                 "score": score_val,
             }
             data_reduction_results = pd.concat(
@@ -770,7 +1044,6 @@ def evaluate_data_reduction(df_features, best_models, best_weights, min_size=10)
         data_reduction_results.to_csv(out_path, index=False)
 
     print("Finished evaluating data reduction.\n")
-
     return df_data_reduction
 
 
@@ -819,63 +1092,66 @@ def evaluate_feature_selection(df_features, best_models, best_weights, min_size=
         )
 
         model_name = best_models[operator]
-        build_model = MODEL_CONSTRUCTORS_HASHMAP[model_name]
-        model = build_model()
+        mm_csv = f"{output_dir}/results/model_metrics.csv"
+        best_model_params = None
+        if os.path.exists(mm_csv):
+            mm_df = pd.read_csv(mm_csv)
+            best_model_row = mm_df[mm_df["model_name"] == model_name].iloc[0]
+            best_model_params = json.loads(best_model_row["hyperparams"])
+
         weights = best_weights[operator]
 
         num_feats = len(df_op.columns)
+        # We'll keep removing features one by one
+        # (i.e. each iteration picks the best K-1 set using SelectKBest).
         while num_feats >= min_size:
-            train_res = train_model(model_name, model, df_op)
-            m = train_res["metrics"]
-            data_portion = train_res["data"]
-            score_val = calculate_model_score(
-                m["accuracy"], m["rmse"], m["mae"], m["r2"], weights
+            # We'll do the train/test once per iteration:
+            X = df_op.drop(columns=["operator", "avg_peak_memory_usage"])
+            y = df_op["avg_peak_memory_usage"]
+
+            X_train, X_test, y_train, y_test = train_test_split(
+                X, y, test_size=TEST_SIZE, random_state=RANDOM_STATE
             )
+
+            final_model = build_model_from_params(model_name, best_model_params)
+            final_model.fit(X_train, y_train)
+            rmse, mae, r2, accuracy, residuals, y_pred = get_model_metrics(
+                final_model, X_test, y_test
+            )
+            score_val = calculate_model_score(accuracy, rmse, mae, r2, weights)
 
             selected_feats = list(
                 set(df_op.columns.tolist()) - {"operator", "avg_peak_memory_usage"}
             )
             row = {
-                "num_features": len(df_op.columns),
+                "num_features": len(selected_feats),
                 "selected_features": selected_feats,
                 "model_name": model_name,
-                "rmse": m["rmse"],
-                "mae": m["mae"],
-                "r2": m["r2"],
-                "accuracy": m["accuracy"],
-                "residuals": data_portion["residuals"],
-                "y_pred": data_portion["y_pred"],
-                "y_test": data_portion["y_test"],
+                "rmse": rmse,
+                "mae": mae,
+                "r2": r2,
+                "accuracy": accuracy,
+                "residuals": residuals.to_list(),
+                "y_pred": y_pred.tolist(),
+                "y_test": y_test.to_list(),
                 "score": score_val,
             }
             feature_results = pd.concat(
-                [feature_results, pd.DataFrame([row])],
-                ignore_index=True,
+                [feature_results, pd.DataFrame([row])], ignore_index=True
             )
             df_feature_selection = pd.concat(
-                [
-                    df_feature_selection,
-                    pd.DataFrame(
-                        [
-                            {
-                                "operator": operator,
-                                **row,
-                            }
-                        ]
-                    ),
-                ],
+                [df_feature_selection, pd.DataFrame([{"operator": operator, **row}])],
                 ignore_index=True,
             )
 
-            # Use SelectKBest to remove one feature at a time
+            # Now remove the "least important" feature via selectKBest
+            if num_feats == min_size:
+                break
             selector = SelectKBest(score_func=f_regression, k=num_feats - 1)
-            X_data, y_data = data_portion["X"], data_portion["y"]
-            selector.fit_transform(X_data, y_data)
-
-            # Build new columns list
-            keep_cols = ["operator", "avg_peak_memory_usage"] + X_data.columns[
-                selector.get_support()
-            ].tolist()
+            X_data = X
+            selector.fit_transform(X_data, y)
+            keep_cols = X_data.columns[selector.get_support()].tolist()
+            keep_cols = ["operator", "avg_peak_memory_usage"] + keep_cols
             df_op = df_op[keep_cols]
             num_feats -= 1
 
@@ -887,7 +1163,6 @@ def evaluate_feature_selection(df_features, best_models, best_weights, min_size=
         feature_results.to_csv(out_path, index=False)
 
     print("Finished evaluating feature selection.\n")
-
     return df_feature_selection
 
 
@@ -909,14 +1184,10 @@ def build_final_model(
         output_dir = f"{OUTPUT_DIR}/best_models"
         os.makedirs(output_dir, exist_ok=True)
 
-        # ---------------------------
         # 1) Filter the data by operator
-        # ---------------------------
         df_op_features = df_features[df_features["operator"] == operator].copy()
 
-        # ---------------------------
         # 2) Feature Selection: find row meeting threshold with smallest num_features
-        # ---------------------------
         fs_op = feature_selection_results[
             feature_selection_results["operator"] == operator
         ].copy()
@@ -926,21 +1197,15 @@ def build_final_model(
 
         max_fs_score = fs_op["score"].max()
         fs_acceptance_limit = max_fs_score * (1 - score_acceptance_threshold)
-
-        # Filter rows that meet or exceed acceptance limit
         fs_candidates = fs_op[fs_op["score"] >= fs_acceptance_limit]
         if fs_candidates.empty:
             # If nothing meets the threshold, just pick the highest scoring row
             fs_candidates = fs_op[fs_op["score"] == max_fs_score]
-
-        # Sort by num_features ascending
         fs_candidates = fs_candidates.sort_values(by="num_features", ascending=True)
         best_fs_row = fs_candidates.iloc[0]
         selected_features = best_fs_row["selected_features"]
 
-        # ---------------------------
         # 3) Data Reduction: find row meeting threshold with smallest num_samples
-        # ---------------------------
         dr_op = data_reduction_results[
             data_reduction_results["operator"] == operator
         ].copy()
@@ -950,94 +1215,52 @@ def build_final_model(
 
         max_dr_score = dr_op["score"].max()
         dr_acceptance_limit = max_dr_score * (1 - score_acceptance_threshold)
-
-        # Filter rows that meet or exceed acceptance limit
         dr_candidates = dr_op[dr_op["score"] >= dr_acceptance_limit]
         if dr_candidates.empty:
-            # If nothing meets the threshold, just pick the highest scoring row
             dr_candidates = dr_op[dr_op["score"] == max_dr_score]
-
-        # Sort by num_samples ascending
         dr_candidates = dr_candidates.sort_values(by="num_samples", ascending=True)
         best_dr_row = dr_candidates.iloc[0]
         best_num_samples = int(best_dr_row["num_samples"])
 
-        # ---------------------------
         # 4) Prepare Final Training Data
-        # ---------------------------
-        # Limit the dataset to best_num_samples (if available) and select only chosen features
         if len(df_op_features) > best_num_samples:
             df_op_features = df_op_features.sample(
                 n=best_num_samples, random_state=RANDOM_STATE
             )
 
-        # Ensure the selected features exist in df_op_features
+        # Ensure the selected features exist
         valid_selected_features = [
             feat for feat in selected_features if feat in df_op_features.columns
         ]
         if not valid_selected_features:
             print(f"No valid selected features for {operator}. Skipping...")
             continue
-
-        features = ["operator", "avg_peak_memory_usage", *valid_selected_features]
+        features = ["operator", "avg_peak_memory_usage"] + valid_selected_features
         df_op_features = df_op_features[features].copy()
 
-        # ---------------------------
-        # 5) Train the Best Model
-        # ---------------------------
+        # 5) Train the Best Model with final data
         best_model_name = best_models[operator]
-        build_model = MODEL_CONSTRUCTORS_HASHMAP[best_model_name]
-        best_model = build_model()
-        results = train_model(best_model_name, best_model, df_op_features)
+        # get hyperparams from the best model
+        operator_dir = f"{OPERATORS_DIR}/{operator}"
+        mm_csv = f"{operator_dir}/results/model_metrics.csv"
+        best_model_params = None
+        if os.path.exists(mm_csv):
+            mm_df = pd.read_csv(mm_csv)
+            best_model_row = mm_df[mm_df["model_name"] == best_model_name].iloc[0]
+            best_model_params = json.loads(best_model_row["hyperparams"])
 
-        # ---------------------------
+        final_model = build_model_from_params(best_model_name, best_model_params)
+
+        X_final = df_op_features.drop(columns=["operator", "avg_peak_memory_usage"])
+        y_final = df_op_features["avg_peak_memory_usage"]
+
+        final_model.fit(X_final, y_final)
+
         # 6) Save the Trained Model
-        # ---------------------------
         model_path = os.path.join(output_dir, f"{operator}.pkl")
         with open(model_path, "wb") as f:
-            pickle.dump(results["model"], f)
+            pickle.dump(final_model, f)
         print(f"Model saved at: {model_path}")
-
-
-# ------------------------------------------------------------------------------
-# Saving Train Results
-# ------------------------------------------------------------------------------
-def save_train_result(train_result, output_dir):
-    """
-    Saves the model training data and pickled model to the specified output_dir.
-    """
-    print(f"Saving data for model to {output_dir}...")
-    os.makedirs(output_dir, exist_ok=True)
-    save_model_train_data(train_result, output_dir)
-    save_model(train_result, output_dir)
-
-
-def save_model_train_data(train_result, output_dir):
-    """
-    Saves X/X_train/X_test/y/y_train as CSV, plus residuals/predictions.
-    """
-    print("Saving model train data...")
-    data = train_result["data"]
-
-    data["X"].to_csv(f"{output_dir}/X.csv")
-    data["X_train"].to_csv(f"{output_dir}/X_train.csv")
-    data["X_test"].to_csv(f"{output_dir}/X_test.csv")
-    data["y"].to_csv(f"{output_dir}/y.csv")
-    data["y_train"].to_csv(f"{output_dir}/y_train.csv")
-
-    pd.DataFrame(data["y_test"]).to_csv(f"{output_dir}/y_test.csv", index=False)
-    pd.DataFrame(data["residuals"]).to_csv(f"{output_dir}/residuals.csv", index=False)
-    pd.DataFrame(data["y_pred"]).to_csv(f"{output_dir}/y_pred.csv", index=False)
-
-
-def save_model(train_result, output_dir):
-    """
-    Pickles the trained model object to 'model.pkl'.
-    """
-    print(f"Saving model object to {output_dir}...")
-    model_obj = train_result["model"]
-    with open(f"{output_dir}/model.pkl", "wb") as f:
-        pickle.dump(model_obj, f)
 
 
 # ------------------------------------------------------------------------------

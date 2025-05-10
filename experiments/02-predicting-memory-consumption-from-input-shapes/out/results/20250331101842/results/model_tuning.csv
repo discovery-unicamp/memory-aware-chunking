@@ -1,0 +1,25 @@
+operator,model_name,best_params
+envelope,linear_regression,{}
+envelope,polynomial_regression,"{""degree"": 2}"
+envelope,decision_tree,"{""max_depth"": 10, ""min_samples_split"": 4}"
+envelope,random_forest,"{""n_estimators"": 250, ""max_depth"": 11}"
+envelope,gradient_boosting,"{""n_estimators"": 300, ""learning_rate"": 0.14475899385178143, ""max_depth"": 3}"
+envelope,xgboost,"{""n_estimators"": 250, ""learning_rate"": 0.08160307602355615, ""max_depth"": 3}"
+envelope,support_vector_regression,"{""C"": 4.976788279173747, ""epsilon"": 0.01709696026668634, ""kernel"": ""rbf""}"
+envelope,elastic_net,"{""alpha"": 0.9948283877449523, ""l1_ratio"": 0.43116487677604354}"
+gaussian-filter,linear_regression,{}
+gaussian-filter,polynomial_regression,"{""degree"": 2}"
+gaussian-filter,decision_tree,"{""max_depth"": 10, ""min_samples_split"": 8}"
+gaussian-filter,random_forest,"{""n_estimators"": 300, ""max_depth"": 9}"
+gaussian-filter,gradient_boosting,"{""n_estimators"": 300, ""learning_rate"": 0.04955474386145259, ""max_depth"": 3}"
+gaussian-filter,xgboost,"{""n_estimators"": 150, ""learning_rate"": 0.08009398930629048, ""max_depth"": 3}"
+gaussian-filter,support_vector_regression,"{""C"": 2.073744475710208, ""epsilon"": 0.011235755940100149, ""kernel"": ""rbf""}"
+gaussian-filter,elastic_net,"{""alpha"": 0.8936417415096043, ""l1_ratio"": 0.7234748671328193}"
+gst3d,linear_regression,{}
+gst3d,polynomial_regression,"{""degree"": 2}"
+gst3d,decision_tree,"{""max_depth"": 15, ""min_samples_split"": 6}"
+gst3d,random_forest,"{""n_estimators"": 300, ""max_depth"": 7}"
+gst3d,gradient_boosting,"{""n_estimators"": 250, ""learning_rate"": 0.1037738034755501, ""max_depth"": 3}"
+gst3d,xgboost,"{""n_estimators"": 200, ""learning_rate"": 0.2977010266507545, ""max_depth"": 8}"
+gst3d,support_vector_regression,"{""C"": 4.989793697621445, ""epsilon"": 0.001662567891112085, ""kernel"": ""rbf""}"
+gst3d,elastic_net,"{""alpha"": 0.9673961569748635, ""l1_ratio"": 0.8224478884082371}"

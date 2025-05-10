@@ -179,7 +179,11 @@ df_features["log_volume"] = np.log2(df_features["volume"])
 \textbf{Phase 4: Model Training and Analysis.}
 Phase 4 trains multiple regression models using inlines, xlines, samples, and derived features as memory consumption predictors.
 Peak memory usage serves as the target variable.
-An 80/20 training/test split ensures fair comparisons across Envelope, \ac{GST3D}, and Gaussian Filter runs.
+An 80/20 training/test split ensures fair comparisons.
+Each model’s hyperparameters are selected using a k-fold cross-validation~\cite{kohavi1995study} procedure on the training portion.
+This step provides a validation mechanism that avoids leaking information from the test set.
+After selecting hyperparameters, the script retrains the model on the entire training set and then evaluates the final performance on the held-out test set.
+Four standard regression metrics—\ac{RMSE}, \ac{MAE}, \(R^2\), and a custom “accuracy” measure—assess predictive quality.
 
 Four standard regression metrics evaluate model performance:
 \ac{RMSE}~\cite{hyndman2006},
@@ -200,9 +204,9 @@ These metrics form a single optimization target:
 where \(w_\mathrm{acc}, w_\mathrm{RMSE}, w_\mathrm{MAE},\) and \(w_{R^2}\) indicate how strongly the pipeline rewards or penalizes each metric.
 Maximizing \(\texttt{score}\) balances the risk of underestimating memory (which can trigger job failures) against the cost of over-provisioning (which wastes resources).
 
-The \texttt{Optuna} framework~\cite{akiba2019optuna} guides hyperparameter tuning for each model and determines suitable weights for \(\mathrm{acc}\), \(\mathrm{RMSE}\), \(\mathrm{MAE}\), and \(R^2\).
-A study is created with \(\texttt{direction}=\text{"maximize"}\); at every trial, the study trains the model, evaluates the composite score, and updates search parameters accordingly.
-The best trial parameters yield an optimal combination of hyperparameters and multi-metric weights.
+The \texttt{Optuna} framework~\cite{akiba2019optuna} orchestrates hyperparameter tuning.
+Each trial within the study trains the model using a k-fold split on the training data and measures a combined score.
+By maximizing that score, the method identifies the hyperparameters that best balance accuracy, \ac{RMSE}, \ac{MAE}, and \(R^2\).
 
 Regarding models, the analysis includes several families of regressors:
 
@@ -329,13 +333,29 @@ Section~\ref{sec:pmc-results} elaborates on these experimental outcomes and comp
 
             % Phase 4: Model Training
             \node[phase, right=3cm of phase3] (phase4) {Phase 4:\\Model Training and Evaluation};
-            \node[box, below=of phase4] (p4input) {\textbf{Input}\\Feature dataset};
-            \node[box, below=of p4input] (p4process) {\textbf{Process}\\Train regression\\(XGBoost, NN, etc)};
-            \node[box, below=of p4process] (p4output) {\textbf{Output}\\Memory usage\\predictions};
 
-            \draw[arrow] (p4input) -- (p4process);
-            \draw[arrow] (p4process) -- (p4output);
-            \draw[arrow] (p3output.east) -- ++(0.7,0) |- (p4input.west);
+            % (A) "Hyperparam Tuning (K-fold)"
+            \node[box, below=of phase4, text width=3.8cm] (p4a) {
+                \textbf{Process}\\
+                Hyperparam tuning\\
+                (k-fold CV + Optuna)
+            };
+
+            % (B) "Train & Predict"
+            \node[box, below=of p4a, text width=3.8cm] (p4b) {
+                \textbf{Process}\\
+                Final training on entire train set\\
+                + Test set evaluation
+            };
+
+            \node[box, below=of p4b] (p4output) {
+                \textbf{Output}\\
+                Memory usage predictions
+            };
+
+            \draw[arrow] (p3output.east) -- ++(0.7,0) |- (p4a.west);
+            \draw[arrow] (p4a) -- (p4b);
+            \draw[arrow] (p4b) -- (p4output);
 
         \end{tikzpicture}
     }

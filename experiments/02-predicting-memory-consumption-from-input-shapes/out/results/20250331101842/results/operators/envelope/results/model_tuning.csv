@@ -1,0 +1,9 @@
+operator,model_name,best_params
+envelope,linear_regression,{}
+envelope,polynomial_regression,"{""degree"": 2}"
+envelope,decision_tree,"{""max_depth"": 10, ""min_samples_split"": 4}"
+envelope,random_forest,"{""n_estimators"": 250, ""max_depth"": 11}"
+envelope,gradient_boosting,"{""n_estimators"": 300, ""learning_rate"": 0.14475899385178143, ""max_depth"": 3}"
+envelope,xgboost,"{""n_estimators"": 250, ""learning_rate"": 0.08160307602355615, ""max_depth"": 3}"
+envelope,support_vector_regression,"{""C"": 4.976788279173747, ""epsilon"": 0.01709696026668634, ""kernel"": ""rbf""}"
+envelope,elastic_net,"{""alpha"": 0.9948283877449523, ""l1_ratio"": 0.43116487677604354}"

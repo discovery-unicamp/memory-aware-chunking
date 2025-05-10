@@ -4,7 +4,7 @@ Analyzes memory usage prediction experiment results for Memory-Aware Chunking.
 1. Reads environment variables (OUTPUT_DIR, OPERATORS_DIR).
 2. Finds operator directories and their CSV results.
 3. Produces numerous plots based on memory usage, model performance,
-   data reduction, feature selection, and additional insights.
+   data reduction, feature selection, hyperparameter tuning, and additional insights.
 4. Produces cross-operator plots aggregating data across all operators.
 """
 
@@ -70,8 +70,11 @@ def main():
     analyze_feature_selection_cross(results)
     analyze_additional_insights_cross(results)
 
-    # 9. New enhancements (extended analyses)
+    # 4. Analyze new enhancements
     analyze_new_enhancements(results)
+
+    # 5. Analyze hyperparameter tuning specifically
+    analyze_hyperparam_tuning(results)
 
 
 # ------------------------------------------------------------------------------
@@ -145,10 +148,9 @@ def plot_peak_memory_usage_per_volume(df, operator, out_dir):
     filename = f"peak_memory_by_volume_{operator}.pdf"
     out_path = os.path.join(out_dir, filename)
     if os.path.exists(out_path):
-        print(f"Chart already exists. Skipping plot_peak_memory_usage_per_volume.")
         return
-
     print(f"  -> Peak memory usage per volume for {operator}")
+
     fig, ax1 = plt.subplots()
     ax1.plot(df["volume"], df["peak_memory_usage_avg"], marker="o", zorder=3)
 
@@ -183,10 +185,9 @@ def plot_memory_usage_distribution(df, operator, out_dir):
     filename = f"memory_usage_distribution_{operator}.pdf"
     out_path = os.path.join(out_dir, filename)
     if os.path.exists(out_path):
-        print(f"Chart already exists. Skipping plot_memory_usage_distribution.")
         return
-
     print(f"  -> Memory usage distribution for {operator}")
+
     fig, ax = plt.subplots()
     sns.violinplot(
         data=df,
@@ -204,10 +205,8 @@ def plot_memory_usage_distribution(df, operator, out_dir):
     ax.set_ylabel("Memory Usage (GB)")
 
     volumes = df["volume"].unique()
-    # Set fixed ticks
     ax.set_xticks(np.arange(len(volumes)))
     ax.set_xticklabels([format_volume_label(v) for v in volumes])
-    # Rotate labels
     plt.setp(ax.get_xticklabels(), rotation=45, ha="right")
 
     save_chart(fig, out_path)
@@ -217,10 +216,9 @@ def plot_inline_xline_progression(df, operator, out_dir):
     filename = f"inline_xline_memory_usage_progression_{operator}.pdf"
     out_path = os.path.join(out_dir, filename)
     if os.path.exists(out_path):
-        print(f"Chart already exists. Skipping plot_inline_xline_progression.")
         return
-
     print(f"  -> Inline/Xline memory progression for {operator}")
+
     g = sns.FacetGrid(
         df,
         col="inlines",
@@ -247,12 +245,10 @@ def plot_memory_usage_heatmap_by_time(df, operator, out_dir):
     filename = f"memory_usage_heatmap_by_time_{operator}.pdf"
     out_path = os.path.join(out_dir, filename)
     if os.path.exists(out_path):
-        print(f"Chart already exists. Skipping plot_memory_usage_heatmap_by_time.")
         return
-
     print(f"  -> Memory usage heatmap by time for {operator}")
+
     if "relative_time" not in df.columns or "volume" not in df.columns:
-        print("  -> Skipping heatmap by time (columns missing).")
         return
 
     ph = df.copy()
@@ -271,7 +267,6 @@ def plot_memory_usage_heatmap_by_time(df, operator, out_dir):
     ax.set_xlabel("Time Bin")
     ax.set_ylabel("Volume Bin")
     ax.set_title(f"Memory Usage Over Time (Mean) - {operator}")
-
     save_chart(fig, out_path)
 
 
@@ -279,13 +274,11 @@ def plot_memory_usage_by_configuration(df, operator, out_dir):
     filename = f"memory_usage_by_configuration_{operator}.pdf"
     out_path = os.path.join(out_dir, filename)
     if os.path.exists(out_path):
-        print(f"Chart already exists. Skipping plot_memory_usage_by_configuration.")
         return
-
     print(f"  -> Memory usage by configuration (3D) for {operator}")
+
     needed = ["session_id", "volume", "inlines", "xlines", "samples"]
     if not all(col in df.columns for col in needed):
-        print("  -> Skipping 3D config plot (columns missing).")
         return
 
     fig = plt.figure()
@@ -303,12 +296,8 @@ def plot_memory_usage_by_configuration(df, operator, out_dir):
     ax.set_xlabel("Time")
     ax.set_ylabel("Volume")
     ax.set_zlabel("Mem Usage (GB)")
-    ax.yaxis.set_major_formatter(
-        ticker.FuncFormatter(lambda x, _: format_volume_label(x))
-    )
     ax.view_init(elev=20, azim=140)
     ax.set_title(f"Memory Usage Over Time by Config - {operator}")
-
     save_chart(fig, out_path)
 
 
@@ -316,13 +305,11 @@ def plot_inlines_xlines_heatmap(df, operator, out_dir):
     filename = f"memory_usage_inlines_xlines_heatmap_{operator}.pdf"
     out_path = os.path.join(out_dir, filename)
     if os.path.exists(out_path):
-        print(f"Chart already exists. Skipping plot_inlines_xlines_heatmap.")
         return
-
     print(f"  -> Memory usage inlines/xlines heatmap for {operator}")
+
     needed = ["inlines", "xlines", "captured_memory_usage"]
     if not all(col in df.columns for col in needed):
-        print("  -> Skipping inlines/xlines heatmap (columns missing).")
         return
 
     pivoted = df.groupby(["inlines", "xlines"])["captured_memory_usage"].max().unstack()
@@ -332,7 +319,6 @@ def plot_inlines_xlines_heatmap(df, operator, out_dir):
     ax.set_xlabel("Xlines")
     ax.set_ylabel("Inlines")
     ax.set_title(f"Peak Memory Usage Heatmap - {operator}")
-
     save_chart(fig, out_path)
 
 
@@ -340,13 +326,11 @@ def plot_inlines_xlines_samples_3d(df, operator, out_dir):
     filename = f"memory_usage_inlines_xlines_samples_heatmap_{operator}.pdf"
     out_path = os.path.join(out_dir, filename)
     if os.path.exists(out_path):
-        print(f"Chart already exists. Skipping plot_inlines_xlines_samples_3d.")
         return
-
     print(f"  -> 3D memory usage (inlines/xlines/samples) for {operator}")
+
     needed = ["inlines", "xlines", "samples", "captured_memory_usage"]
     if not all(col in df.columns for col in needed):
-        print("  -> Skipping 3D memory usage plot (columns missing).")
         return
 
     grouped = (
@@ -378,10 +362,9 @@ def plot_execution_time_by_volume(df, operator, out_dir):
     filename = f"execution_time_by_volume_{operator}.pdf"
     out_path = os.path.join(out_dir, filename)
     if os.path.exists(out_path):
-        print(f"Chart already exists. Skipping plot_execution_time_by_volume.")
         return
-
     print(f"  -> Execution time by volume for {operator}")
+
     fig, ax = plt.subplots()
     ax.plot(df["volume"], df["execution_time_avg"], marker="o", zorder=3)
 
@@ -400,7 +383,6 @@ def plot_execution_time_by_volume(df, operator, out_dir):
     ax.set_xlabel("Volume")
     ax.set_ylabel("Execution Time (s)")
     ax.set_title(f"Execution Time by Volume - {operator}")
-
     save_chart(fig, out_path)
 
 
@@ -408,12 +390,10 @@ def plot_execution_time_distribution(df, operator, out_dir):
     filename = f"execution_time_distribution_{operator}.pdf"
     out_path = os.path.join(out_dir, filename)
     if os.path.exists(out_path):
-        print(f"Chart already exists. Skipping plot_execution_time_distribution.")
         return
-
     print(f"  -> Execution time distribution for {operator}")
+
     if "execution_time_avg" not in df.columns:
-        print("  -> Skipping execution time distribution (column missing).")
         return
 
     fig, ax = plt.subplots()
@@ -421,7 +401,6 @@ def plot_execution_time_distribution(df, operator, out_dir):
     ax.set_xlabel("Total Execution Time (s)")
     ax.set_ylabel("Frequency")
     ax.set_title(f"Execution Time Distribution - {operator}")
-
     save_chart(fig, out_path)
 
 
@@ -429,15 +408,11 @@ def plot_execution_time_distribution_by_volume(df, operator, out_dir):
     filename = f"execution_time_distribution_by_volume_{operator}.pdf"
     out_path = os.path.join(out_dir, filename)
     if os.path.exists(out_path):
-        print(
-            f"Chart already exists. Skipping plot_execution_time_distribution_by_volume."
-        )
         return
-
     print(f"  -> Execution time distribution by volume for {operator}")
+
     needed = ["session_id", "timestamp", "volume"]
     if not all(col in df.columns for col in needed):
-        print("  -> Skipping execution time distribution by volume (columns missing).")
         return
 
     grouped = (
@@ -462,7 +437,6 @@ def plot_execution_time_distribution_by_volume(df, operator, out_dir):
     ax.set_xlabel("Volume")
     ax.set_ylabel("Total Execution Time (s)")
     ax.set_title(f"Execution Time Distribution by Volume - {operator}")
-
     save_chart(fig, out_path)
 
 
@@ -470,9 +444,7 @@ def plot_memory_progression(df, operator, out_dir):
     filename = f"memory_progression_{operator}.pdf"
     out_path = os.path.join(out_dir, filename)
     if os.path.exists(out_path):
-        print(f"Chart already exists. Skipping plot_memory_progression.")
         return
-
     print(f"  -> Memory progression envelope for {operator}")
 
     def smooth_and_downsample(sub_df):
@@ -556,7 +528,6 @@ def plot_model_performance(df, operator, out_dir):
     filename = f"performance_by_model_{operator}.pdf"
     out_path = os.path.join(out_dir, filename)
     if os.path.exists(out_path):
-        print(f"Chart already exists. Skipping plot_model_performance.")
         return
 
     print(f"  -> Model performance for {operator}")
@@ -582,7 +553,6 @@ def plot_model_score(df, operator, out_dir):
     filename = f"score_by_model_{operator}.pdf"
     out_path = os.path.join(out_dir, filename)
     if os.path.exists(out_path):
-        print(f"Chart already exists. Skipping plot_model_score.")
         return
 
     print(f"  -> Model score for {operator}")
@@ -603,9 +573,7 @@ def plot_model_score(df, operator, out_dir):
     )
 
     ax.set_title(f"Model Ranking by Score - {operator}")
-    ax.legend()
     plt.xticks(rotation=45, ha="right")
-
     save_chart(fig, out_path)
 
 
@@ -613,7 +581,6 @@ def plot_model_acc_vs_rmse(df, operator, out_dir):
     filename = f"accuracy_by_rmse_per_model_{operator}.pdf"
     out_path = os.path.join(out_dir, filename)
     if os.path.exists(out_path):
-        print(f"Chart already exists. Skipping plot_model_acc_vs_rmse.")
         return
 
     print(f"  -> Model Accuracy vs RMSE for {operator}")
@@ -630,7 +597,6 @@ def plot_model_acc_vs_rmse(df, operator, out_dir):
     ax.set_ylabel("Accuracy (Higher is Better)")
     ax.set_title(f"Accuracy vs. RMSE - {operator}")
     ax.legend(loc="lower left", bbox_to_anchor=(1.0, 0.1))
-
     save_chart(fig, out_path)
 
 
@@ -638,13 +604,14 @@ def plot_residual_distribution(df, operator, out_dir):
     filename = f"residuals_distribution_by_model_{operator}.pdf"
     out_path = os.path.join(out_dir, filename)
     if os.path.exists(out_path):
-        print(f"Chart already exists. Skipping plot_residual_distribution.")
         return
 
     print(f"  -> Residual distribution for {operator}")
     fig, ax = plt.subplots()
     for _, row in df.iterrows():
-        residuals = ast.literal_eval(row["residuals"])
+        residuals = row["residuals"]
+        if isinstance(residuals, str):
+            residuals = ast.literal_eval(residuals)
         sns.kdeplot(residuals, fill=True, alpha=0.3, label=row["model_name"], ax=ax)
 
     ax.axvline(0, linestyle="dashed")
@@ -652,7 +619,6 @@ def plot_residual_distribution(df, operator, out_dir):
     ax.set_ylabel("Density")
     ax.set_title(f"Residual Distribution by Model - {operator}")
     ax.legend()
-
     save_chart(fig, out_path)
 
 
@@ -660,7 +626,6 @@ def plot_actual_vs_predicted(df, operator, out_dir):
     filename = f"actual_vs_predicted_by_model_{operator}.pdf"
     out_path = os.path.join(out_dir, filename)
     if os.path.exists(out_path):
-        print(f"Chart already exists. Skipping plot_actual_vs_predicted.")
         return
 
     print(f"  -> Actual vs. Predicted for {operator}")
@@ -670,8 +635,13 @@ def plot_actual_vs_predicted(df, operator, out_dir):
     for i, row in df.iterrows():
         if i >= len(axes):
             break
-        y_test = ast.literal_eval(row["y_test"])
-        y_pred = ast.literal_eval(row["y_pred"])
+        y_test = row["y_test"]
+        y_pred = row["y_pred"]
+        if isinstance(y_test, str):
+            y_test = ast.literal_eval(y_test)
+        if isinstance(y_pred, str):
+            y_pred = ast.literal_eval(y_pred)
+
         sns.regplot(
             x=y_test,
             y=y_pred,
@@ -717,7 +687,6 @@ def plot_metrics_by_sample_size(df, operator, out_dir):
     filename = f"metrics_evolution_by_sample_size_{operator}.pdf"
     out_path = os.path.join(out_dir, filename)
     if os.path.exists(out_path):
-        print(f"Chart already exists. Skipping plot_metrics_by_sample_size.")
         return
 
     print(f"  -> Metrics by sample size for {operator}")
@@ -742,7 +711,6 @@ def plot_score_by_sample_size(df, operator, out_dir):
     filename = f"score_by_sample_size_{operator}.pdf"
     out_path = os.path.join(out_dir, filename)
     if os.path.exists(out_path):
-        print(f"Chart already exists. Skipping plot_score_by_sample_size.")
         return
 
     print(f"  -> Score by sample size for {operator}")
@@ -751,7 +719,6 @@ def plot_score_by_sample_size(df, operator, out_dir):
     ax.set_title(f"Model Score vs. Number of Samples - {operator}")
     ax.set_xlabel("Number of Samples")
     ax.set_ylabel("Score")
-
     save_chart(fig, out_path)
 
 
@@ -759,7 +726,6 @@ def plot_rmse_mae_ratio_by_sample_size(df, operator, out_dir):
     filename = f"rmse_mae_ratio_by_sample_size_{operator}.pdf"
     out_path = os.path.join(out_dir, filename)
     if os.path.exists(out_path):
-        print(f"Chart already exists. Skipping plot_rmse_mae_ratio_by_sample_size.")
         return
 
     print(f"  -> RMSE/MAE ratio by sample size for {operator}")
@@ -769,7 +735,6 @@ def plot_rmse_mae_ratio_by_sample_size(df, operator, out_dir):
     ax.set_title(f"RMSE/MAE Ratio Over Data Reduction - {operator}")
     ax.set_xlabel("Number of Samples")
     ax.set_ylabel("RMSE/MAE")
-
     save_chart(fig, out_path)
 
 
@@ -777,19 +742,20 @@ def plot_residual_distribution_by_sample_size(df, operator, out_dir):
     filename = f"residual_metrics_by_sample_size_{operator}.pdf"
     out_path = os.path.join(out_dir, filename)
     if os.path.exists(out_path):
-        print(
-            f"Chart already exists. Skipping plot_residual_distribution_by_sample_size."
-        )
         return
 
     print(f"  -> Residual distribution by sample size for {operator}")
     data = df.copy()
-    data["residuals"] = data["residuals"].apply(ast.literal_eval)
+    data["residuals"] = data["residuals"].apply(
+        lambda x: ast.literal_eval(x) if isinstance(x, str) else x
+    )
     data["mean"] = data["residuals"].apply(np.mean)
     data["std"] = data["residuals"].apply(np.std)
-    data["mae_calc"] = data["residuals"].apply(lambda x: np.mean(np.abs(x)))
+    data["mae_calc"] = data["residuals"].apply(
+        lambda x: np.mean(np.abs(x)) if len(x) else np.nan
+    )
     data["rmse_calc"] = data["residuals"].apply(
-        lambda x: np.sqrt(np.mean(np.square(x)))
+        lambda x: np.sqrt(np.mean(np.square(x))) if len(x) else np.nan
     )
 
     fig, ax = plt.subplots()
@@ -808,7 +774,6 @@ def plot_residual_distribution_by_sample_size(df, operator, out_dir):
     ax.set_xlabel("Number of Samples")
     ax.set_ylabel("Error")
     ax.legend()
-
     save_chart(fig, out_path)
 
 
@@ -843,7 +808,6 @@ def plot_metrics_by_feature_count(df, operator, out_dir):
     filename = f"metrics_evolution_by_number_of_features_{operator}.pdf"
     out_path = os.path.join(out_dir, filename)
     if os.path.exists(out_path):
-        print(f"Chart already exists. Skipping plot_metrics_by_feature_count.")
         return
 
     print(f"  -> Metrics by feature count for {operator}")
@@ -860,19 +824,13 @@ def plot_metrics_by_feature_count(df, operator, out_dir):
         ax.set_title(title)
         ax.set_xlabel("Num Features")
 
-    save_chart(
-        fig,
-        os.path.join(
-            out_dir, f"metrics_evolution_by_number_of_features_{operator}.pdf"
-        ),
-    )
+    save_chart(fig, out_path)
 
 
 def plot_score_by_feature_count(df, operator, out_dir):
     filename = f"score_by_number_of_features_{operator}.pdf"
     out_path = os.path.join(out_dir, filename)
     if os.path.exists(out_path):
-        print(f"Chart already exists. Skipping plot_score_by_feature_count.")
         return
 
     print(f"  -> Score by number of features for {operator}")
@@ -881,7 +839,6 @@ def plot_score_by_feature_count(df, operator, out_dir):
     ax.set_xlabel("Number of Features")
     ax.set_ylabel("Score")
     ax.set_title(f"Model Score vs. Number of Features - {operator}")
-
     save_chart(fig, out_path)
 
 
@@ -889,7 +846,6 @@ def plot_rmse_mae_ratio_by_feature_count(df, operator, out_dir):
     filename = f"rmse_mae_ratio_by_number_of_features_{operator}.pdf"
     out_path = os.path.join(out_dir, filename)
     if os.path.exists(out_path):
-        print(f"Chart already exists. Skipping plot_rmse_mae_ratio_by_feature_count.")
         return
 
     print(f"  -> RMSE/MAE ratio by number of features for {operator}")
@@ -899,7 +855,6 @@ def plot_rmse_mae_ratio_by_feature_count(df, operator, out_dir):
     ax.set_title(f"RMSE/MAE Ratio Over Feature Selection - {operator}")
     ax.set_xlabel("Number of Features")
     ax.set_ylabel("RMSE/MAE")
-
     save_chart(fig, out_path)
 
 
@@ -907,16 +862,19 @@ def plot_residual_by_feature_count(df, operator, out_dir):
     filename = f"residual_metrics_by_number_of_features_{operator}.pdf"
     out_path = os.path.join(out_dir, filename)
     if os.path.exists(out_path):
-        print(f"Chart already exists. Skipping plot_residual_by_feature_count.")
         return
 
     print(f"  -> Residual distribution by feature count for {operator}")
     data = df.copy()
-    data["residuals"] = data["residuals"].apply(ast.literal_eval)
+    data["residuals"] = data["residuals"].apply(
+        lambda x: ast.literal_eval(x) if isinstance(x, str) else x
+    )
     data["std"] = data["residuals"].apply(np.std)
-    data["mae_calc"] = data["residuals"].apply(lambda x: np.mean(np.abs(x)))
+    data["mae_calc"] = data["residuals"].apply(
+        lambda x: np.mean(np.abs(x)) if len(x) else np.nan
+    )
     data["rmse_calc"] = data["residuals"].apply(
-        lambda x: np.sqrt(np.mean(np.square(x)))
+        lambda x: np.sqrt(np.mean(np.square(x))) if len(x) else np.nan
     )
 
     fig, ax = plt.subplots()
@@ -935,7 +893,6 @@ def plot_residual_by_feature_count(df, operator, out_dir):
     ax.set_xlabel("Number of Features")
     ax.set_ylabel("Error")
     ax.legend()
-
     save_chart(fig, out_path)
 
 
@@ -943,12 +900,13 @@ def plot_feature_performance(df, operator, out_dir):
     filename = f"feature_impact_{operator}.pdf"
     out_path = os.path.join(out_dir, filename)
     if os.path.exists(out_path):
-        print(f"Chart already exists. Skipping plot_feature_performance.")
         return
 
     print(f"  -> Feature performance impact for {operator}")
     data = df.copy()
-    data["selected_features"] = data["selected_features"].apply(ast.literal_eval)
+    data["selected_features"] = data["selected_features"].apply(
+        lambda x: ast.literal_eval(x) if isinstance(x, str) else x
+    )
     data.sort_values("num_features", ascending=False, inplace=True, ignore_index=True)
 
     impact_records = []
@@ -967,7 +925,6 @@ def plot_feature_performance(df, operator, out_dir):
             )
 
     if not impact_records:
-        print("  -> No single-feature removal steps found. Skipping.\n")
         return
 
     impact_df = pd.DataFrame(impact_records)
@@ -983,7 +940,6 @@ def plot_feature_performance(df, operator, out_dir):
     ax.set_ylabel("Avg ΔRMSE")
     ax.set_title(f"Impact of Removing Each Feature on RMSE - {operator}")
     plt.xticks(rotation=90)
-
     save_chart(fig, out_path)
 
 
@@ -1027,17 +983,9 @@ def plot_memory_vs_volume_regression(df, operator, out_dir):
     filename = f"memory_vs_volume_regression_{operator}.pdf"
     out_path = os.path.join(out_dir, filename)
     if os.path.exists(out_path):
-        print(f"Chart already exists. Skipping plot_memory_vs_volume_regression.")
         return
 
-    """
-    Plots memory usage vs volume with a simple linear regression overlay.
-    Expects columns: "volume" and "peak_memory_usage_avg".
-    """
     if not all(col in df.columns for col in ["volume", "peak_memory_usage_avg"]):
-        print(
-            f"  -> Missing columns in profile_summary for memory vs volume. Skipping."
-        )
         return
 
     print(f"  -> Memory vs. Volume (Regression) for {operator}")
@@ -1053,11 +1001,9 @@ def plot_memory_vs_volume_regression(df, operator, out_dir):
     ax.set_ylabel("Avg Peak Memory (GB)")
     ax.set_title(f"Memory vs. Volume (Linear Fit) - {operator}")
     ax.legend()
-
     ax.xaxis.set_major_formatter(
         ticker.FuncFormatter(lambda v, _: format_volume_label(v))
     )
-
     save_chart(fig, out_path)
 
 
@@ -1065,18 +1011,10 @@ def plot_memory_vs_dimensions(df, operator, out_dir):
     filename = f"memory_vs_dimensions_pairplot_{operator}.png"
     out_path = os.path.join(out_dir, filename)
     if os.path.exists(out_path):
-        print(f"Chart already exists. Skipping plot_memory_vs_dimensions.")
         return
 
-    """
-    Creates a pairplot to see how memory usage (captured_memory_usage)
-    correlates with inlines, xlines, samples.
-    """
     needed_cols = ["inlines", "xlines", "samples", "captured_memory_usage"]
     if not all(col in df.columns for col in needed_cols):
-        print(
-            f"  -> Missing needed columns in profile_history for dimension pairplot. Skipping."
-        )
         return
 
     print(f"  -> Memory vs. Dimensions Pairplot for {operator}")
@@ -1089,7 +1027,6 @@ def plot_memory_vs_dimensions(df, operator, out_dir):
         diag_kind="kde",
     )
     g.fig.suptitle(f"Memory vs. Dimensions (Pairplot) - {operator}", y=1.02)
-
     g.fig.savefig(out_path, bbox_inches="tight")
     plt.close(g.fig)
 
@@ -1098,21 +1035,11 @@ def plot_residual_vs_predicted(mmetrics, operator, out_dir):
     filename = f"residual_vs_predicted_{operator}.pdf"
     out_path = os.path.join(out_dir, filename)
     if os.path.exists(out_path):
-        print(f"Chart already exists. Skipping plot_residual_vs_predicted.")
         return
-
-    """
-    Plots residual (y_pred - y_test) vs. predicted for each model.
-    """
-    import numpy as np
-    import matplotlib.pyplot as plt
 
     if not all(
         col in mmetrics.columns for col in ["model_name", "residuals", "y_pred"]
     ):
-        print(
-            "  -> Missing needed columns in model_metrics for residual vs. predicted. Skipping."
-        )
         return
 
     print(f"  -> Residual vs. Predicted for {operator}")
@@ -1122,13 +1049,13 @@ def plot_residual_vs_predicted(mmetrics, operator, out_dir):
     for i, row in mmetrics.iterrows():
         if i >= len(axes):
             break
-
         model_name = row["model_name"]
-        residuals = np.array(ast.literal_eval(row["residuals"]))
-        y_pred = np.array(ast.literal_eval(row["y_pred"]))
-
-        if len(residuals) != len(y_pred):
-            continue
+        residuals = row["residuals"]
+        y_pred = row["y_pred"]
+        if isinstance(residuals, str):
+            residuals = ast.literal_eval(residuals)
+        if isinstance(y_pred, str):
+            y_pred = ast.literal_eval(y_pred)
 
         ax = axes[i]
         ax.scatter(y_pred, residuals, alpha=0.6)
@@ -1139,7 +1066,6 @@ def plot_residual_vs_predicted(mmetrics, operator, out_dir):
 
     fig.tight_layout(rect=[0, 0, 1, 0.95])
     fig.suptitle(f"Residual vs. Predicted - {operator}", fontsize=16)
-
     fig.savefig(out_path)
     plt.close(fig)
 
@@ -1148,18 +1074,11 @@ def plot_residual_qq(mmetrics, operator, out_dir):
     filename = f"residual_qq_plots_{operator}.pdf"
     out_path = os.path.join(out_dir, filename)
     if os.path.exists(out_path):
-        print(f"Chart already exists. Skipping plot_residual_qq.")
         return
 
-    """
-    Creates a QQ-Plot for each model's residual distribution to check normality.
-    """
-    import numpy as np
     import scipy.stats as stats
-    import matplotlib.pyplot as plt
 
     if not all(col in mmetrics.columns for col in ["model_name", "residuals"]):
-        print("  -> Missing needed columns in model_metrics for QQ-plot. Skipping.")
         return
 
     print(f"  -> Residual QQ-Plot for {operator}")
@@ -1170,7 +1089,9 @@ def plot_residual_qq(mmetrics, operator, out_dir):
         if i >= len(axes):
             break
         model_name = row["model_name"]
-        residuals = np.array(ast.literal_eval(row["residuals"]))
+        residuals = row["residuals"]
+        if isinstance(residuals, str):
+            residuals = ast.literal_eval(residuals)
 
         ax = axes[i]
         stats.probplot(residuals, dist="norm", plot=ax)
@@ -1178,7 +1099,6 @@ def plot_residual_qq(mmetrics, operator, out_dir):
 
     fig.tight_layout(rect=[0.0, 0.0, 1.0, 0.95])
     fig.suptitle(f"QQ-Plots of Residuals - {operator}", fontsize=16)
-
     fig.savefig(out_path)
     plt.close(fig)
 
@@ -1187,21 +1107,14 @@ def plot_execution_time_vs_memory(df, operator, out_dir):
     filename = f"execution_time_vs_memory_{operator}.pdf"
     out_path = os.path.join(out_dir, filename)
     if os.path.exists(out_path):
-        print(f"Chart already exists. Skipping plot_execution_time_vs_memory.")
         return
 
-    """
-    Scatter of execution_time_avg vs. peak_memory_usage_avg
-    to see if there's a relationship between time and memory usage.
-    """
     print(f"  -> Execution Time vs. Memory for {operator}")
     fig, ax = plt.subplots()
     ax.scatter(df["peak_memory_usage_avg"], df["execution_time_avg"], alpha=0.7)
-
     ax.set_xlabel("Avg Peak Memory (GB)")
     ax.set_ylabel("Avg Execution Time (s)")
     ax.set_title(f"Execution Time vs. Memory Usage - {operator}")
-
     fig.savefig(out_path)
     plt.close(fig)
 
@@ -1210,10 +1123,6 @@ def plot_execution_time_vs_memory(df, operator, out_dir):
 # Cross-Operator Analyses (Profile)
 # ------------------------------------------------------------------------------
 def analyze_profile_cross(results):
-    """
-    Creates cross-operator charts using 'profile_summary' or 'profile_history'
-    from each operator. Saved to <out>/charts/cross/profile/.
-    """
     print("---- CROSS-OPERATOR: Profile ----")
     cross_dir = os.path.join(OUTPUT_DIR, "charts", "cross", "profile")
     os.makedirs(cross_dir, exist_ok=True)
@@ -1228,21 +1137,14 @@ def analyze_profile_cross(results):
         summary_all = pd.concat(summary_data, ignore_index=True)
         plot_cross_peak_memory_by_volume(summary_all, cross_dir)
         plot_cross_execution_time_by_volume(summary_all, cross_dir)
-    else:
-        print("  -> No operator has 'profile_summary' for cross-operator charts.")
 
 
 def plot_cross_peak_memory_by_volume(df, out_dir):
     filename = "cross_peak_memory_by_volume.pdf"
     out_path = os.path.join(out_dir, filename)
     if os.path.exists(out_path):
-        print(f"Chart already exists. Skipping plot_cross_peak_memory_by_volume.")
         return
 
-    """
-    Plots a cross-operator line chart of peak_memory_usage_avg vs volume.
-    Each operator is a separate line.
-    """
     fig, ax = plt.subplots()
     operators = df["operator"].unique()
     for op in operators:
@@ -1262,7 +1164,6 @@ def plot_cross_peak_memory_by_volume(df, out_dir):
         ticker.FuncFormatter(lambda x, _: format_volume_label(x))
     )
     ax.legend()
-
     save_chart(fig, out_path)
 
 
@@ -1270,13 +1171,8 @@ def plot_cross_execution_time_by_volume(df, out_dir):
     filename = "cross_execution_time_by_volume.pdf"
     out_path = os.path.join(out_dir, filename)
     if os.path.exists(out_path):
-        print(f"Chart already exists. Skipping plot_cross_execution_time_by_volume.")
         return
 
-    """
-    Plots a cross-operator line chart of execution_time_avg vs volume.
-    Each operator is a separate line.
-    """
     fig, ax = plt.subplots()
     operators = df["operator"].unique()
     for op in operators:
@@ -1298,7 +1194,6 @@ def plot_cross_execution_time_by_volume(df, out_dir):
         ticker.FuncFormatter(lambda x, _: format_volume_label(x))
     )
     ax.legend()
-
     save_chart(fig, out_path)
 
 
@@ -1306,10 +1201,6 @@ def plot_cross_execution_time_by_volume(df, out_dir):
 # Cross-Operator Analyses (Model)
 # ------------------------------------------------------------------------------
 def analyze_model_cross(results):
-    """
-    Creates cross-operator charts using 'model_metrics' from each operator.
-    Saved to <out>/charts/cross/model/.
-    """
     print("---- CROSS-OPERATOR: Model ----")
     cross_dir = os.path.join(OUTPUT_DIR, "charts", "cross", "model")
     os.makedirs(cross_dir, exist_ok=True)
@@ -1322,7 +1213,6 @@ def analyze_model_cross(results):
             model_data.append(df)
 
     if not model_data:
-        print("  -> No operator has 'model_metrics' for cross-operator charts.")
         return
 
     all_metrics = pd.concat(model_data, ignore_index=True)
@@ -1336,22 +1226,16 @@ def plot_cross_model_performance(df, out_dir):
     filename = "cross_model_r2_bar.pdf"
     out_path = os.path.join(out_dir, filename)
     if os.path.exists(out_path):
-        print(f"Chart already exists. Skipping plot_cross_model_performance.")
         return
 
-    """
-    A grouped bar chart showing each operator's model_name vs. R² (example).
-    """
     fig, ax = plt.subplots()
     grouped = df.groupby(["operator", "model_name"])["r2"].mean().reset_index()
-
     pivoted = grouped.pivot(index="model_name", columns="operator", values="r2")
     pivoted.plot(kind="bar", ax=ax, zorder=3)
     ax.set_title("Cross-Operator: Average R² per Model")
     ax.set_ylabel("R²")
     ax.legend(title="Operator", bbox_to_anchor=(1.05, 1), loc="upper left")
     plt.xticks(rotation=45, ha="right")
-
     save_chart(fig, out_path)
 
 
@@ -1359,12 +1243,8 @@ def plot_cross_model_rmse(df, out_dir):
     filename = "cross_model_rmse_scatter.pdf"
     out_path = os.path.join(out_dir, filename)
     if os.path.exists(out_path):
-        print(f"Chart already exists. Skipping plot_cross_model_rmse.")
         return
 
-    """
-    Scatter: average RMSE for each operator-model combination.
-    """
     grouped = df.groupby(["operator", "model_name"])["rmse"].mean().reset_index()
 
     fig, ax = plt.subplots()
@@ -1377,7 +1257,6 @@ def plot_cross_model_rmse(df, out_dir):
     ax.set_ylabel("RMSE")
     ax.legend()
     plt.xticks(rotation=45, ha="right")
-
     save_chart(fig, out_path)
 
 
@@ -1385,22 +1264,13 @@ def plot_cross_actual_vs_predicted_by_model(df, out_dir):
     filename = "actual_vs_predicted_by_model.pdf"
     out_path = os.path.join(out_dir, filename)
     if os.path.exists(out_path):
-        print(
-            f"Chart already exists. Skipping plot_cross_actual_vs_predicted_by_model."
-        )
         return
 
-    """
-    Creates a multi-panel figure, one panel per model_name.
-    Within each panel, it overlays actual vs predicted lines for each operator.
-    """
-    import matplotlib.pyplot as plt
     from matplotlib.lines import Line2D
 
     print("  -> Cross: actual_vs_predicted_by_model.pdf")
     models = df["model_name"].unique()
     operators = df["operator"].unique()
-
     color_map = dict(zip(operators, sns.color_palette(n_colors=len(operators))))
 
     cols = 3
@@ -1414,15 +1284,18 @@ def plot_cross_actual_vs_predicted_by_model(df, out_dir):
         for op in sub_model["operator"].unique():
             sub_op = sub_model[sub_model["operator"] == op]
             for _, row in sub_op.iterrows():
-                y_test = ast.literal_eval(row["y_test"])
-                y_pred = ast.literal_eval(row["y_pred"])
+                y_test = row["y_test"]
+                y_pred = row["y_pred"]
+                if isinstance(y_test, str):
+                    y_test = ast.literal_eval(y_test)
+                if isinstance(y_pred, str):
+                    y_pred = ast.literal_eval(y_pred)
                 ax.plot(y_test, "--", color=color_map[op])
                 ax.plot(y_pred, "-", color=color_map[op])
         ax.set_title(model)
         ax.set_xlabel("Sample Index")
         ax.set_ylabel("Value")
 
-    # Clean up any extra axes if models < rows*cols
     for j in range(len(models), len(axes)):
         fig.delaxes(axes[j])
 
@@ -1441,7 +1314,6 @@ def plot_cross_actual_vs_predicted_by_model(df, out_dir):
     )
     fig.suptitle("All Operators - Actual vs. Predicted by Model", fontsize=16)
     fig.tight_layout(rect=[0, 0, 1, 0.95])
-
     fig.savefig(out_path, bbox_inches="tight")
     plt.close(fig)
 
@@ -1450,20 +1322,17 @@ def plot_cross_residual_vs_predicted(df, out_dir):
     filename = "residual_vs_predicted.pdf"
     out_path = os.path.join(out_dir, filename)
     if os.path.exists(out_path):
-        print(f"Chart already exists. Skipping plot_cross_residual_vs_predicted.")
         return
 
-    """
-    Plots residual vs predicted for all operators/models in one chart.
-    """
     print("  -> Cross: residual_vs_predicted.pdf")
-
     all_points = []
     for _, row in df.iterrows():
-        if "residuals" not in row or "y_pred" not in row:
-            continue
-        res = ast.literal_eval(row["residuals"])
-        y_pred = ast.literal_eval(row["y_pred"])
+        res = row["residuals"]
+        y_pred = row["y_pred"]
+        if isinstance(res, str):
+            res = ast.literal_eval(res)
+        if isinstance(y_pred, str):
+            y_pred = ast.literal_eval(y_pred)
         if len(res) != len(y_pred):
             continue
         for r_val, p_val in zip(res, y_pred):
@@ -1475,8 +1344,8 @@ def plot_cross_residual_vs_predicted(df, out_dir):
                     "predicted": p_val,
                 }
             )
+
     if not all_points:
-        print("  -> No residual/predicted data available.")
         return
 
     df_points = pd.DataFrame(all_points)
@@ -1502,10 +1371,6 @@ def plot_cross_residual_vs_predicted(df, out_dir):
 # Cross-Operator Analyses (Data Reduction)
 # ------------------------------------------------------------------------------
 def analyze_data_reduction_cross(results):
-    """
-    Creates cross-operator charts using 'data_reduction' from each operator.
-    Saved to <out>/charts/cross/data_reduction/.
-    """
     print("---- CROSS-OPERATOR: Data Reduction ----")
     cross_dir = os.path.join(OUTPUT_DIR, "charts", "cross", "data_reduction")
     os.makedirs(cross_dir, exist_ok=True)
@@ -1518,7 +1383,6 @@ def analyze_data_reduction_cross(results):
             dr_data.append(df)
 
     if not dr_data:
-        print("  -> No operator has 'data_reduction' for cross-operator charts.")
         return
 
     all_dr = pd.concat(dr_data, ignore_index=True)
@@ -1531,12 +1395,8 @@ def plot_cross_data_reduction(df, out_dir):
     filename = "cross_data_reduction_rmse.pdf"
     out_path = os.path.join(out_dir, filename)
     if os.path.exists(out_path):
-        print(f"Chart already exists. Skipping plot_cross_data_reduction.")
         return
 
-    """
-    Example cross-operator plot: average RMSE vs num_samples for each operator.
-    """
     fig, ax = plt.subplots()
     operators = df["operator"].unique()
     for op in operators:
@@ -1547,7 +1407,6 @@ def plot_cross_data_reduction(df, out_dir):
     ax.set_xlabel("Number of Samples")
     ax.set_ylabel("RMSE")
     ax.legend()
-
     save_chart(fig, out_path)
 
 
@@ -1555,16 +1414,9 @@ def plot_cross_metrics_evolution_by_sample_size(df, out_dir):
     filename = "metrics_evolution_by_sample_size.pdf"
     out_path = os.path.join(out_dir, filename)
     if os.path.exists(out_path):
-        print(
-            f"Chart already exists. Skipping plot_cross_metrics_evolution_by_sample_size."
-        )
         return
 
-    """
-    2x2 chart showing RMSE, MAE, R², Accuracy vs. num_samples for each operator.
-    """
     print(f"  -> Cross: {filename}")
-
     fig, axes = plt.subplots(2, 2, figsize=(10, 8))
     metrics_map = {
         "RMSE": ("rmse", axes[0, 0]),
@@ -1592,20 +1444,15 @@ def plot_cross_residual_metrics_by_sample_size(df, out_dir):
     filename = "residual_metrics_by_sample_size.pdf"
     out_path = os.path.join(out_dir, filename)
     if os.path.exists(out_path):
-        print(
-            f"Chart already exists. Skipping plot_cross_residual_metrics_by_sample_size."
-        )
         return
 
-    """
-    Plots residual-based metrics (MAE, RMSE) vs sample_size, lines for each operator.
-    """
     print(f"  -> Cross: {filename}")
-
     data = df.copy()
     if "residuals" in data.columns:
         data["residuals_eval"] = data["residuals"].apply(
-            lambda x: np.array(ast.literal_eval(x)) if pd.notna(x) else []
+            lambda x: (
+                np.array(ast.literal_eval(x)) if isinstance(x, str) else np.array([])
+            )
         )
         data["mae_calc"] = data["residuals_eval"].apply(
             lambda x: np.mean(np.abs(x)) if len(x) else np.nan
@@ -1636,10 +1483,6 @@ def plot_cross_residual_metrics_by_sample_size(df, out_dir):
 # Cross-Operator Analyses (Feature Selection)
 # ------------------------------------------------------------------------------
 def analyze_feature_selection_cross(results):
-    """
-    Creates cross-operator charts using 'feature_selection' from each operator.
-    Saved to <out>/charts/cross/feature_selection/.
-    """
     print("---- CROSS-OPERATOR: Feature Selection ----")
     cross_dir = os.path.join(OUTPUT_DIR, "charts", "cross", "feature_selection")
     os.makedirs(cross_dir, exist_ok=True)
@@ -1652,7 +1495,6 @@ def analyze_feature_selection_cross(results):
             fs_data.append(df)
 
     if not fs_data:
-        print("  -> No operator has 'feature_selection' for cross-operator charts.")
         return
 
     all_fs = pd.concat(fs_data, ignore_index=True)
@@ -1666,12 +1508,8 @@ def plot_cross_feature_selection(df, out_dir):
     filename = "cross_feature_selection_r2.pdf"
     out_path = os.path.join(out_dir, filename)
     if os.path.exists(out_path):
-        print(f"Chart already exists. Skipping plot_cross_feature_selection.")
         return
 
-    """
-    Example cross-operator chart: line plot of average R² vs num_features, per operator.
-    """
     fig, ax = plt.subplots()
     operators = df["operator"].unique()
     for op in operators:
@@ -1684,7 +1522,6 @@ def plot_cross_feature_selection(df, out_dir):
     ax.set_xlabel("Number of Features")
     ax.set_ylabel("R²")
     ax.legend()
-
     save_chart(fig, out_path)
 
 
@@ -1692,21 +1529,20 @@ def plot_cross_feature_impact(df, out_dir):
     filename = "feature_impact.pdf"
     out_path = os.path.join(out_dir, filename)
     if os.path.exists(out_path):
-        print(f"Chart already exists. Skipping plot_cross_feature_impact.")
         return
 
-    """
-    Aggregates single-feature removal steps for all operators in one chart.
-    """
     print(f"  -> Cross: {filename}")
-
-    df = df.copy()
-    df["selected_features"] = df["selected_features"].apply(ast.literal_eval)
-    df.sort_values(["operator", "num_features"], ascending=[True, False], inplace=True)
+    data = df.copy()
+    data["selected_features"] = data["selected_features"].apply(
+        lambda x: ast.literal_eval(x) if isinstance(x, str) else x
+    )
+    data.sort_values(
+        ["operator", "num_features"], ascending=[True, False], inplace=True
+    )
 
     records = []
-    for op in df["operator"].unique():
-        sub_op = df[df["operator"] == op].reset_index(drop=True)
+    for op in data["operator"].unique():
+        sub_op = data[data["operator"] == op].reset_index(drop=True)
         for i in range(len(sub_op) - 1):
             feats_now = set(sub_op.loc[i, "selected_features"])
             feats_next = set(sub_op.loc[i + 1, "selected_features"])
@@ -1723,7 +1559,6 @@ def plot_cross_feature_impact(df, out_dir):
                 )
 
     if not records:
-        print("No single-feature removal steps found in cross feature_selection data.")
         return
 
     rec_df = pd.DataFrame(records)
@@ -1732,8 +1567,7 @@ def plot_cross_feature_impact(df, out_dir):
     ax.set_xlabel("Removed Feature")
     ax.set_ylabel("Avg ΔRMSE")
     ax.set_title("Cross-Operator: Impact of Removing Each Feature on RMSE")
-    ax.set_xticklabels(ax.get_xticklabels(), rotation=45, ha="right")
-    ax.legend(bbox_to_anchor=(1.02, 1), loc="upper left")
+    plt.xticks(rotation=45, ha="right")
     fig.tight_layout()
     fig.savefig(out_path)
     plt.close(fig)
@@ -1743,16 +1577,9 @@ def plot_cross_metrics_evolution_by_number_of_features(df, out_dir):
     filename = "metrics_evolution_by_number_of_features.pdf"
     out_path = os.path.join(out_dir, filename)
     if os.path.exists(out_path):
-        print(
-            f"Chart already exists. Skipping plot_cross_metrics_evolution_by_number_of_features."
-        )
         return
 
-    """
-    2x2 chart: RMSE, MAE, R², Accuracy vs. num_features for each operator.
-    """
     print(f"  -> Cross: {filename}")
-
     fig, axes = plt.subplots(2, 2, figsize=(10, 8))
     metrics_map = {
         "RMSE": ("rmse", axes[0, 0]),
@@ -1780,20 +1607,15 @@ def plot_cross_residual_metrics_by_number_of_features(df, out_dir):
     filename = "residual_metrics_by_number_of_features.pdf"
     out_path = os.path.join(out_dir, filename)
     if os.path.exists(out_path):
-        print(
-            f"Chart already exists. Skipping plot_cross_residual_metrics_by_number_of_features."
-        )
         return
 
-    """
-    Plot lines for each operator, x=num_features, y=MAE/RMSE from residuals.
-    """
     print(f"  -> Cross: {filename}")
-
     data = df.copy()
     if "residuals" in data.columns:
         data["residuals_eval"] = data["residuals"].apply(
-            lambda x: np.array(ast.literal_eval(x)) if pd.notna(x) else []
+            lambda x: (
+                np.array(ast.literal_eval(x)) if isinstance(x, str) else np.array([])
+            )
         )
         data["mae_calc"] = data["residuals_eval"].apply(
             lambda x: np.mean(np.abs(x)) if len(x) else np.nan
@@ -1823,10 +1645,6 @@ def plot_cross_residual_metrics_by_number_of_features(df, out_dir):
 # Cross-Operator Additional Insights
 # ------------------------------------------------------------------------------
 def analyze_additional_insights_cross(results):
-    """
-    Creates cross-operator charts that might combine multiple CSV sources.
-    Saved to <out>/charts/cross/insights/.
-    """
     print("---- CROSS-OPERATOR: Additional Insights ----")
     cross_dir = os.path.join(OUTPUT_DIR, "charts", "cross", "insights")
     os.makedirs(cross_dir, exist_ok=True)
@@ -2192,12 +2010,81 @@ def plot_memory_by_volume_and_aspect(df, operator, out_dir, max_bins=20):
 
 
 # ------------------------------------------------------------------------------
+# 10. Hyperparameter Tuning Analysis
+# ------------------------------------------------------------------------------
+def analyze_hyperparam_tuning(results):
+    """
+    Reads 'model_tuning.csv' from each operator (and globally),
+    and produces charts about the discovered hyperparams.
+    """
+    print("---- STEP 10: Analyzing Hyperparameter Tuning ----")
+    # We'll check if there's a global 'model_tuning.csv'
+    global_tuning_csv = os.path.join(OUTPUT_DIR, "results", "model_tuning.csv")
+    if not os.path.exists(global_tuning_csv):
+        print("No global model_tuning.csv found. Skipping hyperparam analysis.")
+        return
+
+    tuning_df = pd.read_csv(global_tuning_csv)
+    if tuning_df.empty:
+        print("Empty tuning_df. Skipping hyperparam analysis.")
+        return
+
+    # Basic expansions and chart
+    # We'll parse best_params JSON to separate columns
+    all_rows = []
+    for _, row in tuning_df.iterrows():
+        best_params = row["best_params"]
+        try:
+            best_params = ast.literal_eval(best_params)
+        except:
+            best_params = {}
+        base = {
+            "operator": row["operator"],
+            "model_name": row["model_name"],
+        }
+        for k, v in best_params.items():
+            base[k] = v
+        all_rows.append(base)
+
+    if not all_rows:
+        return
+
+    expanded_df = pd.DataFrame(all_rows)
+    out_dir = os.path.join(OUTPUT_DIR, "charts", "hyperparams")
+    os.makedirs(out_dir, exist_ok=True)
+
+    plot_hyperparam_distribution(expanded_df, out_dir)
+
+
+def plot_hyperparam_distribution(df, out_dir):
+    # We'll filter just numeric columns:
+    numeric_cols = []
+    for col in df.columns:
+        if col not in ["operator", "model_name"] and pd.api.types.is_numeric_dtype(
+            df[col]
+        ):
+            numeric_cols.append(col)
+
+    if not numeric_cols:
+        return
+
+    for param in numeric_cols:
+        # Let's do a simple boxplot of param vs. model_name
+        fig, ax = plt.subplots()
+        sns.boxplot(data=df, x="model_name", y=param, hue="operator", ax=ax)
+        ax.set_title(f"Hyperparam Distribution - {param}")
+        ax.set_ylabel(param)
+        ax.set_xlabel("Model")
+        plt.xticks(rotation=45, ha="right")
+        ax.legend(bbox_to_anchor=(1.02, 1), loc="upper left")
+        out_path = os.path.join(out_dir, f"hyperparam_{param}.pdf")
+        save_chart(fig, out_path)
+
+
+# ------------------------------------------------------------------------------
 # Utilities
 # ------------------------------------------------------------------------------
 def format_volume_label(val):
-    """
-    Formats large volume values to K/M for cleaner axes.
-    """
     val = float(val)
     if val >= 1e6:
         return f"{int(val/1e6)}M"
@@ -2207,9 +2094,6 @@ def format_volume_label(val):
 
 
 def save_chart(fig, out_path):
-    """
-    Saves a Matplotlib figure to out_path and closes it.
-    """
     os.makedirs(os.path.dirname(out_path), exist_ok=True)
     fig.tight_layout()
     fig.savefig(out_path)

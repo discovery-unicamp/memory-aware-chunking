@@ -1,0 +1,9 @@
+operator,model_name,best_params
+gaussian-filter,linear_regression,{}
+gaussian-filter,polynomial_regression,"{""degree"": 2}"
+gaussian-filter,decision_tree,"{""max_depth"": 10, ""min_samples_split"": 8}"
+gaussian-filter,random_forest,"{""n_estimators"": 300, ""max_depth"": 9}"
+gaussian-filter,gradient_boosting,"{""n_estimators"": 300, ""learning_rate"": 0.04955474386145259, ""max_depth"": 3}"
+gaussian-filter,xgboost,"{""n_estimators"": 150, ""learning_rate"": 0.08009398930629048, ""max_depth"": 3}"
+gaussian-filter,support_vector_regression,"{""C"": 2.073744475710208, ""epsilon"": 0.011235755940100149, ""kernel"": ""rbf""}"
+gaussian-filter,elastic_net,"{""alpha"": 0.8936417415096043, ""l1_ratio"": 0.7234748671328193}"
