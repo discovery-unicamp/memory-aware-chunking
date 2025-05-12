@@ -191,7 +191,7 @@ Modeling these memory footprints in advance (Section~\ref{sec:fundamentals-predi
 \begin{itemize}
     \item \textbf{Large Data Volumes:} Modern seismic surveys can produce hundreds of thousands of inlines/xlines, each containing thousands of samples. Straightforward approaches to load an entire volume often exceed per-node memory limits~\cite{Yilmaz2001}.
     \item \textbf{Complex Workflows:} Real seismic processing pipelines involve dozens of operators chained together. Intermediate representations—such as partial migrations or stacked volumes—can quadruple or quintuple the original data size.
-    \item \textbf{Parallel \ac{I/O} and Distribution:} Efficient reading and writing of chunks (inlines or xlines) demands parallel file systems or distributed object stores. Otherwise, \ac{I/O} becomes a bottleneck, overshadowing the benefits of \ac{HPC} parallelism~\cite{Folk2011}.
+    \item \textbf{Parallel \ac{I/O} and Distribution:} Efficient reading and writing of chunks (\eg, inlines or xlines) demands parallel file systems or distributed object stores. Otherwise, \ac{I/O} becomes a bottleneck, overshadowing the benefits of \ac{HPC} parallelism~\cite{Folk2011}.
     \item \textbf{Operator-Specific Memory Peaks:} Some algorithms, like \ac{RTM}, store multiple timesteps of wavefields in memory, leading to spike-and-release usage patterns that are challenging to predict without operator-level insight.
 \end{itemize}
 
@@ -219,11 +219,10 @@ Aside from reference counting, Python also uses a cyclic garbage collector to ha
 This garbage collector periodically scans the program’s object graph to detect and free cycles.
 Because it doesn’t run continuously, memory might appear high right before a collection cycle, and the process can introduce occasional \ac{CPU} spikes.
 
-Another key detail is how Python handles freed memory internally:
+Another key detail is how Python handles freed memory internally. According to Nanjekye \etal~\cite{Nanjekye2023}:
 \begin{quote}
     “Instead of constantly asking the operating system for small pieces of memory, Python grabs large chunks of memory (arenas). Once an object is deleted, the memory inside the arena may be reused by Python but not necessarily returned to the OS.”
 \end{quote}
-~\cite{Nanjekye2023}.
 Thus, total memory usage might look inflated even after freeing objects, simply because Python’s private arenas hold onto memory for reuse.
 
 \subsection{Memory Fragmentation and \ac{OS} Interactions}
@@ -257,7 +256,7 @@ Both \ac{RSS} and \ac{VMS} metrics play distinct roles in memory analysis~\cite{
 \begin{itemize}
     \item \textbf{\ac{RSS} for Real-Time Constraints:} In \ac{HPC} batch scheduling, limits often hinge on how much physical memory a job actually holds at any time.
     \item \textbf{\ac{VMS} for Potential Peak Usage:} If an application or library aggressively over-allocates memory, \ac{VMS} can balloon even if not all pages are used simultaneously.
-    \item \textbf{Container and Ballooning Interactions:} Container runtimes track memory usage at the cgroup level, which may aggregate \ac{RSS} differently and consider \ac{VMS} in overall memory caps.
+    \item \textbf{Container and Ballooning Interactions:} Container runtimes track memory usage at the \ac{cgroup} level, which may aggregate \ac{RSS} differently and consider \ac{VMS} in overall memory caps.
 \end{itemize}
 
 In Python-based \ac{HPC} workloads, the split between \ac{RSS} and \ac{VMS} can become pronounced.
@@ -376,3 +375,5 @@ Data-parallel frameworks—such as Dask—rely on chunking to scale large datase
 Predictive models that link shape attributes (\eg, total volume, dimension sizes) to expected memory usage serve as powerful mechanisms to drive chunking decisions and resource scheduling~\cite{Bader2023,Bader2024}.
 When integrated properly, these models minimize guesswork while maintaining concurrency and preventing \ac{OOM} failures.
 The subsequent chapters detail how to measure Python memory accurately, how to build shape-based predictors for typical scientific workloads, and how to incorporate those predictors into chunk partitioning to achieve reliable, memory-aware data parallelism.
+
+\EB{Notei a ausência de conceitos de processamento sísmico no sumário. Talvez vale a pena dar uma olhada na tabela Contents para verificar se todas as seções principais deste capítulo estão cobertas neste sumário.}

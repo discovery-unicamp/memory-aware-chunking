@@ -24,6 +24,10 @@ The primary performance metrics considered include:
 
 Table~\ref{tab:mode_summary} presents a bird's-eye view of the results:
 
+\EB{Daniel, imagino que as abordagens autochunking e evenly-split sofrem de OOM nas configurações mais custosas, que tomam mais tempo e memória.   
+Como você contabiliza o tempo e a memória nos casos onde houve OOM? Você não inclui na média? Se for o caso, será que a ausência destes resultados nas abordagens auto-chunking e evenly-split não está trazendo a média de tempo e consumo de memória delas para baixo?}
+\EB{Talvez vale a pena resumir na tabela apenas as configurações/runs foram executadas com sucesso pelas três abordagens}
+
 \begin{table}[ht]
     \centering
     \caption{Summarized Execution Time and Peak Memory Usage by Chunking Mode}
@@ -46,6 +50,7 @@ Table~\ref{tab:mode_summary} presents a bird's-eye view of the results:
 
     \item \textbf{Memaware chunking trades speed for reliability.} The average execution time for memaware rose to about 51 seconds, while its median time was around 37.7 seconds.
     However, this increased runtime coincided with a significantly lower peak memory usage: a median peak of about 1.89\,GB, reflecting a notable 28\% reduction compared to the other two methods.
+    \EB{Como ficaria esta comparação se levássemos em consideração apenas as amostras das configurações/experimentos que funcionaram nas três abordagens? (Veja o outro comentário acima)}
 
 \end{itemize}
 
@@ -98,6 +103,7 @@ The results from these categories provide a good cross-section of how chunking m
 \paragraph{Small Shapes (\eg, 100\(\times\)100\(\times\)100).}
 In these smaller volumetric datasets, both auto-chunking and evenly-split chunking generally outperform memaware by a margin of about 5--10\%.
 As shown later in Table~\ref{tab:leaderboard-100x100}, these methods benefit from low overhead when chunk sizes remain modest.
+\EB{Será que é por causa de uma estimativa conservadora de uso de memória do nosso modelo?}
 
 \paragraph{Medium Shapes (\eg, 200\(\times\)200\(\times\)200).}
 When the datasets grow to medium volumes, the performance gap narrows.
@@ -116,6 +122,7 @@ In contrast, memaware consistently completes runs in an acceptable time frame (o
 \medskip
 \noindent
 To provide an at-a-glance view of which mode wins under each shape/worker combination, we include two complementary leaderboards:
+\EBADD{Table~\ref{tab:leaderboard-100x100} and Table~\ref{tab:leaderboard-summary}}.
 
 \begin{table}[ht]
     \centering
@@ -198,7 +205,8 @@ To better illustrate the empirical differences in runtime and memory profiles, F
     \end{subfigure}
     \caption{Effect of chunking strategy on parallel performance for a $200\times200\times200$ dataset:
         (a) Mean execution time (solid lines) with shaded variability for auto (blue), evenly\_split (orange), and memaware (green) chunking modes across 1, 2, 4, 6, and 8 workers—demonstrating flat scaling up to four workers, with memaware incurring extra overhead beyond that point.
-        (b) Mean peak memory usage (solid lines) and variability under the same conditions, showing that memaware chunking increases the memory footprint at higher worker counts, while auto and evenly\_split remain comparatively stable.}
+        (b) Mean peak memory usage (solid lines) and variability under the same conditions, showing that memaware chunking increases the memory footprint at higher worker counts, while auto and evenly\_split remain comparatively stable.
+        \EB{Os tempos observados aqui me levam a crer que as médias que você está reportando na tabela bird's eye view estão enviezadas por incluir tempos e consumo de memória onde só o memaware funciona - se for o caso, não me parece muito justa a comparação.}}
     \label{fig:performance_200}
 \end{figure*}
 
@@ -214,15 +222,17 @@ To better illustrate the empirical differences in runtime and memory profiles, F
         \caption{Memory Usage for $400\times400\times300$}
     \end{subfigure}
     \caption{Impact of chunking strategy on parallel performance for a $400\times400\times300$ dataset:
-        (a) Mean execution time (solid lines) with shaded variability for auto (blue), evenly\_split (orange), and memaware (green) modes across 1–8 workers—showing that memaware incurs increasing overhead at higher worker counts while auto and evenly\_split plateau after two workers.
+        (a) Mean execution time (solid lines) with shaded variability for auto (blue), evenly\_split (orange), and memaware (green) modes across 1–8 workers—showing that memaware incurs increasing overhead at higher worker counts while auto and evenly\_split \EBC{plateau after two workers}{Não consegui ver este plateau -- O gráfico parece sugerir que o evenlysplit e o auto só rodam com 1 worker.}.
         (b) Mean peak memory usage (solid lines) and variability under the same conditions, illustrating that memaware chunking keeps memory well within limits, whereas auto and evenly\_split approaches approach or exceed available memory (risking OOM) as worker count grows.}
     \label{fig:performance_400}
 \end{figure*}
 
 \paragraph{Observations from Figures.}
 \begin{itemize}
-    \item \textbf{Medium-sized data} (\(200 \times 200 \times 200\)): All three strategies exhibit somewhat comparable memory footprints, but memaware shows a more compact distribution, confirming lower and more predictable peak usage.
-    \item \textbf{Large-sized data} (\(400 \times 400 \times 300\)): Auto-chunking and evenly-split chunking distributions widen considerably, reflecting an increased risk of \ac{OOM}. Conversely, memaware chunking remains stable, albeit with higher median execution times.
+    
+    \item \textbf{Medium-sized data} (\(200 \times 200 \times 200\)): All three strategies exhibit somewhat comparable memory footprints, but memaware shows a \EBC{more compact distribution, confirming lower and more predictable peak usage}{Não consegui ver isso a partir das figuras.}.
+    
+    \item \textbf{Large-sized data} (\(400 \times 400 \times 300\)): Auto-chunking and evenly-split chunking distributions widen considerably, reflecting an increased risk of \ac{OOM}. Conversely, memaware chunking remains stable, albeit with \EBC{higher median execution times}{Fazendo um zoom no gráfico, não parece que o tempo médio do memaware é maior nas configurações onde os três funcionam.}.
 \end{itemize}
 
 \subsection{Discussion of Key Findings}
@@ -244,6 +254,8 @@ Based on the results across multiple shapes and concurrency levels, we draw the 
     \item \textbf{Practical considerations for \ac{HPC} or cloud environments}. In many \ac{HPC} or cloud deployments, ephemeral worker nodes can be scaled horizontally. Memaware chunking reduces the risk of losing an entire cluster job if memory is exhausted, which can be critical in pay-per-use or short-time-slot \ac{HPC} queue systems where restarts are expensive.
 \end{enumerate}
 
+\EB{A discussão sobre os key findings está bem legal, no entanto, é importante você revisá-la depois que concluirmos nossa discussão sobre os resultados da seção anterior.}
+
 \subsection{Summary of Findings}
 \label{subsec:summary-of-findings}
 
@@ -253,7 +265,7 @@ In summary, the experimental data yields four primary insights:
 
     \item \textbf{Overall Performance by Mode.}
     Auto-chunking and evenly-split chunking deliver near-identical results in terms of both time and memory usage for smaller runs.
-    Memaware is slower on average (median around 37.7s vs. 15.7s for auto/evenly-split), but cuts median memory usage by about 28\%.
+    Memaware is slower on average (\EBC{median around 37.7s vs. 15.7s for auto/evenly-split}{revisar estes números}), but cuts median memory usage by about 28\%.
 
     \item \textbf{Out-of-Memory Behavior.}
     Auto-chunking and evenly-split chunking both encounter non-negligible \ac{OOM} rates (0.15 vs.\ 0.08, respectively), whereas memaware exhibits zero \ac{OOM}s across 768 runs.

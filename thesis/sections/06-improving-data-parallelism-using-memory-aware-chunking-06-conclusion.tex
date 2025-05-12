@@ -1,8 +1,6 @@
 \section{Conclusion}
 \label{sec:idp-conclusion}
 
-\EB{Não revisei esta seção ainda}
-
 The experimental findings presented in this chapter underscore the critical importance of balancing workload distribution for efficient data-parallel processing in \ac{HPC} environments.
 In essence, partitioning data into appropriately sized chunks is \emph{fundamental}: overly large chunks lead to \ac{OOM} failures, while excessive fragmentation forces undue scheduling overheads.
 Achieving a balanced chunking strategy is therefore crucial for maximizing throughput and ensuring that computations proceed reliably, especially in domains such as seismic imaging and large-scale tensor-based analyses.
@@ -21,6 +19,9 @@ Achieving a balanced chunking strategy is therefore crucial for maximizing throu
 \textbf{Load Balancing Advantages.}
 \begin{itemize}
     \item \textit{Resource Utilization:} An optimally balanced workload helps ensure workers operate near capacity without triggering memory overruns. In cluster contexts, such robust partitioning can prevent job crashes that might otherwise stall entire pipelines.
+    \EB{Uma dúvida que restou é se nossa abordagem de chunking é muito conservadora e acaba gerando chunks muito pequenos. Um possível teste para tentar clarificar este ponto seria rodar com um modo agressivo do memaware onde, em vez de ajustar o chunking com o recomendado pelo memaware, nós utilizaríamos um fator de redução para ajustar a predição de memória e permitir que o algoritmo escolha chunks maiores. Algo como memaware-0.9 ou memaware-0.5 onde a predição de memória seria 10\% (ou 50\% menor do que o predito pelo modelo). Se estas versões agressivas causarem OOM, é um indício de que estamos realizando predições próximas do limiar.}
+    \EB{Acho que podemos deixar este experimento para o artigo ou versão final da dissertação -- pós-defesa. Recomendo deixar para trabalhar nisso após fecharmos o texto para a banca.}
+
     \item \textit{Parallel Efficiency:} Even partitioning reduces idle times by preventing scenarios where one worker is overloaded while another finishes early. Memory-aware chunking further enforces a conservative boundary on chunk size, allowing high concurrency while staying safe from memory spikes.
 \end{itemize}
 

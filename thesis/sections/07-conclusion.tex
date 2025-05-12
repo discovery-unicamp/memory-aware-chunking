@@ -55,7 +55,7 @@ This reduces overhead when profiling large shape grids.
 \label{sec:conc-chunking}
 
 The third phase integrates predictive memory models into a memory-aware chunking scheme for data-parallel tasks, such as those managed by Dask.
-Conventional chunking heuristics (\eg, Dask’s “auto-chunking”) often struggle with higher-dimensional or HPC contexts.
+Conventional chunking heuristics (\eg, Dask’s “auto-chunking”) often struggle with higher-dimensional \EBADD{data} or \EBC{HPC contexts}{distributed HPC contexts?}.
 Chunk sizes either exceed memory limits and trigger out-of-memory conditions or over-fragment the data, producing a proliferation of tiny tasks and excessive scheduling overhead.
 
 Memory-aware chunking computes a chunk dimension \(c\) so each chunk remains below a predefined memory threshold, derived from user constraints and a safety factor.
@@ -98,7 +98,7 @@ The thesis contributes four principal findings across these phases.
 Certain limitations and open research avenues remain.
 \begin{itemize}
     \item Operator-Specific Models.
-    The tested operators (Envelope, \ac{GST3D}, Gaussian Filter) exhibit linear scaling, but other workloads such as deep-learning pipelines and other operators might behave more unpredictably.
+    The tested operators (Envelope, \ac{GST3D}, Gaussian Filter) exhibit linear scaling, but other workloads such as \EBC{deep-learning pipelines}{acho que os pipelines de deep-learning serão bem comportados e previsíveis também} and other operators might behave more unpredictably.
     Applying memory-aware chunking to a broader set of operators demands re-profiling and retraining or refining the predictive model.
     \item \ac{GPU} Memory.
     The thesis focuses on \ac{CPU} memory usage.
@@ -118,5 +118,5 @@ The synergy between precise measurement, lightweight predictive models, and robu
 Shape-based memory predictors and containerized measurement form a practical foundation for advanced resource-aware strategies, including dynamic chunking and integrated \ac{HPC} scheduling.
 
 These methodologies provide reliability through model-based memory bounding and retain flexibility for smaller volumes with minimal overhead.
-They directly apply to industrial and academic seismic processing pipelines and a wide range of large-scale tensor-based computations, such as geospatial imaging, bioinformatics, or climate modeling.
+They directly apply to industrial and academic seismic processing pipelines and \EBADD{can improve} a wide range of large-scale tensor-based computations, such as geospatial imaging, bioinformatics, or climate modeling.
 Further refinement in adaptive safety factor tuning and direct scheduler integration can optimize \ac{HPC} infrastructures even more, reducing hardware overprovisioning costs and the indirect expense of repeated job failures.
