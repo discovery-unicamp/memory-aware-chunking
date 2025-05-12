@@ -2,7 +2,7 @@
 \label{sec:idp-dask-auto-chunking}
 
 Dask~\cite{rocklin2015dask} is a distributed computing library designed to partition large arrays into smaller blocks, known as chunks, facilitating their parallel execution across multiple workers.
-At the heart of Dask’s data partitioning strategy is the \emph{auto-chunking} feature, which attempts to automatically determine suitable chunk sizes based on heuristic-driven approaches.
+At the heart of Dask's data partitioning strategy is the \emph{auto-chunking} feature, which automatically determines suitable chunk sizes based on heuristic-driven approaches.
 These heuristics typically consider several factors:
 
 \begin{itemize}
@@ -34,20 +34,20 @@ The auto-chunking mechanism evaluates the dimensions of an array and partitions 
     \end{algorithmic}
 \end{algorithm}
 
-In simpler, one-dimensional scenarios, this heuristic approach frequently yields effective and efficient chunk sizes.
-However, the heuristic strategy often struggles with higher-dimensional datasets common in complex computations such as seismic analysis and tensor-based operations.
+This heuristic approach frequently yields effective and efficient chunk sizes in simpler, one-dimensional scenarios.
+However, the heuristic strategy often struggles with higher-dimensional datasets, complex computations such as seismic analysis, and tensor-based operations.
 
-In multi-dimensional contexts, the simplistic heuristic frequently results in uneven or excessively small chunks.
-An overly fragmented array leads to a proliferation of small tasks that dramatically increase overhead, placing undue strain on Dask’s task scheduler.
+The simplistic heuristic frequently results in uneven or tiny chunks in multi-dimensional contexts.
+An overly fragmented array leads to a proliferation of small tasks that dramatically increase overhead, placing undue strain on Dask's task scheduler.
 This excessive fragmentation can cause task contention and scheduling bottlenecks, negatively impacting the overall computational throughput and efficiency.
 
-Furthermore, Dask’s default chunking heuristic operates without explicit consideration of algorithm-specific complexities or intermediate data expansions typical in sophisticated computational workflows.
+Furthermore, Dask's default chunking heuristic does not explicitly consider algorithm-specific complexities or intermediate data expansions typical in sophisticated computational workflows.
 Tensor-based operations, such as gradient computations, multi-stage transformations, or operator pipelines, often introduce intermediate data structures that significantly increase memory requirements beyond the original data size.
-For instance, processing a moderate-sized volume like $600\times600\times600$ could inadvertently result in either numerous inadequately small chunks or excessively large chunks, the latter potentially causing \ac{OOM} errors in memory-constrained environments.
+For instance, processing a moderate-sized volume like $600\times600\times600$ could inadvertently result in numerous inadequately small chunks or huge chunks, potentially causing \ac{OOM} errors in memory-constrained environments.
 
 This fundamental limitation highlights the necessity for more sophisticated chunk-sizing strategies that account explicitly for the characteristics of the underlying computational tasks.
 Different computational workloads impose distinct requirements; for example, data pipelines involving deep convolutional operations require carefully shaped chunks that minimize boundary overheads and control memory expansion during intermediate steps.
 Conversely, simpler, volume-based operators might benefit from fewer, larger chunk divisions.
 
-Dask’s auto-chunking mechanism currently lacks the ability to incorporate such task-specific and operator-specific information, leading to suboptimal performance in demanding scenarios typical of seismic and high-dimensional imaging applications.
-Addressing this shortcoming, the subsequent section introduces \emph{memory-aware chunking}, a predictive approach that leverages an algorithm-specific memory usage model to intelligently guide chunk size selection, thereby enhancing both memory efficiency and computational performance.
+Dask's auto-chunking mechanism cannot incorporate task-specific and operator-specific information, leading to suboptimal performance in demanding scenarios typical of seismic and high-dimensional imaging applications.
+Addressing this shortcoming, the subsequent section introduces \emph{memory-aware chunking}. This predictive approach leverages an algorithm-specific memory usage model to intelligently guide chunk size selection, enhancing memory efficiency and computational performance.

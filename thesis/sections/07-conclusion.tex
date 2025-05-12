@@ -11,15 +11,15 @@ Underestimations often lead to \ac{OOM} failures, while overestimations waste co
 \label{sec:conc-measurement}
 
 The first phase establishes a framework to reliably measure Python memory consumption under conditions typical of \ac{HPC} deployments.
-Python’s internal memory model, reference counting, cyclic garbage collection, and dynamic allocation, makes it difficult to capture stable numbers for peak or average memory usage.
+Python's internal memory model, reference counting, cyclic garbage collection, and dynamic allocation make it challenging to capture stable numbers for peak or average memory usage.
 Container-based abstractions (\eg, Docker or other \ac{cgroup}-based solutions) introduce further variability due to filesystem caches, shared kernel resources, and copy-on-write behaviors.
 
 Several practices address these complexities.
 \begin{enumerate}
     \item Clean-Slate Isolation.
-    Lightweight containers or fresh Python subprocesses for each measurement iteration prevent remnant state, memory fragmentation, or objects leftover from prior runs.
+    Lightweight containers or fresh Python subprocesses for each measurement iteration prevent remnant state, memory fragmentation, or objects left over from prior runs.
     \item Cross-Validation with Multiple Tools.
-    Rather than relying on a single utility such as \texttt{top} or \texttt{tracemalloc}, both internal (Python-level) and external (\ac{OS}-level) metrics ensure transient allocations are captured while instrumentation overhead remains limited.
+    Rather than relying on a single utility such as \texttt{top} or \texttt{tracemalloc}, the experiment captures both internal (Python-level) and external (\ac{OS}-level) metrics to ensure transient allocations are measured while limiting instrumentation overhead.
     \item Structured Sampling Methodologies.
     By balancing sampling frequency, which might distort native performance, and the need to capture ephemeral spikes, the strategy retains a sufficiently granular timeline with only a few percentage points of overhead.
 \end{enumerate}
@@ -32,7 +32,7 @@ Empirical tests show that \traceq tracks peak memory usage within 2--3\% of \ac{
 \label{sec:conc-predict}
 
 After establishing reliable measurement techniques, the second phase examines how to predict memory consumption from input shapes, focusing on tensor-based or seismic-processing workloads.
-Many computational routines involving large multidimensional arrays (tensors) exhibit nearly linear memory scaling with the input’s total volume, such as
+Many computational routines involving large multidimensional arrays (tensors) exhibit nearly linear memory scaling with the input's total volume, such as
 \(
 \text{inlines} \times \text{xlines} \times \text{samples}
 \)
@@ -40,22 +40,22 @@ in seismic contexts.
 Key findings include:
 \begin{itemize}
     \item Dominance of Volume.
-    Among shape-derived features (\eg, surface area, aspect ratios, diagonal lengths), the volume term explains the majority of the variance (often exceeding 99\%).
+    Among shape-derived features (\eg, surface area, aspect ratios, diagonal lengths), the volume term explains most of the variance (often exceeding 99\%).
     \item Operator-Specific Variations.
     Although Envelope, \ac{GST3D}, and Gaussian Filter show slightly different slopes due to intermediate buffers, the volume-centric regression captures memory behavior effectively for each operator.
     \item Model Simplicity.
     Complex regressors (\eg, gradient boosting or neural networks) provide only minor gains compared to simpler linear or polynomial regressions, making it practical for \ac{HPC} teams to use faster-to-train models without losing accuracy.
 \end{itemize}
 
-Data reduction experiments confirm that even a moderate set of shape-memory measurements (on the order of 30--40 representative shapes) suffices to build a robust predictive model.
-This reduces overhead when profiling large shape grids.
+Data reduction experiments confirm that even a moderate set of shape-memory measurements (on the order of 30–40 representative shapes) suffices to build a robust predictive model.
+Such limited sampling reduces overhead when profiling large shape grids.
 
 
 \section{Memory-Aware Chunking for Data Parallelism}
 \label{sec:conc-chunking}
 
-The third phase integrates predictive memory models into a memory-aware chunking scheme for data-parallel tasks, such as those managed by Dask.
-Conventional chunking heuristics (\eg, Dask’s “auto-chunking”) often struggle with higher-dimensional \EBADD{data} or \EBC{HPC contexts}{distributed HPC contexts?}.
+The third phase integrates predictive memory models into a memory-aware chunking scheme for data-parallel tasks like those managed by Dask.
+Conventional chunking heuristics (\eg, Dask's "auto-chunking") often struggle with higher-dimensional data or distributed \ac{HPC} contexts.
 Chunk sizes either exceed memory limits and trigger out-of-memory conditions or over-fragment the data, producing a proliferation of tiny tasks and excessive scheduling overhead.
 
 Memory-aware chunking computes a chunk dimension \(c\) so each chunk remains below a predefined memory threshold, derived from user constraints and a safety factor.
@@ -64,16 +64,16 @@ The predictive step uses the learned regression model to estimate peak memory us
 Experimental outcomes show:
 \begin{itemize}
     \item Zero \ac{OOM} Failures.
-    Across hundreds of runs on medium to large \ac{3D} volumes, the memory-aware method avoids out-of-memory incidents even at higher worker counts.
+    The memory-aware method avoids out-of-memory incidents even at higher worker counts across hundreds of runs on medium to large \ac{3D} volumes.
     \item Predictable Resource Usage.
     Peak memory usage per worker remains below the expected limit, minimizing catastrophic job failures in HPC or pay-per-use cloud environments where restarts impose long queue times or extra cost.
     \item Moderate Speed Penalty.
-    On small data, memory-aware chunking can be slower by 5--15\%, compared to automatic or evenly-split chunking.
+    Memory-aware chunking on small data can be slower by 5--15\% compared to automatic or evenly-split chunking.
     For larger datasets prone to \ac{OOM}, memory-aware chunking is often the only feasible approach for reliable completion.
 \end{itemize}
 
 This approach trades some runtime speed for improved reliability and stable memory usage.
-In HPC operations where out-of-memory errors invalidate entire runs, this trade-off becomes highly appealing.
+This trade-off becomes highly appealing in HPC operations where out-of-memory errors invalidate entire runs.
 
 
 \section{Overall Contributions and Relevance to HPC}
@@ -98,8 +98,8 @@ The thesis contributes four principal findings across these phases.
 Certain limitations and open research avenues remain.
 \begin{itemize}
     \item Operator-Specific Models.
-    The tested operators (Envelope, \ac{GST3D}, Gaussian Filter) exhibit linear scaling, but other workloads such as \EBC{deep-learning pipelines}{acho que os pipelines de deep-learning serão bem comportados e previsíveis também} and other operators might behave more unpredictably.
-    Applying memory-aware chunking to a broader set of operators demands re-profiling and retraining or refining the predictive model.
+    The tested operators (Envelope, \ac{GST3D}, Gaussian Filter) exhibit linear scaling, but other workloads, such as other operators, might behave more unpredictably.
+    Applying memory-aware chunking to a broader set of operators demands re-profiling, retraining, or refining the predictive model.
     \item \ac{GPU} Memory.
     The thesis focuses on \ac{CPU} memory usage.
     \ac{HPC} systems increasingly use \ac{GPU} accelerators, and the interplay of \ac{CPU}, \ac{GPU}, and on-device memory introduces further complexity.
@@ -114,9 +114,9 @@ Certain limitations and open research avenues remain.
 
 \section*{Final Remarks}
 
-The synergy between precise measurement, lightweight predictive models, and robust data-parallel frameworks closes the gap between Python memory introspection and \ac{HPC} resource requirements.
+The precise measurement, lightweight predictive models, and robust data-parallel frameworks bridge the gap between Python memory introspection and \ac{HPC} resource requirements.
 Shape-based memory predictors and containerized measurement form a practical foundation for advanced resource-aware strategies, including dynamic chunking and integrated \ac{HPC} scheduling.
 
 These methodologies provide reliability through model-based memory bounding and retain flexibility for smaller volumes with minimal overhead.
-They directly apply to industrial and academic seismic processing pipelines and \EBADD{can improve} a wide range of large-scale tensor-based computations, such as geospatial imaging, bioinformatics, or climate modeling.
+They directly apply to industrial and academic seismic processing pipelines and can improve large-scale tensor-based computations, such as geospatial imaging, bioinformatics, or climate modeling.
 Further refinement in adaptive safety factor tuning and direct scheduler integration can optimize \ac{HPC} infrastructures even more, reducing hardware overprovisioning costs and the indirect expense of repeated job failures.

@@ -5,7 +5,7 @@
 
     Esta dissertação apresenta uma metodologia automatizada de particionamento com consciência de memória, melhorando significativamente a confiabilidade em aplicações Dask ao prever o consumo de memória a partir das dimensões dos dados.
     Realizou-se inicialmente uma avaliação sistemática para identificar fatores que influenciam o uso de memória em tarefas intensivas, especialmente operadores sísmicos (Envelope, \ac{GST3D}, Filtro Gaussiano 3D).
-    Por meio do perfilamento com a biblioteca TraceQ, desenvolvida para este trabalho, o uso de memória foi precisamente capturado em ambientes controlados e conteinerizados.
+    Por meio do perfilamento com a biblioteca \traceq, desenvolvida para este trabalho, o uso de memória foi precisamente capturado em ambientes controlados e conteinerizados.
     Esses experimentos exploraram a relação entre parâmetros de forma dos dados (inlines, xlines, amostras) e os requisitos máximos de memória, identificando padrões previsíveis.
 
     Modelos de regressão foram empregados para prever o uso de memória exclusivamente com base nos parâmetros de forma, apresentando previsões precisas, com baixo erro quadrático médio (RMSE) e elevado poder explicativo ($R^2$ próximo a 1.0).

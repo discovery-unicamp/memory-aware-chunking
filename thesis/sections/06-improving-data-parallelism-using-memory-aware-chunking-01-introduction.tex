@@ -1,26 +1,26 @@
 \section{Introduction}
 \label{sec:idp-introduction}
 
-Data parallelism is a computational strategy that partitions large datasets across multiple processing units or workers, thereby significantly reducing overall processing time.
-This technique effectively leverages available computational resources, particularly when the individual tasks applied to each data subset can execute independently.
-Applications involving seismic attributes and tensor-based computations often exhibit substantial performance improvements through data parallelism because their operations are dominated by large multi-dimensional arrays (tensors), which frequently constitute a substantial portion of memory consumption.
+Data parallelism is a computational strategy that partitions large datasets across multiple processing units or workers, significantly reducing overall processing time.
+This technique effectively leverages available computational resources, particularly when tasks applied to each data subset can execute independently.
+Applications involving seismic attributes and tensor-based computations often see substantial performance improvements from data parallelism because large multi-dimensional arrays (tensors) dominate their operations, frequently consuming significant amounts of memory.
 
-However, achieving optimal performance through data parallelism requires careful management of workload distribution.
-An imbalanced partitioning can severely undermine efficiency, resulting in underutilization of resources on certain workers, while others encounter \ac{OOM} errors due to excessive data loads.
-The key to addressing this imbalance lies in the effective selection of chunk sizes, which determine how the dataset is partitioned across workers.
-Optimal chunk sizing ensures a balanced workload, minimizing memory bottlenecks and maximizing computational throughput.
+However, achieving optimal performance through data parallelism requires carefully managing workload distribution.
+Imbalanced partitioning can severely undermine efficiency, causing some workers to underutilize resources while others encounter \ac{OOM} errors due to excessive data loads.
+Effectively selecting chunk sizes, which determine how the dataset partitions across workers, addresses this imbalance.
+Optimal chunk sizing ensures a balanced workload, minimizes memory bottlenecks, and maximizes computational throughput.
 
-Conventional practices for selecting appropriate chunk sizes generally involve heuristic tuning or a trial-and-error approach.
+Conventional practices for selecting appropriate chunk sizes involve heuristic tuning or a trial-and-error approach.
 Operators typically execute multiple iterations of an algorithm with various chunk configurations, searching for an optimal partitioning that avoids memory errors and maintains acceptable runtime performance.
-This iterative methodology is computationally expensive and often inefficient, as unsuccessful trials can consume significant resources without producing useful outcomes.
+This iterative methodology is computationally expensive and often inefficient, as unsuccessful trials can consume significant resources without producing beneficial outcomes.
 
 Earlier chapters of this thesis established foundational insights critical to addressing these challenges.
 Specifically, \textbf{Chapter~\ref{ch:measuring-memory-consumption}} described robust methodologies to accurately isolate and measure memory usage in computational tasks, laying the groundwork for precise memory profiling.
 Subsequently, \textbf{Chapter~\ref{ch:predicting-memory-consumption-from-input-shapes}} demonstrated how memory consumption in tensor-based algorithms scales predictably based on input shape dimensions, introducing predictive modeling techniques to estimate memory requirements prior to execution.
 
 Leveraging these findings, this chapter presents a novel \emph{memory-aware chunking} mechanism designed to intelligently partition data arrays based on predictive modeling of memory usage.
-The following sections thoroughly evaluate this strategy by comparing it to Dask’s default \emph{auto-chunking} method.
-Specifically, Section~\ref{sec:idp-dask-auto-chunking} describes Dask’s auto-chunking algorithm and identifies its limitations within \ac{HPC} contexts.
+The following sections thoroughly evaluate this strategy by comparing it to Dask's default \emph{auto-chunking} method.
+Specifically, Section~\ref{sec:idp-dask-auto-chunking} describes Dask's auto-chunking algorithm and identifies its limitations within \ac{HPC} contexts.
 Section~\ref{sec:idp-memory-aware-chunking} introduces the memory-aware chunking approach, detailing how a pre-trained model anticipates memory requirements to inform chunk selection proactively.
 Section~\ref{sec:idp-materials-methods} outlines the experimental methodology used to rigorously evaluate both chunking approaches across various data sizes, worker configurations, and chunking modes.
 The outcomes of these experiments, which demonstrate clear advantages of the memory-aware approach over conventional auto-chunking, are presented and analyzed in Section~\ref{sec:idp-experimental-results}.

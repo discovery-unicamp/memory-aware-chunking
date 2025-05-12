@@ -2,7 +2,7 @@
 \label{sec:idp-memory-aware-chunking}
 
 Memory-aware chunking addresses the limitations of heuristic-based methods by employing a predictive model designed to anticipate memory consumption based on input data shapes and operator-specific characteristics.
-This approach leverages a trained regression model, detailed in \textbf{Chapter~\ref{ch:predicting-memory-consumption-from-input-shapes}}, enabling accurate predictions of memory requirements and thereby facilitating informed decisions about optimal chunk sizes.
+This approach leverages a trained regression model, detailed in \textbf{Chapter~\ref{ch:predicting-memory-consumption-from-input-shapes}}, enabling accurate predictions of memory requirements, thereby facilitating informed decisions about optimal chunk sizes.
 The core objective of memory-aware chunking is to ensure that memory usage remains consistently below a specified user-defined threshold, effectively reducing the occurrence of \ac{OOM} incidents.
 
 The memory-aware chunking workflow consists of the following detailed steps:
@@ -12,31 +12,34 @@ The memory-aware chunking workflow consists of the following detailed steps:
 
     \item \textbf{Memory Prediction:} Using the trained predictive regression model, the algorithm estimates the total memory consumption required for processing the entire dataset volume. The model integrates prior knowledge acquired through training on historical data, considering both the volume dimensions and the complexity of the computational operators applied.
 
-    \item \textbf{Chunk Dimension Selection:} The predicted total memory consumption is translated into a per-voxel memory cost. Based on this value, an initial chunk dimension $c$ is calculated, adhering to the constraint:
+    \item \textbf{Chunk Dimension Selection:}
+    The algorithm translates the predicted total memory consumption into a per-voxel memory cost.
+    Using this value, it calculates an initial chunk dimension $c$, adhering to the constraint:
     \begin{equation}
         \label{eq:chunk_dimension_selection}
         c^3 \times \text{(estimated memory per voxel)} \leq \text{memory\_limit} \times \text{safety\_factor}
     \end{equation}
-    This calculation ensures each chunk’s memory requirement remains safely below the established memory limit, adjusted by a configurable safety factor (typically around 0.8), to provide additional operational buffer space.
+    This calculation ensures each chunk's memory requirement remains safely below the established memory limit, adjusted by a configurable safety factor (typically around 0.8), to provide additional operational buffer space.
 
     \item \textbf{Chunk Dimension Refinement:} The initial dimension $c$ is further refined to ensure that each dimension of the original volume is evenly divisible by $c$, thus guaranteeing the generation of regular, rectangular sub-volumes. If necessary, $c$ is adjusted downward until it satisfies alignment constraints or predefined minimal chunk size requirements, ensuring compatibility with computational requirements and hardware constraints.
 
 \end{enumerate}
 
-The Python implementation of this logic is encapsulated in the \texttt{\_find\_memaware\_chunk\_size} function within the script \texttt{collect\_profile.py}. 
-This function explicitly loads a previously trained predictive model (\eg, stored as \texttt{gst3d.pkl}), forecasts the memory requirements for a given volume, and computes the optimal chunk size based on the user-defined memory limit and safety factor parameters. 
-These configurations, represented by environment variables such as \texttt{MEMORY\_LIMIT\_GB} (\eg, 16 GB) and \texttt{SAFETY\_FACTOR} (\eg, 0.8), allow users to dynamically control memory utilization relative to their available computational resources.
+The Python implementation of this logic resides in the \texttt{\_find\_memaware\_chunk\_size} function within the script \texttt{collect\_profile.py}.
+This function explicitly loads a previously trained predictive model (\eg, stored as \texttt{gst3d.pkl}), forecasts the memory requirements for a given volume, and computes the optimal chunk size based on the user-defined memory limit and safety factor parameters.
+These configurations, represented by environment variables such as \texttt{MEMORY\_LIMIT\_GB} (\eg, 16 GB) and \texttt{SAFETY\_FACTOR} (\eg, 0.8), allow users to control memory utilization relative to their available computational resources dynamically.
 
 The benefits of employing memory-aware chunking in large-scale tensor-based computations and seismic processing workflows include:
 
 \begin{itemize}
-    
+
     \item \textbf{Reduced OOM Incidents:} Automatic constraint enforcement ensures chunk sizes remain within specified memory limits, even during intermediate computational stages characterized by temporary memory expansions due to kernel operations and transformations.
 
-    \item \textbf{Predictable and Efficient Scaling:} Memory-aware chunking systematically selects chunk dimensions that distribute workloads evenly across parallel workers, thereby enhancing computational efficiency and resource utilization without being restricted by arbitrary file-block boundaries or heuristic thresholds.
+    \item \textbf{Predictable and Efficient Scaling:} Memory-aware chunking systematically selects chunk dimensions that distribute workloads evenly across parallel workers, enhancing computational efficiency and resource utilization without being restricted by arbitrary file-block boundaries or heuristic thresholds.
 
-    \item \textbf{Minimized Manual Hyper-Parameter Tuning:} By automating the chunk size determination process through predictive modeling, this approach significantly reduces the need for manual tuning. 
-    This minimizes computational overhead associated with iterative, trial-and-error approaches, thereby saving considerable time and computational resources.
+    \item \textbf{Minimized Manual Hyper-Parameter Tuning:}
+    By automating the chunk size determination process through predictive modeling, the proposed approach significantly reduces the need for manual tuning.
+    This automation minimizes computational overhead associated with iterative, trial-and-error methods, saving considerable time and computational resources.
 
 \end{itemize}
 
