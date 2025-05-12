@@ -374,54 +374,6 @@ and Schwiegelshohn, Uwe",
     doi = {10.1145/3292500.3330701}
 }
 
-@misc{delucca2025experiment1,
-    author = {Daniel Fonseca},
-    title = {Memory-Aware Chunking: Experiment Folder for Measuring Memory Consumption of Python programs},
-    year = {2025},
-    howpublished = {\url{https://github.com/discovery-unicamp/memory-aware-chunking/blob/main/experiments/01-measuring-memory-usage-of-python-programs}},
-    note = {Accessed: 2025-03-23}
-}
-
-@misc{delucca2025experiment2,
-    author = {Daniel Fonseca},
-    title = {Memory-Aware Chunking: Experiment Folder for Predicting Memory Consumption from Input Shapes},
-    year = {2025},
-    howpublished = {\url{https://github.com/discovery-unicamp/memory-aware-chunking/blob/main/experiments/02-predicting-memory-consumption-from-input-shapes}},
-    note = {Accessed: 2025-03-23}
-}
-
-@misc{delucca2025experiment2notebooks,
-    author = {Daniel Fonseca},
-    title = {Memory-Aware Chunking: Notebooks Folder for Predicting Memory Consumption from Input Shapes},
-    year = {2025},
-    howpublished = {\url{https://github.com/discovery-unicamp/memory-aware-chunking/blob/main/experiments/02-predicting-memory-consumption-from-input-shapes/notebooks}},
-    note = {Accessed: 2025-03-23}
-}
-
-@misc{delucca2025experiment2script,
-    author = {Daniel Fonseca},
-    title = {Memory-Aware Chunking: Experiment Script for Predicting Memory Consumption from Input Shapes},
-    year = {2025},
-    howpublished = {\url{https://github.com/discovery-unicamp/memory-aware-chunking/blob/main/experiments/02-predicting-memory-consumption-from-input-shapes/scripts/experiment.sh}},
-    note = {Accessed: 2025-03-23}
-}
-
-@misc{delucca2025experiment2results,
-    author = {Daniel Fonseca},
-    title = {Memory-Aware Chunking: Results of the Experiment for Predicting Memory Consumption from Input Shapes},
-    year = {2025},
-    howpublished = {\url{https://github.com/discovery-unicamp/memory-aware-chunking/blob/main/experiments/02-predicting-memory-consumption-from-input-shapes/out/results/20250322210428}},
-    note = {Accessed: 2025-03-23}
-}
-
-@misc{delucca2025experiment2resultscollection,
-    author = {Daniel Fonseca},
-    title = {Memory-Aware Chunking: Results Collection for Predicting Memory Consumption from Input Shapes},
-    year = {2025},
-    howpublished = {\url{https://github.com/discovery-unicamp/memory-aware-chunking/blob/main/experiments/02-predicting-memory-consumption-from-input-shapes/experiment/collect_results.py}},
-    note = {Accessed: 2025-03-23}
-}
-
 @misc{f3dataset,
     author = {dGB Earth Sciences},
     title = {Netherlands Offshore F3 Block - Complete Open Seismic Dataset},
@@ -455,7 +407,7 @@ and de Supinski, Bronis R.",
     publisher = "Springer International Publishing",
     address = "Cham",
     pages = "1--18",
-    abstract = "Users in high performance computing (HPC) clusters normally face challenges to specify accurate resource estimates for running their applications as batch jobs. Prediction is a common way to alleviate this complexity by using historical job records of previous runs to estimate resource usage for new coming jobs. Most of existing resource prediction methods directly build a single model to consider all of the jobs in clusters. However, people in production usage tend to only focus on the resource usage of jobs with certain patterns, e.g. jobs with large memory consumption. This paper proposes a practical resource prediction method for large memory jobs. The proposed method first tries to predict whether a job tends to use large memory size, and then predicts the final memory usage using a model which is trained by only historical large memory jobs. Using several real-world job traces collected from large production clusters of IBM Spectrum LSF customer sites, the evaluation results show that the average prediction errors can be reduced up to 40{\%} for nearly 90{\%} of large memory jobs. Meanwhile, the model training cost can be reduced over 30{\%} for the evaluated job traces.",
+    abstract = "Users in high performance computing (HPC) clusters normally face challenges to specify accurate resource estimates for running their applications as batch jobs. Prediction is a common way to alleviate this complexity by using historical job records of previous runs to estimate resource usage for new coming jobs. Most of existing resource prediction methods directly build a single model to consider all of the jobs in clusters. However, people in production usage tend to only focus on the resource usage of jobs with certain patterns, \eg jobs with large memory consumption. This paper proposes a practical resource prediction method for large memory jobs. The proposed method first tries to predict whether a job tends to use large memory size, and then predicts the final memory usage using a model which is trained by only historical large memory jobs. Using several real-world job traces collected from large production clusters of IBM Spectrum LSF customer sites, the evaluation results show that the average prediction errors can be reduced up to 40{\%} for nearly 90{\%} of large memory jobs. Meanwhile, the model training cost can be reduced over 30{\%} for the evaluated job traces.",
     isbn = "978-3-030-18645-6"
 }
 
@@ -647,4 +599,253 @@ and de Supinski, Bronis R.",
     pages = {3146--3154},
     year = {2017},
     publisher = {Curran Associates, Inc.}
+}
+
+@article{singularity,
+    title = {Singularity: Scientific containers for mobility of compute},
+    author = {Kurtzer, Gregory M. and Sochat, Vanessa and Bauer, Michael W.},
+    journal = {PLOS ONE},
+    volume = {12},
+    number = {5},
+    pages = {e0177459},
+    year = {2017},
+    publisher = {Public Library of Science}
+}
+
+@inproceedings{zaharia2010spark,
+    title = {Spark: Cluster Computing with Working Sets},
+    author = {Zaharia, Matei and Chowdhury, Mosharaf and Franklin, Michael J. and Shenker, Scott and Stoica, Ion},
+    booktitle = {Proceedings of the 2nd USENIX Conference on Hot Topics in Cloud Computing (HotCloud ’10)},
+    pages = {10--10},
+    year = {2010},
+    organization = {USENIX Association}
+}
+
+@inproceedings{vavilapalli2013apache,
+    title = {Apache Hadoop YARN: yet another resource negotiator},
+    author = {Vavilapalli, Vinod K. and Murthy, Arun C. and Douglas, Chris and Agarwal, Sharad and Konar, Mahadev and Evans, Robert and Graves, Thomas and Lowe, Jason and Shah, Hitesh and Seth, Siddharth and Saha, Bikas and Curino, Carlo and O’Malley, Owen and Radia, Sanjay and Reed, Benjamin and Baldeschwieler, Eric},
+    booktitle = {Proceedings of the 4th Annual Symposium on Cloud Computing (SoCC '13)},
+    pages = {1--16},
+    year = {2013},
+    address = {Santa Clara, CA},
+    publisher = {ACM},
+    isbn = {978-1-4503-2428-1},
+    doi = {10.1145/2523616.2523633},
+    url = {https://dl.acm.org/doi/10.1145/2523616.2523633}
+}
+
+@inproceedings{waldspurger-ballooning-2002,
+    title = {Memory Resource Management in {VMware} {ESX} Server},
+    author = {Waldspurger, Carl A.},
+    booktitle = {Proceedings of the 5th Symposium on Operating Systems Design and Implementation (OSDI)},
+    year = 2002,
+    isbn = {1-55586-182-1},
+    location = {Boston, MA},
+    pages = {181--194},
+    numpages = {14},
+    publisher = {USENIX Association},
+    address = {Berkeley, CA, USA},
+    url = {https://www.usenix.org/legacy/event/osdi02/tech/full_papers/waldspurger/waldspurger.pdf},
+}
+
+@misc{linux-man-proc,
+    author = {Linux Man Pages},
+    title = {proc - process information pseudo-filesystem},
+    howpublished = {\url{https://man7.org/linux/man-pages/man5/proc.5.html}},
+    note = {Accessed: 2025-04-30}
+}
+
+@book{kimball-etl,
+    title = {The Data Warehouse ETL Toolkit: Practical Techniques for Extracting, Cleaning, Conforming, and Delivering Data},
+    author = {Kimball, Ralph and Caserta, Joe},
+    publisher = {Wiley},
+    year = 2004,
+    isbn = {978-0764567575},
+}
+
+@book{yilmaz-seismic-data-analysis,
+    title = {Seismic Data Analysis: Processing, Inversion, and Interpretation of Seismic Data},
+    author = {Yilmaz, Oz},
+    publisher = {Society of Exploration Geophysicists},
+    edition = {2nd},
+    year = 2001,
+    isbn = {978-1560800941},
+}
+
+@inproceedings{Yoo2003,
+    author = {Andy B. Yoo and Morris A. Jette and Mark Grondona},
+    title = {SLURM: Simple Linux Utility for Resource Management},
+    booktitle = {Job Scheduling Strategies for Parallel Processing, 9th International Workshop (JSSPP 2003), Revised Papers},
+    series = {Lecture Notes in Computer Science},
+    volume = {2862},
+    pages = {44--60},
+    publisher = {Springer},
+    year = {2003},
+    doi = {10.1007/10968987_3}
+}
+
+@article{Dagum1998OpenMP,
+    author = {Leonardo Dagum and Ramesh Menon},
+    title = {{OpenMP}: an industry-standard API for shared-memory programming},
+    journal = {IEEE Computational Science \& Engineering},
+    volume = {5},
+    number = {1},
+    pages = {46--55},
+    year = {1998},
+    doi = {10.1109/99.660313}
+}
+
+@book{Snir1998MPI,
+    author = {Marc Snir and Steve Otto and Steven Huss-Lederman and David Walker and Jack Dongarra},
+    title = {{MPI}: The Complete Reference, Volume 1: The {MPI} Core},
+    publisher = {MIT Press},
+    address = {Cambridge, MA},
+    year = {1998},
+    edition = {2nd}
+}
+
+@article{Boettiger2015,
+    author = {Carl Boettiger},
+    title = {An introduction to Docker for reproducible research},
+    journal = {ACM SIGOPS Operating Systems Review},
+    volume = {49},
+    number = {1},
+    pages = {71--79},
+    year = {2015},
+    doi = {10.1145/2723872.2723882}
+}
+
+@article{Kurtzer2017,
+    author = {Gregory M. Kurtzer and Vanessa Sochat and Michael W. Bauer},
+    title = {Singularity: Scientific containers for mobility of compute},
+    journal = {PLOS ONE},
+    volume = {12},
+    number = {5},
+    pages = {e0177459},
+    year = {2017},
+    doi = {10.1371/journal.pone.0177459}
+}
+
+@article{Vassiliadis2009ETL,
+    author = {Panos Vassiliadis},
+    title = {A Survey of Extract--Transform--Load Technology},
+    journal = {International Journal of Data Warehousing and Mining},
+    volume = {5},
+    number = {3},
+    pages = {1--27},
+    year = {2009},
+    doi = {10.4018/jdwm.2009070101}
+}
+
+@inproceedings{Rocklin2015,
+    author = {Matthew Rocklin},
+    title = {Dask: Parallel Computation with Blocked Algorithms and Task Scheduling},
+    booktitle = {Proc. of the 14th Python in Science Conference (SciPy)},
+    pages = {126--132},
+    year = {2015},
+    editor = {Kathryn Huff and James Bergstra},
+    doi = {10.25080/Majora-7b98e3ed-013}
+}
+
+@inproceedings{Nanjekye2023,
+    author = {Joannah Nanjekye and David Bremner and Aleksandar Micic},
+    title = {Towards Reliable Memory Management for Python Native Extensions},
+    booktitle = {Proc. of the 31st Annual International Conference on Computer Science and Software Engineering (CASCON)},
+    year = {2023},
+    doi = {10.1145/3554356}
+}
+
+@book{Yilmaz2001,
+    author = {{\"O}zdo{\u{g}}an Yilmaz},
+    title = {Seismic Data Analysis: Processing, Inversion, and Interpretation of Seismic Data},
+    publisher = {Society of Exploration Geophysicists},
+    address = {Tulsa, OK},
+    year = {2001}
+}
+
+@inproceedings{Dean2004,
+    author = {Jeffrey Dean and Sanjay Ghemawat},
+    title = {{MapReduce}: Simplified Data Processing on Large Clusters},
+    booktitle = {Proc. of the 6th Symposium on Operating System Design and Implementation (OSDI)},
+    pages = {137--150},
+    publisher = {USENIX Association},
+    year = {2004}
+}
+
+@inproceedings{Bader2023,
+    author = {Jonathan Bader and Nils Diedrich and Lauritz Thamsen and Odej Kao},
+    title = {Predicting Dynamic Memory Requirements for Scientific Workflow Tasks},
+    booktitle = {Proc. of the IEEE International Conference on Big Data (IEEE BigData)},
+    year = {2023},
+    doi = {10.1109/BigData59044.2023.10386837}
+}
+
+@inproceedings{Bader2024,
+    author = {Jonathan Bader and Ansgar L{\"o}scher and Lauritz Thamsen and Bj{\"o}rn Scheuermann and Odej Kao},
+    title = {{KS+}: Predicting Workflow Task Memory Usage Over Time},
+    booktitle = {Proc. of the IEEE International Conference on e-Science (e-Science)},
+    year = {2024},
+    doi = {10.1109/e-Science62913.2024.10678686}
+}
+
+@inproceedings{Folk2011,
+    author = {Michael Folk and Gerd Heber and Quincey Koziol and Elena Pourmal and Dana Robinson},
+    title = {An overview of the {HDF5} technology suite and its applications},
+    booktitle = {Proc. of the EDBT/ICDT 2011 Workshop on Array Databases},
+    pages = {36--47},
+    year = {2011},
+    doi = {10.1145/1966895.1966900}
+}
+
+@article{okamoto2010,
+    author = {Okamoto, Takuya and Takenaka, Hiroshi and Nakamura, Takeshi and Aoki, Takayuki},
+    year = {2010},
+    month = {12},
+    pages = {939-942},
+    title = {Accelerating Large-Scale Simulation of Seismic Wave Propagation by Multi-GPUs and Three-Dimensional Domain Decomposition},
+    volume = {62},
+    isbn = {978-3-642-16404-0},
+    journal = {Earth Planets and Space},
+    doi = {10.5047/eps.2010.11.009}
+}
+
+@inproceedings{yuyang2024,
+    author = {Yuyang Ji and Lianlei Shan},
+    title = {LDNET: Semantic Segmentation Of High-Resolution Images Via Learnable Patch Proposal And Dynamic Refinement},
+    year = {2024},
+    cdate = {1704067200000},
+    pages = {1-6},
+    url = {https://doi.org/10.1109/ICME57554.2024.10687693},
+    booktitle = {ICME},
+}
+
+@article{pedregosa2011scikit,
+    author = {Pedregosa, Fabian and Varoquaux, Ga\"{e}l and Gramfort, Alexandre and Michel, Vincent and Thirion, Bertrand and Grisel, Olivier and Blondel, Mathieu and Prettenhofer, Peter and Weiss, Ron and Dubourg, Vincent and Vanderplas, Jake and Passos, Alexandre and Cournapeau, David and Brucher, Matthieu and Perrot, Matthieu and Duchesnay, \'{E}douard},
+    title = {Scikit-learn: Machine Learning in Python},
+    year = {2011},
+    issue_date = {2/1/2011},
+    publisher = {JMLR.org},
+    volume = {12},
+    number = {null},
+    issn = {1532-4435},
+    abstract = {Scikit-learn is a Python module integrating a wide range of state-of-the-art machine learning algorithms for medium-scale supervised and unsupervised problems. This package focuses on bringing machine learning to non-specialists using a general-purpose high-level language. Emphasis is put on ease of use, performance, documentation, and API consistency. It has minimal dependencies and is distributed under the simplified BSD license, encouraging its use in both academic and commercial settings. Source code, binaries, and documentation can be downloaded from http://scikit-learn.sourceforge.net.},
+    journal = {J. Mach. Learn. Res.},
+    month = nov,
+    pages = {2825–2830},
+    numpages = {6}
+}
+
+@inproceedings{kohavi1995study,
+    author = {Kohavi, Ron},
+    title = {A study of cross-validation and bootstrap for accuracy estimation and model selection},
+    year = {1995},
+    isbn = {1558603638},
+    publisher = {Morgan Kaufmann Publishers Inc.},
+    address = {San Francisco, CA, USA},
+    abstract = {We review accuracy estimation methods and compare the two most common methods crossvalidation and bootstrap. Recent experimental results on artificial data and theoretical re cults in restricted settings have shown that for selecting a good classifier from a set of classifiers (model selection), ten-fold cross-validation may be better than the more expensive leaveone-out cross-validation. We report on a largescale experiment--over half a million runs of C4.5 and a Naive-Bayes algorithm--to estimate the effects of different parameters on these algrithms on real-world datasets. For crossvalidation we vary the number of folds and whether the folds are stratified or not, for bootstrap, we vary the number of bootstrap samples. Our results indicate that for real-word datasets similar to ours, The best method to use for model selection is ten fold stratified cross validation even if computation power allows using more folds.},
+    booktitle = {Proceedings of the 14th International Joint Conference on Artificial Intelligence - Volume 2},
+    pages = {1137–1143},
+    numpages = {7},
+    location = {Montreal, Quebec, Canada},
+    series = {IJCAI'95}
 }

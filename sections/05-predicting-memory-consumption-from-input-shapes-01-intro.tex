@@ -24,14 +24,14 @@ More accurate pre-runtime memory predictions enable users to request memory more
 The content in this chapter prioritizes tensor-based workloads, which revolve around large multidimensional arrays often referred to as \textit{tensors}.
 For clarity, the term “tensor-based” (or equivalently, “tensor-centric”) describes computations centered on these large data structures, sometimes also called “array-based” workloads, which exhibit strong correlations between memory usage and input shape.
 Numerous scientific and data-centric applications center on these large multidimensional arrays.
-Examples include seismic wave simulations on \ac{3D} grids\ADDREF, high-resolution image analysis in computer vision\ADDREF, and large-scale numerical linear algebra routines in scientific computing\ADDREF.
+Examples include seismic wave simulations on \ac{3D} grids~\cite{okamoto2010}, high-resolution image analysis in computer vision~\cite{yuyang2024}, and large-scale numerical linear algebra routines in scientific computing.
 Memory consumption in these scenarios often scales according to array dimensions, because storage for input data structures and intermediate results typically dominates memory usage.
 For example, doubling the resolution of an input image in each dimension roughly quadruples its memory footprint~\cite{stackoverflow_memory_inv}, while in deep neural networks increasing either input size or batch size similarly amplifies memory usage due to larger activation maps and additional computation~\cite{dell_3dunet_memory}.
 These relationships underscore the crucial role of input shape in determining memory demands for tensor-centric workloads.
 A predictive model that captures how memory scales with shape parameters can then offer robust estimates for new input configurations.
 
 Several research directions have explored memory usage estimation and prediction in related fields.
-In the \ac{HPC} domain, historical job data from systems like Slurm often enable machine learning models to predict resource consumption.
+In the \ac{HPC} domain, historical job data from systems like Slurm often enable \ac{ML} models to predict resource consumption.
 These models exploit features such as job metadata and input sizes to forecast memory requirements~\cite{yoo2003slurm}.
 That approach demonstrates that ample historical data can support reliable predictions for recurring workloads.
 In high-level numerical computing, analytical modeling of memory for array operations provides another possibility~\cite{cornell_memory_workshop}.

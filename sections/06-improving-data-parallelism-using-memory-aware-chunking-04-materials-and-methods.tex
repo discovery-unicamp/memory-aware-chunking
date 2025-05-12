@@ -30,7 +30,7 @@ Important configurable parameters include:
     \item \texttt{EXPERIMENT\_IMAGE\_TAG}: Docker image tag used for executing Python scripts.
     \item \texttt{EXPERIMENT\_N\_RUNS}: Number of repetitions for each scenario, defaulting to 3 runs per configuration.
     \item \texttt{DATASET\_INITIAL\_SIZE}, \texttt{DATASET\_FINAL\_SIZE}, \texttt{DATASET\_STEP\_SIZE}: Control the dimensions of synthetic seismic data generated, ranging from 100³ to 400³ voxels, incremented by steps of 100.
-    \item \texttt{WORKER\_SCENARIOS}: Specifies worker configurations (e.g., \texttt{single:1}, \texttt{two:2}, \texttt{smalln:4}, \texttt{bign:8}).
+    \item \texttt{WORKER\_SCENARIOS}: Specifies worker configurations (\eg, \texttt{single:1}, \texttt{two:2}, \texttt{smalln:4}, \texttt{bign:8}).
     \item \texttt{CHUNKING\_MODES}: Determines which chunking strategies to compare, including \texttt{auto}, \texttt{evenly\_split}, and \texttt{memaware}.
     \item \texttt{GST3D\_MODEL\_FILE}: Path to the pre-trained predictive model for memory-aware chunking.
     \item \texttt{MEMORY\_LIMIT\_GB}: Defines the total memory allocation available per scenario, partitioned evenly among workers.
@@ -41,7 +41,7 @@ All configuration settings are logged at the experiment’s initiation for trans
 \subsection*{Step 1: Data Generation}
 
 Data generation utilizes the \texttt{generate\_data.py} script, which systematically creates synthetic \ac{SEG-Y} seismic datasets across a grid of specified shapes.
-It iteratively generates data volumes for all combinations of dimensions defined within the configured size range (e.g., $(100,100,100)$ through $(400,400,400)$), saving each as individual \texttt{.segy} files.
+It iteratively generates data volumes for all combinations of dimensions defined within the configured size range (\eg, $(100,100,100)$ through $(400,400,400)$), saving each as individual \texttt{.segy} files.
 
 \subsection*{Step 2: Profiling Scenarios}
 

@@ -4,7 +4,7 @@
 Accurate measurement of Python applications' memory usage presents significant challenges.
 Python’s internal memory manager and operating system abstractions each introduce complexities and potential inaccuracies.
 This section highlights key issues, providing a foundational overview.
-For an in-depth examination, refer to Appendix~\ref{ch:appendix-challenges-and-pitfalls-in-accurate-memory-measurement}.
+For an in-depth examination, refer to Appendix~\ref{ch:appendix-challenges-pitfalls}.
 
 \subsection{Dynamic Memory and Garbage Collection}
 \label{subsec:mmc-challenges-gc}
@@ -34,28 +34,27 @@ Fragmentation restricts effective reuse of memory segments, inflating the report
 Modern operating system features introduce complexities into accurate memory measurements:
 
 \begin{itemize}
-    
+
     \item \textbf{Caching Mechanisms.} \ac{OS}-level caching strategies such as filesystem caches and memory compression technologies (\eg, Linux’s \texttt{zswap}~\cite{zswap}, \texttt{zram}~\cite{zram}) can misleadingly indicate reserved or compressed memory as actively used.
-    
-    \item \textbf{\ac{COW}.} Processes that employ forking behavior copy memory pages only upon modification. 
+
+    \item \textbf{\ac{COW}.} Processes that employ forking behavior copy memory pages only upon modification.
     This mechanism can artificially inflate memory usage readings unless properly accounted for.
-    
-    \item \textbf{Container Overheads.} Containerization tools like Docker abstract memory usage in ways that standard process-level profilers may inaccurately represent. 
+
+    \item \textbf{Container Overheads.} Containerization tools like Docker abstract memory usage in ways that standard process-level profilers may inaccurately represent.
     Container-specific caching mechanisms can distort traditional \ac{OS}-level memory metrics.
 \end{itemize}
 
 Failing to account for these \ac{OS}-level optimizations can significantly skew memory usage assessments.
 
-\subsection{Tool Overhead}
+\subsection{Profiling Tool's Overhead}
 \label{subsec:mmc-challenges-tool-overhead}
-\EB{Que tal chamar de Profiling Tools' Overhead ou Profiling Memory Overhead}
 
 Memory profiling tools themselves introduce additional overhead~\cite{scalene}, impacting measurements:
 
 \begin{itemize}
 
     \item \textbf{Internal Profilers.} Tools such as \texttt{tracemalloc}, which intercept memory allocation calls, alter native allocation behavior and can increase observed memory usage, especially during numerous small allocations.
-    
+
     \item \textbf{Sampling Frequency.} Continuous versus periodic measurement introduces trade-offs. Frequent sampling provides detailed profiles but increases overhead, while infrequent sampling may overlook transient memory spikes.
 
 \end{itemize}
@@ -70,12 +69,10 @@ Underestimating memory can trigger \ac{OOM} conditions, wasting computational re
 Conversely, overestimating memory leads to inefficient resource allocation and elevated operational costs.
 Therefore, a rigorous measurement strategy addressing Python’s dynamic memory allocation, \ac{OS}-level caching effects, and tool overhead is essential.
 
-\EB{Em vez de ser uma sub-seção, o parágrafo acima poderia ser fundido com (ou adicionado ao) parágrafo inicial da Seção~\ref{sec:mmc-common-challenges-and-pitfalls}.}
-
 \subsection{Detailed Exploration in the Appendix}
 \label{subsec:mmc-challenges-appendix-ref}
 
-For an extensive exploration of these challenges, particularly \ac{OS} memory management, as well as advanced Python and \ac{OS} features, consult Appendix~\ref{ch:appendix-challenges-and-pitfalls-in-accurate-memory-measurement}.
+For an extensive exploration of these challenges, particularly \ac{OS} memory management, as well as advanced Python and \ac{OS} features, consult Appendix~\ref{ch:appendix-challenges-pitfalls}.
 The appendix offers comprehensive insights into each factor's implications for memory metrics, alongside strategies for isolating or mitigating their impact during experimental setups.
 
 The subsequent section introduces best practices derived from understanding these challenges, emphasizing environment isolation, and validation through container-specific tools to enhance the reliability of Python memory profiling in practical applications.

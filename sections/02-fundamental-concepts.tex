@@ -1,57 +1,213 @@
 \chapter{Fundamental Concepts}
 \label{ch:fundamental-concepts}
 
-\EB{Daniel, o capítulo oferece explicações e definições dos principais termos, mas senti falta de referência de onde você tirou estas explicações. Geralmente referenciamos materiais bem consolidados, como livros técnicos e/ou surveys - artigos periódicos que discorrem sobre um determinado tema. Geralmente, para cada definição, é de praxe colocarmos uma referência no final da frase.}
-
-\ac{HPC} accelerates large-scale scientific, engineering, and data-driven tasks by distributing computation over multiple nodes, \ac{CPU}s, or specialized accelerators.
-These environments demand careful planning of memory and processing resources, because errors in estimation can degrade throughput or cause \ac{OOM} failures.
-Python’s increasing adoption in \ac{HPC} contexts offers accessibility and a rich ecosystem of libraries, but it also introduces a unique set of challenges related to memory usage.
-Containerization, meanwhile, has evolved as a lightweight alternative to full virtualization, adding another dimension to resource management.
-Data-parallel frameworks such as Dask further \EBC{complicate or enhance}{qual é o ponto aqui? Argumentar que ele ajuda ou que ele atrapalha?} performance by partitioning data into chunks, where naive chunking strategies can ignore memory-intensive stages.
-Predictive modeling of resource needs arises as an effective solution to reduce trial-and-error.
+\ac{HPC} accelerates large-scale scientific, engineering, and data-driven tasks by distributing computation over multiple nodes, \ac{CPU}, or specialized accelerators~\cite{Yoo2003,Snir1998MPI,Dagum1998OpenMP}.
+These environments demand careful planning of memory and processing resources, because errors in estimation can degrade throughput or cause \ac{OOM} failures~\cite{Bader2023}.
+Python’s increasing adoption in \ac{HPC} contexts offers accessibility and a rich ecosystem of libraries, but it also introduces a unique set of challenges related to memory usage~\cite{Nanjekye2023}.
+Containerization, meanwhile, has evolved as a lightweight alternative to full virtualization, adding another dimension to resource management~\cite{Boettiger2015,Kurtzer2017}.
+Data-parallel frameworks such as Dask further enhance performance by partitioning data into chunks, where naive chunking strategies can ignore memory-intensive stages~\cite{Rocklin2015}.
+Predictive modeling of resource needs arises as an effective solution to reduce trial-and-error~\cite{Bader2023,Bader2024}.
 This chapter details these core \ac{HPC} and Python concepts, illuminating why memory measurement and prediction strategies require specialized approaches.
 
 
 \section{High-Performance Computing Overview}
 \label{sec:fundamentals-hpc-overview}
 
-\ac{HPC} platforms integrate numerous compute nodes, each containing multiple \ac{CPU} cores or \ac{GPU}s, unified through high-speed interconnects such as InfiniBand~\cite{infiniband-ta-2015}.
-Jobs typically request resources through a batch scheduler, for example Slurm or \ac{PBS}.
+\ac{HPC} platforms integrate numerous compute nodes, each containing multiple \ac{CPU} cores or \ac{GPU}, unified through high-speed interconnects such as InfiniBand~\cite{infiniband-ta-2015}.
+Jobs typically request resources through a batch scheduler, for example Slurm or \ac{PBS}~\cite{Yoo2003}.
 Schedulers queue and dispatch these jobs according to priority, availability, and requested resource constraints.
 Memory allocation must be specified in advance, and erroneous estimates have direct consequences.
 Overestimation wastes cluster capacity.
-Underestimation leads to abrupt terminations when the requested memory limit is exceeded.
+Underestimation leads to abrupt terminations when the requested memory limit is exceeded~\cite{Bader2023,Bader2024}.
 
 \subsection{Resource Allocation and Scheduling}
 \label{subsec:fundamentals-resource-allocation}
 
-Schedulers organize job placement by matching requests to available hardware resources.
+Schedulers organize job placement by matching requests to available hardware resources~\cite{Yoo2003}.
 A job that requests certain memory and \ac{CPU} time receives an allocation that remains exclusive until job completion.
-This exclusivity makes memory misuse or imprecise estimates especially costly, since HPC nodes cannot be effectively shared beyond the scheduled allocations.
-If a program demands more memory than predicted, the result can be node-level \ac{OOM} kills, requeuing, or job failure.
-Such inefficiencies motivate improved predictive models and measurement tools.
+This exclusivity makes memory misuse or imprecise estimates especially costly, since \ac{HPC} nodes cannot be effectively shared beyond the scheduled allocations.
+If a program demands more memory than predicted, the result can be node-level \ac{OOM} kills, requeuing, or job failure~\cite{Bader2023}.
+Such inefficiencies motivate improved predictive models and measurement tools~\cite{Bader2024}.
 
 \subsection{Parallel Workloads and Concurrency}
 \label{subsec:fundamentals-parallel-concurrency}
 
-\ac{HPC} workloads often rely on parallelization interfaces like \ac{OpenMP} (thread-based), \ac{MPI} (message passing), or higher-level abstractions such as array partitioning frameworks.
+\ac{HPC} workloads often rely on parallelization interfaces like \ac{OpenMP} (thread-based)~\cite{Dagum1998OpenMP}, \ac{MPI} (message passing)~\cite{Snir1998MPI}, or higher-level abstractions such as array partitioning frameworks~\cite{Rocklin2015}.
 Parallel processes operate on different segments of data or distinct tasks within the same workflow.
 Memory usage then must be balanced across multiple workers or nodes to avoid local \ac{OOM} incidents.
 In distributed-memory architectures, each node has private memory.
 In shared-memory or hybrid architectures, different threads or processes may compete for the same memory pool.
-Either approach demands a clear understanding of per-worker memory behavior.
+Either approach demands a clear understanding of per-worker memory behavior~\cite{Bader2023}.
+
+\subsection{Extract, Transform, Load (ETL)}
+\label{subsec:fundamentals-etl}
+
+\ac{ETL} stands for \textit{Extract, Transform, Load}, a foundational process in data warehousing, analytics, and large-scale data management~\cite{Vassiliadis2009ETL}.
+The core idea is to move data from various sources into a target repository (\eg, a data lake or \ac{HPC} storage system) in a structured and consistent manner.
+Although often viewed as an enterprise or business-intelligence technique, \ac{ETL} can also play a significant role in scientific computing pipelines, where heterogeneous datasets must be standardized for further analysis or simulation~\cite{Vassiliadis2009ETL}.
+
+\paragraph{Extraction.}
+This step involves retrieving data from one or more sources, such as relational databases, \ac{CSV} files, \ac{API} endpoints, or sensor streams.
+The challenge is handling differing formats and access patterns, especially in \ac{HPC} contexts where data may reside on shared storage volumes or across geographically distributed clusters.
+Efficient extraction typically requires parallel \ac{I/O}, buffering strategies, or chunk-based reads to avoid bottlenecks when working with massive datasets~\cite{Dean2004}.
+
+\paragraph{Transformation.}
+Once data is extracted, it is cleaned, normalized, and reshaped in memory or on intermediate disk.
+Transformations may include:
+\begin{itemize}
+    \item \emph{Data Cleaning:} Removing duplicates, filling missing values, or standardizing units.
+    \item \emph{Data Restructuring:} Aggregating or pivoting tables, splitting or merging columns, and performing type conversions.
+    \item \emph{Business Logic or Domain-Specific Rules:} Converting raw measurements to domain-specific metrics or applying specialized filters.
+\end{itemize}
+In Python-based \ac{HPC} environments, libraries like Pandas or Dask can handle transformation steps at scale, enabling distributed processing of large datasets~\cite{Rocklin2015}.
+However, memory consumption can spike if transformations involve heavy reshuffling or create intermediate copies of the data (Section~\ref{sec:fundamentals-python-memory}).
+
+\paragraph{Loading.}
+Finally, the data is loaded into a target system, which might be a data warehouse, \ac{HPC} file system, or a distributed data store.
+In \ac{HPC} pipelines, loading could mean writing chunked, transformed arrays to a parallel file system or shipping the data into a specialized database for subsequent analysis.
+Loading steps must often balance throughput (to reduce job duration) with cluster resource constraints (to avoid saturating network and storage \ac{I/O}).
+
+\paragraph{\ac{ETL} in \ac{HPC} and Data-Intensive Workflows.}
+Although \ac{ETL} originated in business intelligence, large-scale scientific workflows frequently mirror the same pattern: gather data from instruments or simulations, apply domain-specific transformations, and place the results into a centralized repository for further analysis or visualization~\cite{Vassiliadis2009ETL}.
+In \ac{HPC} contexts, \ac{ETL} must cope with:
+\begin{itemize}
+    \item \textbf{Massive Data Volumes:} Source datasets can reach petabyte scale, demanding careful partitioning and parallelism.
+    \item \textbf{Performance Constraints:} Minimizing \ac{I/O} overhead and memory usage is crucial; naive approaches might trigger \ac{OOM} events or \ac{I/O} bottlenecks.
+    \item \textbf{Multi-Stage Pipelines:} Data often undergoes iterative transformations (\eg, cleaning, feature engineering, subsetting) before final storage, requiring scheduling strategies that optimize each \ac{ETL} phase across available cluster resources.
+\end{itemize}
+
+\paragraph{Relation to Memory Measurement and Prediction.}
+\ac{ETL} jobs exhibit spiky memory usage due to bulky transformations and intermediate data copies.
+Predictive models that estimate memory consumption (see Section~\ref{sec:fundamentals-predictive-modeling}) can inform better chunk sizing and resource allocation, reducing failures from unforeseen memory peaks~\cite{Bader2023,Bader2024}.
+By integrating \ac{ETL}-aware memory planning with HPC schedulers, large workflows can avoid over-allocation (leading to wasted capacity) or under-allocation (causing abrupt crashes).
+
+\ac{ETL} thus serves as a critical building block for data-driven workflows in both enterprise and scientific domains~\cite{Vassiliadis2009ETL}.
+Understanding its memory footprint and performance demands helps \ac{HPC} administrators and data engineers plan more efficient pipelines, ensuring that each stage—from extraction to loading—remains within the available cluster resources.
+
+\subsection{Task Execution in Dask}
+\label{subsec:fundamentals-dask-execution}
+
+Dask is a flexible parallel computing library in Python that enables users to scale their code from single-machine multi-core setups to large \ac{HPC} clusters or cloud environments~\cite{Rocklin2015}.
+At its core, Dask translates high-level operations (\eg, array or dataframe transformations) into a \ac{DAG} of tasks.
+Each node in the graph represents a discrete unit of work, and edges capture inter-task dependencies (for instance, one chunk of an array depends on another chunk’s partial result).
+
+\paragraph{DAG Construction.}
+When a user calls methods on a Dask collection (like \texttt{dask.array} or \texttt{dask.dataframe}), the library does not immediately execute those operations.
+Instead, it records them as nodes and edges in a \ac{DAG}.
+Only when the user explicitly requests a result (\eg, by calling \texttt{.compute()}) does Dask traverse this graph to determine the order in which tasks must run~\cite{Rocklin2015}.
+
+\paragraph{Schedulers and Worker Processes.}
+Dask supports multiple schedulers:
+\begin{itemize}
+    \item \emph{Single-Threaded or Multi-Threaded Scheduler:} Useful for debugging or quick, local computations.
+    \item \emph{Distributed Scheduler:} Typically used in an \ac{HPC} or multi-machine context. A central scheduler process coordinates a cluster of workers that each execute subsets of the task graph~\cite{Rocklin2015}.
+\end{itemize}
+Each worker typically has its own process (or multiple threads), allowing parallel execution of tasks on different chunks of data.
+The scheduler tracks task dependencies, idle workers, and data locality, deciding which worker should handle each task to minimize network overhead and memory pressure.
+
+\paragraph{Task Lifecycle.}
+Once a task is ready to run (\ie, all its dependencies have finished), the scheduler dispatches it to a worker.
+That worker loads or receives the required data (possibly reading from disk or pulling from another worker’s memory), executes the associated Python function, and then stores the result in memory.
+If subsequent tasks depend on that result, the scheduler can direct them to the same worker (to minimize data movement) or to another worker (if balancing load or addressing memory constraints).
+
+\paragraph{Importance of Chunk Sizing.}
+Dask collections frequently revolve around chunked data structures—\textit{dask arrays} split along one or more axes, or \textit{dask dataframes} partitioned by index or row groups~\cite{Rocklin2015}:
+\begin{itemize}
+    \item \textbf{Memory Efficiency:} Chunks that are too large increase the likelihood of \ac{OOM} failures on a worker, as each chunk must be processed in \ac{RAM}.
+    \item \textbf{Scheduling Overhead:} Conversely, overly small chunks cause scheduling overhead to dominate, as the number of tasks in the \ac{DAG} grows and the scheduler spends more time orchestrating tasks than performing computations~\cite{Dean2004}.
+    \item \textbf{Operator Complexity:} Some operations (e.g., \ac{FFT}, convolutions, or data shuffles) inflate memory usage beyond the raw size of the input chunk. Estimating this inflation (see Section~\ref{sec:fundamentals-predictive-modeling}) helps prevent chunk sizing that inadvertently leads to worker crashes~\cite{Bader2024}.
+\end{itemize}
+
+\paragraph{Adaptive Scheduling and Dynamic Rebalancing.}
+Recent Dask enhancements include adaptive scheduling features, where the cluster can scale the number of workers up or down based on the current demand~\cite{Rocklin2015}.
+In \ac{HPC} clusters or containerized environments, this may mean provisioning extra workers for a memory-intensive phase and then releasing them once the workflow moves to a lighter stage.
+Meanwhile, Dask can optionally \emph{rebalance} data across workers if one worker’s memory usage grows too high, although such rebalancing introduces additional data movement costs.
+
+\paragraph{Takeaways.}
+By building and executing tasks from a \ac{DAG}, Dask allows parallelism across many computational resources, making it well-suited for data-intensive tasks in Python~\cite{Rocklin2015}.
+However, the design of that \ac{DAG}—particularly how data is chunked and tasks are distributed—directly impacts performance, memory overhead, and reliability.
+Understanding Dask’s scheduling behavior and the interplay between chunk size and operator resource usage is therefore crucial for creating robust, high-performance applications in scientific computing, data analytics, and beyond.
+
+
+\section{Seismic Data and Processing}
+\label{sec:fundamentals-seismic}
+
+Seismic data acquisition and processing form the backbone of subsurface exploration, particularly in the oil and gas industry but also in broader geophysical research~\cite{Yilmaz2001}.
+The techniques involve recording reflected sound (or elastic) waves as they travel through the Earth, storing them in large volumes, and applying various mathematical transformations, called seismic operators, to interpret subsurface structures.
+These processes are computationally and memory intensive, making \ac{HPC} an indispensable tool for modern seismic analysis~\cite{Yilmaz2001}.
+
+\subsection{Seismic Fundamentals}
+\label{subsec:fundamentals-seismic-fundamentals}
+
+A \textit{seismic survey} typically involves emitting controlled energy sources (\eg, vibroseis trucks or air guns) and recording the returned echoes at numerous receiver locations.
+The recorded signals form traces, each capturing how the subsurface reflects these signals over time.
+When these traces are merged, corrected, and positioned in a consistent spatial grid, they create a \ac{3D} volume of amplitude values~\cite{Yilmaz2001}.
+
+\begin{itemize}
+    \item \textbf{Time or Depth Axis:} Seismic traces are indexed by either \emph{time} (how long it takes for the wave to return) or \emph{depth} (estimated from velocity models).
+    \item \textbf{Amplitude:} Each sample in a trace represents the reflection strength at that time or depth, influenced by subsurface rock properties.
+    \item \textbf{Multi-Dimensional Data:} Modern surveys can easily reach terabyte- or petabyte-scale, necessitating parallel \ac{I/O} and distributed memory management (see Section~\ref{sec:fundamentals-data-parallel}) to handle the massive datasets efficiently~\cite{Yilmaz2001}.
+\end{itemize}
+
+\subsection{Inlines, Xlines, and Samples}
+\label{subsec:fundamentals-inlines-xlines-samples}
+
+Seismic volumes are commonly organized into a grid with three primary axes:
+
+\paragraph{Inlines.}
+These slices run in one principal orientation of the survey, often aligned with the direction of data acquisition.
+Each inline is effectively a \ac{2D} cross-section of amplitude samples~\cite{Yilmaz2001}.
+
+\paragraph{Xlines.}
+Sometimes called crosslines, these slices run orthogonally (or nearly so) to the inlines, creating another set of \ac{2D} cross-sections.
+Together, inlines and xlines allow geophysicists to navigate the seismic volume from multiple perspectives~\cite{Yilmaz2001}.
+
+\paragraph{Samples.}
+Along each inline or xline, the data is discretized into \emph{samples} that represent distinct time (or depth) intervals.
+A given seismic trace might have thousands of samples, and each sample is a floating-point amplitude value~\cite{Yilmaz2001}.
+
+In \ac{HPC} contexts, deciding how to \textit{chunk} or partition inlines, xlines, and samples across compute nodes is critical.
+Insufficient partitioning can lead to \ac{OOM} issues, while over-partitioning can increase \ac{I/O} overhead and scheduling complexity (Section~\ref{sec:fundamentals-data-parallel}).
+
+\subsection{Seismic Operators}
+\label{subsec:fundamentals-seismic-operators}
+
+\textit{Seismic operators} refer to the mathematical or algorithmic transformations applied to raw seismic data to enhance signal quality and improve interpretability~\cite{Yilmaz2001,yilmaz-seismic-data-analysis}.
+They can range from relatively simple filters to sophisticated wave-equation migrations:
+
+\begin{itemize}
+    \item \textbf{Filtering Operators:} Band-pass filtering or frequency-based denoising to remove unwanted noise or artifacts.
+    \item \textbf{Migration Operators:} Kirchhoff, \ac{RTM}, or other advanced algorithms that reposition reflection events to their correct subsurface locations by accounting for wave propagation effects.
+    \item \textbf{Deconvolution:} Removing or minimizing the source wavelet signature to clarify subsurface reflectivity.
+    \item \textbf{Inversion:} Iterative methods (\eg, full-waveform inversion) that estimate subsurface properties like velocity and density from recorded seismic waveforms.
+\end{itemize}
+
+These operators often require parallel processing to handle massive volumes, and their intermediate steps (for example, storing partial images or wavefields) can inflate memory requirements.
+Modeling these memory footprints in advance (Section~\ref{sec:fundamentals-predictive-modeling}) helps avoid scheduling inefficiencies or sudden terminations from memory exhaustion.
+
+\subsection{Computational and Memory Challenges in Seismic Processing}
+\label{subsec:fundamentals-seismic-challenges}
+
+\begin{itemize}
+    \item \textbf{Large Data Volumes:} Modern seismic surveys can produce hundreds of thousands of inlines/xlines, each containing thousands of samples. Straightforward approaches to load an entire volume often exceed per-node memory limits~\cite{Yilmaz2001}.
+    \item \textbf{Complex Workflows:} Real seismic processing pipelines involve dozens of operators chained together. Intermediate representations—such as partial migrations or stacked volumes—can quadruple or quintuple the original data size.
+    \item \textbf{Parallel \ac{I/O} and Distribution:} Efficient reading and writing of chunks (\eg, inlines or xlines) demands parallel file systems or distributed object stores. Otherwise, \ac{I/O} becomes a bottleneck, overshadowing the benefits of \ac{HPC} parallelism~\cite{Folk2011}.
+    \item \textbf{Operator-Specific Memory Peaks:} Some algorithms, like \ac{RTM}, store multiple timesteps of wavefields in memory, leading to spike-and-release usage patterns that are challenging to predict without operator-level insight.
+\end{itemize}
+
+By uniting seismic domain knowledge (the structure of inlines/xlines, operator complexities) with \ac{HPC} methods (job scheduling, chunk-based partitioning, predictive modeling), geoscientists can process and interpret enormous seismic datasets more effectively~\cite{Yilmaz2001}.
 
 
 \section{Python Memory Model and Measurement Challenges}
 \label{sec:fundamentals-python-memory}
 
 Python’s ecosystem provides convenient libraries (\eg, NumPy, SciPy, Pandas, Dask, PyTorch) that enable rapid development of \ac{HPC} applications.
-However, Python’s memory subsystem complicates direct measurement and reliable estimates.
+However, Python’s memory subsystem complicates direct measurement and reliable estimates~\cite{Nanjekye2023}.
 
 \subsection{Reference Counting}
 \label{subsec:fundamentals-refcounting}
 
-Every Python object maintains a reference count that tracks how many pointers reference it.
+Every Python object maintains a reference count that tracks how many pointers reference it~\cite{Nanjekye2023}.
 When this count reaches zero, Python deallocates the object.
 Short-lived or frequently created objects may inflate memory usage in bursts, particularly when arrays are constructed as intermediates in a computation.
 Code that spawns many temporary arrays (\eg, sub-slices, filtering masks, partial results) may show dramatic but brief peaks in memory consumption.
@@ -59,10 +215,15 @@ Code that spawns many temporary arrays (\eg, sub-slices, filtering masks, partia
 \subsection{Garbage Collection}
 \label{subsec:fundamentals-gc}
 
-Python also uses a cyclic garbage collector for objects that form reference cycles, which reference counting alone cannot reclaim.
-Garbage collection runs periodically, scanning object graphs to find cycles.
-This mechanism can delay memory freeing and cause occasional spikes in \ac{CPU} usage.
-Memory usage observed just before a garbage-collection cycle might look higher than at other times, while reclaimed memory might still remain allocated within Python’s private arenas. \EB{O que é uma arena?}
+Aside from reference counting, Python also uses a cyclic garbage collector to handle objects that reference each other (so-called “reference cycles”)—these can’t be reclaimed by simple reference counting alone~\cite{Nanjekye2023}.
+This garbage collector periodically scans the program’s object graph to detect and free cycles.
+Because it doesn’t run continuously, memory might appear high right before a collection cycle, and the process can introduce occasional \ac{CPU} spikes.
+
+Another key detail is how Python handles freed memory internally. According to Nanjekye \etal~\cite{Nanjekye2023}:
+\begin{quote}
+    “Instead of constantly asking the operating system for small pieces of memory, Python grabs large chunks of memory (arenas). Once an object is deleted, the memory inside the arena may be reused by Python but not necessarily returned to the OS.”
+\end{quote}
+Thus, total memory usage might look inflated even after freeing objects, simply because Python’s private arenas hold onto memory for reuse.
 
 \subsection{Memory Fragmentation and \ac{OS} Interactions}
 \label{subsec:fundamentals-fragmentation}
@@ -71,55 +232,91 @@ At the Python level, the allocator may request memory from the operating system 
 Frequent allocations and deallocations can fragment these chunks, resulting in internal fragmentation.
 At the \ac{OS} level, calls to \texttt{malloc} and \texttt{free} do not always return memory to the kernel immediately.
 Thus, \ac{RSS} might remain elevated even if Python has freed objects internally.
-Peaks might also be undercounted if certain memory pages are cached but not labeled as used in standard \ac{OS} metrics.
+Peaks might also be undercounted if certain memory pages are cached but not labeled as used in standard \ac{OS} metrics~\cite{Nanjekye2023}.
 These conditions complicate the interpretation of a single memory usage metric.
+
+\subsection{Resident Set Size (RSS) and Virtual Memory Size (VMS)}
+\label{subsec:fundamentals-rss-vms}
+
+When monitoring process memory usage on Unix-like systems, two key metrics commonly appear:
+\emph{Resident Set Size (RSS)} and \emph{Virtual Memory Size (VMS)}.
+Although sometimes used interchangeably in casual conversation, these measures capture different views of how an application’s memory footprint interacts with the operating system~\cite{linux-man-proc}.
+
+\paragraph{Resident Set Size (RSS).}
+\ac{RSS} reflects the portion of a process’s memory that is actually held in \ac{RAM}.
+In \ac{HPC} contexts, \ac{RSS} is a critical gauge for real-time memory pressure:
+overshooting available physical memory triggers \ac{OOM} kills or performance-degrading swaps~\cite{Bader2023}.
+
+\paragraph{Virtual Memory Size (VMS).}
+Sometimes referred to as \textit{VSZ}, \ac{VMS} represents the total virtual address space assigned to a process.
+While a high \ac{VMS} value doesn’t necessarily imply immediate memory pressure, it can reveal potential worst-case scenarios~\cite{linux-man-proc}.
+
+\paragraph{Implications for Measurement and Prediction.}
+Both \ac{RSS} and \ac{VMS} metrics play distinct roles in memory analysis~\cite{Nanjekye2023,Bader2023}:
+\begin{itemize}
+    \item \textbf{\ac{RSS} for Real-Time Constraints:} In \ac{HPC} batch scheduling, limits often hinge on how much physical memory a job actually holds at any time.
+    \item \textbf{\ac{VMS} for Potential Peak Usage:} If an application or library aggressively over-allocates memory, \ac{VMS} can balloon even if not all pages are used simultaneously.
+    \item \textbf{Container and Ballooning Interactions:} Container runtimes track memory usage at the \ac{cgroup} level, which may aggregate \ac{RSS} differently and consider \ac{VMS} in overall memory caps.
+\end{itemize}
+
+In Python-based \ac{HPC} workloads, the split between \ac{RSS} and \ac{VMS} can become pronounced.
+Predictive models that rely solely on one metric might therefore misjudge resource needs~\cite{Bader2024}.
+Effective \ac{HPC} resource management often involves monitoring both \ac{RSS} (to avoid short-term memory overcommit) and \ac{VMS} (to anticipate future pages the process might eventually touch).
+
+\subsection{Memory Ballooning}
+\label{subsec:fundamentals-memory-ballooning}
+
+Memory ballooning is a dynamic memory management technique that redistributes RAM across multiple running virtual machines or containers~\cite{waldspurger-ballooning-2002}.
+A small “balloon” driver within each guest (or container runtime) inflates to claim unused memory pages, effectively returning them to the host or to other guests under memory pressure.
+When more memory is needed, the balloon deflates, giving pages back to the guest.
+
+While originally designed for hypervisors like \ac{KVM} or VMware, similar concepts can apply to containerized or \ac{HPC} environments aiming to maximize node utilization.
+In Python-heavy \ac{HPC} contexts, memory ballooning can intersect with Python’s own allocation patterns.
+Sudden bursts from array creation or garbage collection may coincide with balloon deflation, presenting a risk of insufficient memory.
+Consequently, resource managers must coordinate ballooning decisions with the application’s real-time memory footprint and performance requirements~\cite{waldspurger-ballooning-2002}.
 
 
 \section{Containerization in \ac{HPC}}
 \label{sec:fundamentals-containerization}
 
-Containerization packages software dependencies and environment configuration into isolated bundles that share the host’s kernel while separating file systems, namespaces, and \EBC{cgroups}{Talvez cgroups não seja um termo tão conhecido - que tal usar ``and other computing resources such''? }.
-Containers provide a consistent application environment across diverse \ac{HPC} systems.
-They also enable per-container resource constraints, including memory quotas.
+Containerization packages software dependencies and environment configuration into isolated bundles that share the host’s kernel while separating file systems, namespaces, and \ac{cgroup}.
+Containers provide a consistent application environment across diverse \ac{HPC} systems~\cite{Boettiger2015}.
+They also enable per-container resource constraints, including memory quotas~\cite{Kurtzer2017}.
 
 \subsection{Docker and Singularity}
 \label{subsec:fundamentals-docker-singularity}
 
-Docker is a popular container platform for microservices and cloud deployments, though \ac{HPC} sites increasingly adopt it when security policies allow.
-Singularity is another container solution aimed at \ac{HPC} settings, granting user-level container execution without privileged operations.
+Docker~\cite{Boettiger2015} is a popular container platform for microservices and cloud deployments, though \ac{HPC} sites increasingly adopt it when security policies allow.
+Singularity~\cite{Kurtzer2017} is another container solution aimed at \ac{HPC} settings, granting user-level container execution without privileged operations.
 Both can isolate Python processes and dependencies to ensure reproducible states for measurement or production runs.
 
 \subsection{Nested Containers and \ac{DIND}}
 \label{subsec:fundamentals-nested-dind}
 
 \ac{DIND} enables running new containers within an existing container environment, offering an additional isolation layer that can prevent external interference.
-\EB{Lembre-se de definir as siglas e acrônimos antes do primeiro uso - BTW, não conhecia o termo DIND.}
-This environment proves useful for memory measurement, because multiple ephemeral containers can be launched, each representing a clean-slate state for repeated experiments.
-\EB{Senti falta de referências para o projeto/site/artigo que apresenta o DIND.}
+This environment proves useful for memory measurement, because multiple ephemeral containers can be launched, each representing a clean-slate state for repeated experiments~\cite{Boettiger2015}.
 
 \subsection{Cgroups for Memory Management}
 \label{subsec:fundamentals-cgroups}
 
-Control groups (cgroups) in Linux limit and track resource usage (\ac{CPU}, memory, \ac{I/O}) for processes.
-Containers built on cgroups can impose memory caps and allow for in-depth accounting of each container’s usage.
-However, cgroup metrics do not inherently distinguish which process or library inside the container allocates memory.
-Python-level measurement thus remains necessary for precise insight into dynamic allocation behavior and overhead from Python’s internal mechanisms.
+\ac{cgroup} in Linux limit and track resource usage (\ac{CPU}, memory, \ac{I/O}) for processes.
+Containers built on \ac{cgroup} can impose memory caps and allow for in-depth accounting of each container’s usage~\cite{Kurtzer2017}.
+However, \ac{cgroup} metrics do not inherently distinguish which process or library inside the container allocates memory.
+Python-level measurement thus remains necessary for precise insight into dynamic allocation behavior and overhead from Python’s internal mechanisms~\cite{Nanjekye2023}.
 
 
 \section{Data-Parallel Frameworks and Chunking}
 \label{sec:fundamentals-data-parallel}
 
 Data partitioning is crucial when large datasets exceed the memory capacity of a single node or must be processed in parallel.
-Frameworks like Dask allow arrays or dataframes\ADDREF to be split into smaller \emph{chunks} across multiple workers, enabling concurrent execution.
+Frameworks like Dask allow arrays or dataframes to be split into smaller \emph{chunks} across multiple workers, enabling concurrent execution~\cite{Rocklin2015,Dean2004}.
 
 \subsection{Dask Arrays and Task Graphs}
 \label{subsec:fundamentals-dask-overview}
 
 Dask builds a \ac{DAG} of tasks, each representing an operation (for instance, array slicing, map operations, or reductions) on one or more chunks.
 Workers consume and produce chunks as scheduled.
-Heuristic-based auto-chunking sets chunk sizes with limited awareness of actual operator memory usage.
-
-\EB{Seria legal ter uma imagem aqui ilustrando o processamento em chunks. De preferência uma imagem que ajude a visualizar os problemas de selecionar chunks muito pequenos (excesso de tarefas para escalonar), e chunks muito grandes. Se a imagem na introdução já deixar estes conceitos claros, então não vejo necessidade de adicionar outra aqui.}
+Heuristic-based auto-chunking sets chunk sizes with limited awareness of actual operator memory usage~\cite{Rocklin2015}.
 
 This naive approach leads to frequent imbalance:
 \begin{itemize}
@@ -132,47 +329,51 @@ This naive approach leads to frequent imbalance:
 
 Many \ac{HPC} workloads involve \ac{3D} convolutions, Fourier transforms, or matrix decompositions that create large intermediate buffers.
 Allocating these buffers can multiply memory usage beyond the size of the input array itself.
-If each chunk is processed with an operator that amplifies the array footprint, then chunk boundary decisions become critical.
-Insufficiently sized chunks might hamper parallel efficiency, while oversized chunks may exceed memory capacity \EBADD{and lead to \ac{OOM}}.
+If each chunk is processed with an operator that amplifies the array footprint, then chunk boundary decisions become critical~\cite{Bader2023,Bader2024}.
+Insufficiently sized chunks might hamper parallel efficiency, while oversized chunks may exceed memory capacity and lead to \ac{OOM}.
 
 
 \section{Predictive Modeling in HPC Resource Management}
 \label{sec:fundamentals-predictive-modeling}
 
-Resource managers \EBADD{can} benefit significantly from predictive models that forecast memory usage or runtime based on job features.
-Such forecasts reduce guesswork in scheduling and facilitate better cluster utilization.
+Resource managers can benefit significantly from predictive models that forecast memory usage or runtime based on job features.
+Such forecasts reduce guesswork in scheduling and facilitate better cluster utilization~\cite{Bader2023,Bader2024}.
 
 \subsection{Existing Approaches and Gaps}
 \label{subsec:fundamentals-existing-approaches}
 
-Historical-based solutions gather logs of prior runs and fit regressions or machine-learning models to estimate resources for similar future jobs. \EB{Adicione referências para trabalhos que usam esta abordagem}
-A limitation arises when new workloads present shapes or configurations unlike any previously seen.
-In such situations, shape-based or operator-based predictions are more reliable, especially for consistent algorithms whose memory usage follows a mathematical pattern.
-\EB{Se houver, adicione referências para trabalhos que usam esta outra abordagem}
+One approach to resource prediction uses historical logs, collecting data from previous runs and applying regression or \ac{ML} models to estimate resources for similar upcoming jobs~\cite{Bader2023}.
+This method works well in many scenarios but struggles with new workloads that differ significantly from logged patterns.
+When the shape or configuration of a workload is novel, older models may fail.
+
+Shape-based or operator-based predictions often provide a more robust option for these scenarios.
+Their estimates rely on the internal structure of algorithms, which tend to follow consistent mathematical patterns for memory usage.
+Chapter~\ref{ch:related-work} examines these and other established techniques in greater detail, illustrating how they address resource-estimation challenges that purely historical data cannot resolve~\cite{Bader2024}.
 
 \subsection{Shape-Based Memory Prediction}
 \label{subsec:fundamentals-shape-prediction}
 
-\EBC{Tensor-centric}{Não estou certo ainda, mas talvez seja melhor evitar o uso do termo tensor} tasks often revolve around multi-dimensional data, where memory usage correlates closely with array volume or dimension sizes.
+Some tasks often revolve around multi-dimensional data, where memory usage correlates closely with array volume or dimension sizes~\cite{Rocklin2015,Bader2023}.
 Large arrays, by definition, store more elements, leading to proportionally higher memory demands.
 Certain operators add overhead that scales with the same dimension or an offset of it.
-Empirical studies repeatedly show near-linear relationships between array size and peak memory for filters, transforms, or deep learning layers. \EB{Adicione referências para estes estudos.}
+Empirical studies repeatedly show near-linear relationships between array size and peak memory for filters, transforms, or deep learning layers~\cite{Bader2024}.
 
 \subsection{Chunking Decisions via Modeling}
 \label{subsec:fundamentals-chunking-decisions}
 
-Predictive models \EBC{help}{help or can help?} \ac{HPC} frameworks decide chunk sizes based on the memory footprint expected per chunk, factoring in overhead from the operators in question.
-Memory usage per chunk can be estimated from the data shape, and chunk boundaries can then be constrained by a user-defined or system-imposed memory threshold.
+Predictive models can help \ac{HPC} frameworks decide chunk sizes based on the memory footprint expected per chunk, factoring in overhead from the operators in question~\cite{Bader2023}.
+Memory usage per chunk can be estimated from the data shape, and chunk boundaries can then be constrained by a user-defined or system-imposed memory threshold~\cite{Bader2024}.
 This approach significantly reduces \ac{OOM} incidents and the risk of idle workers awaiting a chunk that some worker cannot handle.
 
 
 \section{Summary of Fundamental Concepts}
 \label{sec:fundamentals-summary}
 
-\ac{HPC} resource management requires precise knowledge of how applications use memory, yet Python introduces complexities via reference counting, garbage collection, and dynamic allocations that standard profiling methods do not always capture well.
-Containerization enables stable environments and cgroup-based memory constraints, yet container-level metrics alone do not dissect Python’s internal overhead.
-Data-parallel frameworks—such as Dask—rely on chunking to scale large datasets across many workers, but naive chunk sizing can yield inefficient or failing computations.
-
-Predictive models that link shape attributes (\eg, total volume, dimension sizes) to expected memory usage serve as powerful mechanisms to drive chunking decisions and resource scheduling.
-When integrated properly, these models minimize guesswork while maintaining concurrency and preventing out-of-memory failures.
+\ac{HPC} resource management requires precise knowledge of how applications use memory, yet Python introduces complexities via reference counting, garbage collection, and dynamic allocations that standard profiling methods do not always capture well~\cite{Nanjekye2023}.
+Containerization enables stable environments and \ac{cgroup}-based memory constraints, yet container-level metrics alone do not dissect Python’s internal overhead~\cite{Boettiger2015,Kurtzer2017}.
+Data-parallel frameworks—such as Dask—rely on chunking to scale large datasets across many workers, but naive chunk sizing can yield inefficient or failing computations~\cite{Rocklin2015,Dean2004}.
+Predictive models that link shape attributes (\eg, total volume, dimension sizes) to expected memory usage serve as powerful mechanisms to drive chunking decisions and resource scheduling~\cite{Bader2023,Bader2024}.
+When integrated properly, these models minimize guesswork while maintaining concurrency and preventing \ac{OOM} failures.
 The subsequent chapters detail how to measure Python memory accurately, how to build shape-based predictors for typical scientific workloads, and how to incorporate those predictors into chunk partitioning to achieve reliable, memory-aware data parallelism.
+
+\EB{Notei a ausência de conceitos de processamento sísmico no sumário. Talvez vale a pena dar uma olhada na tabela Contents para verificar se todas as seções principais deste capítulo estão cobertas neste sumário.}

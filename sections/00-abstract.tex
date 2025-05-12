@@ -1,10 +1,43 @@
-% Sempre deve haver um resumo em português:
 \begin{resumo}
-    O resumo deve ter no máximo 500 palavras e deve ocupar uma única página.
-    \DFTODO{Escrever o resumo}
+    Aplicações em Computação de Alto Desempenho (HPC) exigem precisão na alocação de memória devido ao risco iminente de falhas causadas por subestimativas dos requisitos.
+    Frameworks paralelos em Python, como o Dask~\cite{Rocklin2015}, utilizam estratégias automáticas de particionamento para dividir grandes volumes de dados em blocos menores.
+    Contudo, as heurísticas padrão do Dask tipicamente ignoram os requisitos específicos de memória dos diferentes operadores, causando falhas por falta de memória (Out-of-Memory, OOM).
+
+    Esta dissertação apresenta uma metodologia automatizada de particionamento com consciência de memória, melhorando significativamente a confiabilidade em aplicações Dask ao prever o consumo de memória a partir das dimensões dos dados.
+    Realizou-se inicialmente uma avaliação sistemática para identificar fatores que influenciam o uso de memória em tarefas intensivas, especialmente operadores sísmicos (Envelope, \ac{GST3D}, Filtro Gaussiano 3D).
+    Por meio \EBRP{de profiling de memória utilizando}{do perfilamento com}  a biblioteca \EBRP{original (TraceQ}{TraceQ, desenvolvida para este trabalho}, o uso de memória foi precisamente capturado em ambientes controlados e conteinerizados.
+    Esses experimentos exploraram a relação entre parâmetros de forma dos dados (inlines, xlines, amostras) e os requisitos máximos de memória, identificando padrões previsíveis.
+
+    Modelos de regressão foram empregados para prever o uso de memória exclusivamente com base nos parâmetros de forma, apresentando previsões precisas, com baixo erro quadrático médio (RMSE) e elevado poder explicativo ($R^2$ próximo a 1.0).
+    Estudos de seleção de \EBC{features}{destacar palavras em inglês ou substituir por palavras em português} e redução de dados demonstraram que o volume total dos dados fornece capacidade preditiva suficiente, simplificando o processo.
+
+    O algoritmo de particionamento com consciência de memória utiliza esses modelos diretamente na seleção de partições do Dask.
+    Em vez de otimizar apenas por velocidade, o método prioriza robustez, ajustando as dimensões das partições para prevenir transbordamentos.
+    Avaliações empíricas mostraram que a abordagem elimina completamente falhas OOM, oferecendo confiabilidade mesmo com grandes volumes de dados sísmicos.
+    Embora ocasionalmente introduza leve aumento no tempo de execução devido ao particionamento conservador, a substancial melhora em estabilidade operacional justifica esse \emph{trade-off}, especialmente em cenários críticos onde robustez supera ganhos marginais de desempenho.
+
+    Em suma, esta dissertação introduz um método prático e automatizado que garante robustez em \EBRP{workflows}{fluxos de trabalho} Dask por meio do dimensionamento inteligente de partições.
+    Ao resolver a estimativa crítica de memória, esta pesquisa melhora a eficiência operacional em ambientes distribuídos, reduzindo riscos de falhas e otimizando a gestão de recursos em aplicações HPC baseadas em Python.
 \end{resumo}
 
 \begin{abstract}
-    The abstract must have at most 500 words and must fit in a single page.
-    \DFTODO{Escrever o abstract}
+    \ac{HPC} workloads frequently demand precise memory allocation due to the risk of job failure caused by underestimated memory requirements.
+    Python-based data-parallel frameworks, such as Dask~\cite{Rocklin2015}, employ automatic chunking strategies to divide large datasets into smaller blocks that fit into memory.
+    However, Dask’s default chunking heuristics typically neglect the specific memory requirements of diverse operations, leading to unpredictable memory spikes and, consequently, \ac{OOM} errors.
+
+    This thesis presents an automated memory-aware chunking methodology that \EBRM{significantly} enhances the reliability of Dask-based applications by accurately predicting memory consumption from input data dimensions.
+    Initially, a systematic evaluation was conducted to identify the key factors impacting memory usage in data-intensive workloads, specifically targeting seismic data processing operators (Envelope, \ac{GST3D}, and \ac{3D} Gaussian Filter).
+    Through comprehensive memory profiling, leveraging an original library developed for this research (\traceq), memory usage was precisely captured in controlled, containerized environments.
+    The profiling experiments thoroughly explored the relationship between input data shape parameters (inlines, xlines, samples) and peak memory requirements, identifying consistent and predictable scaling patterns.
+
+    Regression models were then employed to predict memory usage based solely on shape parameters, demonstrating highly accurate predictions with low \ac{RMSE} and high explanatory power ($R^2$ close to 1.0).
+    Extensive feature selection and data reduction studies validated that input volume alone provided sufficient predictive power, simplifying the complexity of the prediction process.
+
+    The developed memory-aware chunking algorithm uses these predictive models, integrating them directly into Dask’s chunk selection process.
+    Rather than optimizing purely for speed, the algorithm prioritizes robustness, proactively adjusting chunk dimensions to prevent memory overflow.
+    Empirical evaluation showed that the proposed approach eliminated \ac{OOM} errors entirely, providing consistent reliability even when handling very large seismic datasets.
+    Although it occasionally introduced moderate execution overhead due to conservative chunking, the substantial improvement in reliability and operational stability justifies this trade-off, especially in critical \ac{HPC} scenarios where robustness outweighs marginal performance gains.
+
+    In conclusion, this thesis contributes significantly to the field of \ac{HPC} by introducing a practical, automated method that ensures reliability and stability in Dask workflows through memory-aware chunk prediction.
+    By addressing the critical issue of memory estimation, this research enhances the operational efficiency of distributed computing environments, effectively reducing risks associated with memory allocation errors and streamlining resource management in Python-based \ac{HPC} applications.
 \end{abstract}

@@ -11,7 +11,29 @@ These heuristics typically consider several factors:
     \item Approximate considerations regarding network bandwidth and disk \ac{I/O} operations.
 \end{itemize}
 
-The auto-chunking mechanism evaluates the dimensions of an array and partitions it into subarrays with sizes that closely match the specified target memory threshold.
+The auto-chunking mechanism evaluates the dimensions of an array and partitions it into subarrays with sizes that closely match the specified target memory threshold (see Algorithm~\ref{alg:dask-autochunking}).
+
+\begin{algorithm}[htbp]
+    \caption{Dask auto‐chunking heuristic: computes the total size of the array in bytes, determines the number of chunks needed based on the target memory threshold, and partitions the first dimension accordingly while retaining full size for the other dimensions to form the chunk shape.}
+    \label{alg:dask-autochunking}
+    \begin{algorithmic}[1]
+        \REQUIRE Array dimensions $\textit{dims} = [d_1, d_2, \dots, d_n]$, element size $s$ (bytes), target chunk size $T$
+        \ENSURE Chunk shape $\textit{chunk\_shape}$
+        \STATE $\textit{total\_elements} \gets \prod_{i=1}^{n} d_i$
+        \STATE $\textit{total\_bytes} \gets \textit{total\_elements} \times s$
+        \STATE $\textit{num\_chunks} \gets \left\lceil \frac{\textit{total\_bytes}}{T} \right\rceil$
+        \STATE $\textit{size\_per\_chunk} \gets \left\lceil \frac{d_1}{\textit{num\_chunks}} \right\rceil$
+        \FOR{$i \leftarrow 1$ to $n$}
+        \IF{$i = 1$}
+        \STATE $\textit{chunk\_shape}[i] \gets \min(d_i,\, \textit{size\_per\_chunk})$
+        \ELSE
+        \STATE $\textit{chunk\_shape}[i] \gets d_i$
+        \ENDIF
+        \ENDFOR
+        \RETURN $\textit{chunk\_shape}$
+    \end{algorithmic}
+\end{algorithm}
+
 In simpler, one-dimensional scenarios, this heuristic approach frequently yields effective and efficient chunk sizes.
 However, the heuristic strategy often struggles with higher-dimensional datasets common in complex computations such as seismic analysis and tensor-based operations.
 
@@ -25,9 +47,7 @@ For instance, processing a moderate-sized volume like $600\times600\times600$ co
 
 This fundamental limitation highlights the necessity for more sophisticated chunk-sizing strategies that account explicitly for the characteristics of the underlying computational tasks.
 Different computational workloads impose distinct requirements; for example, data pipelines involving deep convolutional operations require carefully shaped chunks that minimize boundary overheads and control memory expansion during intermediate steps.
-Conversely, simpler, volume-based \EBRPD{attributes}{operators} might benefit from fewer, larger chunk divisions.
+Conversely, simpler, volume-based operators might benefit from fewer, larger chunk divisions.
 
 Dask’s auto-chunking mechanism currently lacks the ability to incorporate such task-specific and operator-specific information, leading to suboptimal performance in demanding scenarios typical of seismic and high-dimensional imaging applications.
 Addressing this shortcoming, the subsequent section introduces \emph{memory-aware chunking}, a predictive approach that leverages an algorithm-specific memory usage model to intelligently guide chunk size selection, thereby enhancing both memory efficiency and computational performance.
-
-\EB{A seção não explicou como funciona o autochunking. Seria possível explicar isso de forma simples, talvez com um fluxograma ou um pseudo-código?} 

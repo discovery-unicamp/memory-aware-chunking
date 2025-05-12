@@ -3,9 +3,8 @@
 
 A reliable memory measurement workflow in Python requires consistent isolation, precise resource configuration, and lightweight instrumentation.
 This section explains the recommended strategy, then demonstrates its accuracy and reproducibility via a single validation experiment.
-Detailed discussions of pitfalls appear in Appendix~\ref{ch:appendix-challenges-and-pitfalls-in-accurate-memory-measurement}, and relevant scripts and data reside in the project’s GitHub repository~\cite{delucca2025experiment1}. 
-\EB{Eu costumo colocar referências para páginas como notas de rodapé. Algo como \footnote{\traceq GitHub repository: \url{www.x.y.z.com}}}
- 
+Detailed discussions of pitfalls appear in Appendix~\ref{ch:appendix-challenges-pitfalls}, and relevant scripts and data reside in the project’s GitHub repository~\footnote{Experiment Folder. Available at \url{https://github.com/discovery-unicamp/memory-aware-chunking/blob/main/experiments/01-measuring-memory-usage-of-python-programs}. Accessed: 2025-04-29.}.
+
 \subsection{Strategy Overview}
 \label{subsec:strategy-overview}
 
@@ -13,12 +12,12 @@ Four foundational principles guide this approach:
 
 \begin{enumerate}
 
-    \item \textbf{Containerized Isolation.} Run each measurement within a nested \ac{DIND} container to \EBRPD{eliminate}{minimize} interference from the host \ac{OS} and background processes.
-    
+    \item \textbf{Containerized Isolation.} Run each measurement within a nested \ac{DIND} container to minimize interference from the host \ac{OS} and background processes.
+
     \item \textbf{\ac{CPU} Affinity and Cache Clearing.} Pin the container to a single core (\eg, \texttt{--cpuset-cpus=0}) and clear file system caches (\eg, \texttt{echo 3 > /proc/sys/vm/drop\_caches}) before each run, ensuring a stable and uncontaminated environment.
-    
+
     \item \textbf{Deterministic Startup.} Preload libraries, disable lazy imports, and run a brief warm‑up to stabilize caches and just‑in‑time compilation mechanisms.
-    
+
     \item \textbf{TraceQ Instrumentation.} Wrap native memory‑tracking backends (\eg, \texttt{psutil}, \texttt{resource}, \texttt{tracemalloc}, kernel) with the \traceq \ac{API}, which simplifies sampling at higher frequencies and prevents profiler side effects from distorting measurements.
 
 \end{enumerate}
@@ -29,8 +28,6 @@ Four foundational principles guide this approach:
 These steps realize the above principles, providing reproducible and high‑resolution memory traces.
 Note that while native baseline profiling is useful for comparison, it is not an inherent requirement of the strategy.
 
-\EB{Talvez fique bom mostrar uma figura com um fluxograma com os passos abaixo.}
-
 \paragraph{1. Environment Provisioning}
 \begin{itemize}
     \item \textbf{\ac{DIND}} Launch a nested container that includes only essential application code and dependencies, isolating the workload from host system noise.
@@ -38,13 +35,13 @@ Note that while native baseline profiling is useful for comparison, it is not an
     \item \textbf{Predictable Startup.} Preload all libraries, disable lazy imports, and warm up the environment (\eg, through a dry run) to stabilize overhead.
 \end{itemize}
 
-\paragraph{2. TraceQ–Enhanced Profiling}
+\paragraph{2. \traceq–enhanced Profiling}
 \begin{itemize}
-    \item \textbf{Instrumented Sessions.} Enclose the target workload in a \EBC{\texttt{TraceQ} session}{Em alguns lugares está \texttt{TraceQ}, em outros TraceQ e também tem \texttt{traceq}. Acho que seria bom padronizar. Se quiser diferenciar o comando do nome da ferramenta, você poderia ter duas macros: traceq e traceqcmd}:
+    \item \textbf{Instrumented Sessions.} Enclose the target workload in a \traceq session:
     \begin{verbatim}
 traceq.profile(function, *args, **kwargs)
     \end{verbatim}
-    \item \textbf{Higher Sampling Frequency.} Configure \EBH{TraceQ} to sample at the desired interval, capturing short memory spikes missed by less frequent polling.
+    \item \textbf{Higher Sampling Frequency.} Configure \traceq to sample at the desired interval, capturing short memory spikes missed by less frequent polling.
     \item \textbf{Consistent Output Schema.} Export measurements to a standardized \texttt{.prof} format. Include metadata (\eg, session ID) to keep results organized for subsequent analysis.
 \end{itemize}
 
@@ -55,12 +52,11 @@ traceq.profile(function, *args, **kwargs)
     \item Repeat measurements at least three times if validating run-to-run consistency is important, noting any variation in peak or average memory usage.
 \end{itemize}
 
-
 \subsection{Validation Experiment}
 \label{subsec:validation-experiment}
 
-One experiment evaluated the overhead and fidelity of TraceQ by comparing its results to native profiling.
-While native baseline profiling is not required by the strategy itself, it is included here to confirm TraceQ’s negligible impact.
+One experiment evaluated the overhead and fidelity of \traceq by comparing its results to native profiling.
+While native baseline profiling is not required by the strategy itself, it is included here to confirm \traceq’s negligible impact.
 
 \paragraph{Baseline Profiling}
 \begin{itemize}
@@ -73,24 +69,23 @@ While native baseline profiling is not required by the strategy itself, it is in
         \item Kernel (\texttt{/proc/\$PID/statm}): poll at a specific interval.
     \end{itemize}
 
-    \item \textbf{Data Consolidation.} Write results into a \ac{CSV} file matching the TraceQ output format.
+    \item \textbf{Data Consolidation.} Write results into a \ac{CSV} file matching the \traceq output format.
 
 \end{itemize}
 
 \paragraph{TraceQ Profiling}
 \begin{itemize}
 
-    \item \textbf{Instrumentation.} Enable a \texttt{TraceQ} session using the same application logic tested by the native approach.
-    
-    \item \textbf{Consistent Format.} Save \texttt{TraceQ} results to a \texttt{.prof} file, label each row with \texttt{variant} and \texttt{base\_tool} for easy correlation with native logs.
+    \item \textbf{Instrumentation.} Enable a \traceq session using the same application logic tested by the native approach.
+
+    \item \textbf{Consistent Format.} Save \traceq results to a \texttt{.prof} file, label each row with \texttt{variant} and \texttt{base\_tool} for easy correlation with native logs.
 
 \end{itemize}
 
 \paragraph{Results and Observations}
-Figure~\ref{fig:fig-sub-comparison} compares the \EBC{memory}{memory consumption?} distributions, cumulative distributions, and kernel density estimates, showing minimal differences between native and TraceQ \EBC{runs}{results?}.
-Figure~\ref{fig:fig-sub-points} highlights the increased number of samples collected by TraceQ and the negligible difference in maximum memory.
-\EB{Senti falta de uma explicação dos resultados em cada figura.}
-Finally, Figure~\ref{fig:memory_history} provides a representative time‑series trace for one test scenario, illustrating stable performance under TraceQ. \EB{Aqui diz que é usando o TraceQ, mas o título do gráfico indica (No TraceQ). Achei confuso e não entendi o propósito do gráfico.}
+Figure~\ref{fig:fig-sub-comparison} compares the memory consumption distributions, cumulative distributions, and kernel density estimates, showing minimal differences between native and \traceq results.
+Figure~\ref{fig:fig-sub-points} highlights the increased number of samples collected by \traceq and the negligible difference in maximum memory.
+Finally, Figure~\ref{fig:memory_history} provides a representative time‑series trace for one test scenario, illustrating stable performance under \traceq.
 
 \begin{figure}[!ht]
     \centering
@@ -109,7 +104,7 @@ Finally, Figure~\ref{fig:memory_history} provides a representative time‑series
     \vspace{1em}
     \begin{subfigure}[b]{0.48\textwidth}
         \includegraphics[width=\textwidth]{assets/images/04/compare_orig_vs_traceq_kernel}
-        \caption{Native vs.\ TraceQ comparison}
+        \caption{Native vs.\ \traceq comparison}
         \label{fig:sub-compare}
     \end{subfigure}
     \hfill
@@ -118,7 +113,7 @@ Finally, Figure~\ref{fig:memory_history} provides a representative time‑series
         \caption{Kernel density estimates}
         \label{fig:sub-kde}
     \end{subfigure}
-    \caption{Plots illustrating the close similarity between native and TraceQ measurements.}
+    \caption{Comparison of memory‐usage measurements between native tools and TraceQ. (a) Boxplots of baseline tools (psutil, tracemalloc, kernel, resource) versus their TraceQ counterparts, showing medians, quartiles, and outliers. (b) Empirical cumulative distribution functions of native and TraceQ kernel samples, illustrating how memory‐use probabilities accumulate across observed values. (c) Step‐by‐step time series of native kernel versus TraceQ measurements, demonstrating their close alignment over the sampling period. (d) Kernel density estimates for native and TraceQ kernel data, highlighting the similarity in their underlying distribution shapes.}
     \label{fig:fig-sub-comparison}
 \end{figure}
 
@@ -135,40 +130,41 @@ Finally, Figure~\ref{fig:memory_history} provides a representative time‑series
         \caption{Max memory comparison}
         \label{fig:sub-maxmem}
     \end{subfigure}
-    \caption{TraceQ collects more samples without inflating peak memory usage.
-    \EB{Padronizar os termos - Original significa native? Base também é native?}}
+    \caption{Instrumentation throughput and overhead for native tools vs.\ TraceQ.
+        (a) Number of samples gathered by each base mechanism (kernel, psutil, resource, tracemalloc) under original versus TraceQ instrumentation—showing that TraceQ boosts sampling count by 3–5×.
+        (b) Peak memory usage recorded by each method, demonstrating that TraceQ’s higher sampling density incurs negligible additional memory overhead.}
     \label{fig:fig-sub-points}
 \end{figure}
 
 \begin{figure}[!ht]
     \centering
     \includegraphics[width=0.75\textwidth]{assets/images/04/memory_history_no_traceq}
-    \caption{Representative memory trace over time for a single trial.}
+    \caption{Time‐series comparison of baseline (no TraceQ) memory measurements over a single trial. Each curve shows the memory footprint (in \ac{MB}) recorded at each sampling step by one of the native tools—kernel, psutil, resource, and tracemalloc—highlighting their characteristic ramp-up, steady-state plateau, and tear-down phases.}
     \label{fig:memory_history}
 \end{figure}
 
-Table~\ref{tab:mmc-metrics} summarizes measurements from native versus TraceQ profiling.
-In most cases, TraceQ gathers 5–8 times more data points while maintaining peak memory usage within ±2\,\% of native readings.
+Table~\ref{tab:mmc-metrics} summarizes measurements from native versus \traceq profiling.
+In most cases, \traceq gathers 5–8 times more data points while maintaining peak memory usage within ±2\,\% of native readings.
 This consistency indicates minimal overhead even under higher sampling frequencies, providing enhanced visibility into transient memory spikes.
 However, \texttt{tracemalloc} stands out with a 16.6\% increase in measured peak memory.
 A likely explanation is that \texttt{tracemalloc} must retain extensive metadata (\eg, stack traces) for each allocation.
-Under TraceQ’s higher sampling frequency, the extra bookkeeping can amplify \texttt{tracemalloc}’s internal overhead, thus magnifying the disparity compared to its native version.
+Under \traceq’s higher sampling frequency, the extra bookkeeping can amplify \texttt{tracemalloc}’s internal overhead, thus magnifying the disparity compared to its native version.
 
 Tests repeated five times show stable distributions and under 2\% variation in average or peak usage, confirming the effectiveness of containerized isolation, \ac{CPU} pinning, and cache clearing.
-Boxplots, cumulative distribution plots, and kernel density estimates reveal that the overall shape of TraceQ’s measurements closely aligns with native backends, further validating that TraceQ introduces negligible distortion to the underlying memory behavior.
+Boxplots, cumulative distribution plots, and kernel density estimates reveal that the overall shape of \traceq’s measurements closely aligns with native backends, further validating that \traceq introduces negligible distortion to the underlying memory behavior.
 This level of reliability underscores the value of more frequent sampling, especially when large, short‑lived spikes play a critical role in system performance.
 
 \begin{table}[!ht]
     \centering
-    \caption{Comparing data collected by native (N) and TraceQ (T) profiling methods.}
+    \caption{Comparing data collected by native (N) and \traceq (T) profiling methods.}
     \label{tab:mmc-metrics}
     \begin{tabular}{lrrr}
         \toprule
         \textbf{Tool} & \textbf{Samples (N / T)} & \textbf{Peak (MB, N / T)} & \textbf{Difference} \\
         \midrule
-        kernel        & 23 / 156                 & 5626 / 5811               &  3.2\%              \\
-        psutil        & 36 / 159                 & 5840 / 5761               &  1.3\%              \\
-        resource      & 25 / 105                 & 5887 / 5867               &  0.3\%              \\
+        kernel        & 23 / 156                 & 5626 / 5811               & 3.2\%               \\
+        psutil        & 36 / 159                 & 5840 / 5761               & 1.3\%               \\
+        resource      & 25 / 105                 & 5887 / 5867               & 0.3\%               \\
         tracemalloc   & 24 / 106                 & 4943 / 5767               & 16.6\%              \\
         \bottomrule
     \end{tabular}
