@@ -14,24 +14,24 @@ We investigated three commonly used seismic processing operators:
     \item \emph{3D Gaussian Filter}: Applies a smoothing operation across volumes to reduce high-frequency noise.
 \end{itemize}
 All three involve memory-intensive operations on potentially large \ac{3D} volumes.
-Our primary goal was to build regression models that predict each operator’s peak memory usage as a function of shape parameters (inlines, xlines, and samples), enabling more optimized \ac{HPC} job submissions.
+Our primary goal was to build regression models that predict each operator's peak memory usage as a function of shape parameters (inlines, xlines, and samples), enabling more optimized \ac{HPC} job submissions.
 
 \vspace{1em}
 \noindent
 \textbf{Data Artifacts.}
-During the final stage of the pipeline, six main \ac{CSV} outputs were generated:
+The final stage of the pipeline generated six main \ac{CSV} outputs:
 \begin{enumerate}
     \item \emph{profile\_history.csv.xz}: Stores time-series \ac{RSS} measurements and timestamps for each operator run. This file is compressed with \emph{xz}~\cite{xz} to mitigate large file sizes caused by high-resolution time-series logging.
     \item \emph{profile\_summary.csv}: Summarizes peak memory usage, execution time, and statistical descriptors (means, standard deviations, minima, and maxima) per volume configuration.
     \item \emph{model\_metrics.csv}: Captures regression model performances (\ac{RMSE}, \ac{MAE}, $R^2$, and accuracy metrics), along with arrays of predictions and residuals.
     \item \emph{feature\_selection.csv}: Documents experiments that limit the predictor set to specific features or transformations to assess their importance in predicting memory usage.
-    \item \emph{data\_reduction.csv}: Compares how models behave when trained on progressively smaller subsets of the full dataset, providing insight into data requirements for stable predictions.
+    \item \emph{data\_reduction.csv}: Compares how models behave when trained on progressively smaller subsets of the whole dataset, providing insight into data requirements for stable predictions.
     \item \emph{model\_tuning.csv}: Records the best hyperparameters discovered for each model-operator combination (via k-fold cross-validation and \texttt{Optuna}), including any search-space parameters used to optimize the multi-metric objective.
 \end{enumerate}
 
 \vspace{1em}
 \noindent
 \textbf{Shape Configurations.}
-The synthetic seismic volumes encompassed a broad range of \ac{3D} shapes, from $100 \times 100 \times 100$ up to sizes near the system’s memory limits.
-By spanning both small and large volumes, we could characterize memory usage trends across diverse problem scales.
+The synthetic seismic volumes encompassed a broad range of \ac{3D} shapes, from $100 \times 100 \times 100$ up to sizes near the system's memory limits.
+We could characterize memory usage trends across diverse problem scales by spanning small and large volumes.
 Each operator was run on each shape variant, yielding a comprehensive grid of memory and runtime measurements.

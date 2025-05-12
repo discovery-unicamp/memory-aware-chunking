@@ -3,7 +3,7 @@
 
 This section examines raw memory and execution-time measurements.
 The goal is to understand how input shape influences resource demand before applying predictive modeling.
-While full feature selection results are discussed later (Section~\ref{subsec:pmc-results-feature-selection-experiments}), the clear dominance of the \emph{volume} feature\textemdash defined as $\text{inlines} \times \text{xlines} \times \text{samples}$\textemdash motivates its early focus in the analysis.
+While full feature selection results are discussed later (Section~\ref{subsec:pmc-results-feature-selection-experiments}), the apparent dominance of the \emph{volume} feature\textemdash defined as $\text{inlines} \times \text{xlines} \times \text{samples}$\textemdash motivates its early focus in the analysis.
 
 \subsubsection{Linear Trends and Variability}
 \label{subsec:linear-trends-and-variability}
@@ -28,13 +28,13 @@ Larger volumes lead to more consistent memory consumption, whereas smaller volum
         \includegraphics[width=\textwidth]{assets/images/05/peak_memory_by_volume_gaussian-filter}
         \caption{Gaussian Filter}
     \end{subfigure}
-    \caption{Peak memory usage (solid markers, left axis) and coefficient of variation (dashed lines, right axis) as functions of input volume ($\text{inlines}\times\text{xlines}\times\text{samples}$) for (a) Envelope, (b) \ac{GST3D}, and (c) Gaussian Filter. All three operators exhibit near‐linear scaling of memory with increasing volume, while \ac{CV} is highest at smaller volumes and diminishes as volume grows.}
+    \caption{Peak memory usage (solid markers, left axis) and coefficient of variation (dashed lines, right axis) as functions of input volume ($\text{inlines}\times\text{xlines}\times\text{samples}$) for (a) Envelope, (b) \ac{GST3D}, and (c) Gaussian Filter. All three operators exhibit near‐linear memory scaling with increasing volume, while \ac{CV} is highest at smaller volumes and diminishes as volume grows.}
     \label{fig:peak_memory_facet}
 \end{figure*}
 
 Execution times follow a similar trend.
 Figure~\ref{fig:execution_time_by_volume_facet} confirms a near-linear increase with volume for all three operators.
-This reinforces that input shape, especially total volume, is the dominant factor influencing resource usage in these seismic kernels.
+This reinforces the dominant factor influencing resource usage in these seismic kernels: input shape, especially total volume.
 
 \begin{figure*}[htbp]
     \centering
@@ -74,7 +74,7 @@ Since we can see a clear linear pattern, Table~\ref{tab:scaling_slopes_summary} 
         \includegraphics[width=\textwidth]{assets/images/05/cross_peak_memory_by_volume}
         \caption{Peak memory vs. volume}
     \end{subfigure}
-    \caption{Cross‐operator comparison of (a) execution time and (b) peak memory usage as functions of input volume ($\text{inlines}\times\text{xlines}\times\text{samples}$) for \ac{GST3D}, Envelope, and Gaussian Filter. All three operators exhibit near‐linear scaling in both runtime and memory footprint as data volume increases.}
+    \caption{Cross‐operator comparison of (a) execution time and (b) peak memory usage as functions of input volume ($\text{inlines}\times\text{xlines}\times\text{samples}$) for \ac{GST3D}, Envelope, and Gaussian Filter. As data volume increases, all three operators exhibit near‐linear scaling in both runtime and memory footprint.}
     \label{fig:ex_peak_mu_facet}
 \end{figure*}
 
@@ -146,17 +146,17 @@ Two possible causes explain this discrepancy:
     \label{fig:memory_safety_margin}
 \end{figure*}
 
-To investigate whether varying shape dimensions (while fixing the same total volume) leads to large memory differences, Figure~\ref{fig:memory_by_volume_aspect} bins each operator's memory usage by volume and aspect-ratio ranges.
+To investigate whether varying shape dimensions (while fixing the same total volume) leads to significant memory differences, Figure~\ref{fig:memory_by_volume_aspect} bins each operator's memory usage by volume and aspect-ratio ranges.
 The aspect ratio
 \[
     \text{Aspect} \;=\; \frac{\text{inlines}}{\text{xlines}}
 \]
 is grouped into intervals (\textless0.5, 0.5--1, 1--2, 2--5, \textgreater5).
-The boxplots reveal no pronounced sensitivity to aspect-ratio changes: curves in each volume bin overlap substantially, regardless of whether the shape is long and narrow or nearly cubic.
-Consequently, shape permutations at a fixed volume do not appear to cause the large jump from average to 95\% percentile.
+The boxplots reveal no pronounced sensitivity to aspect-ratio changes: curves in each volume bin overlap substantially, regardless of whether the shape is long, narrow, or nearly cubic.
+Consequently, shape permutations at a fixed volume do not appear to cause a significant jump from the average to the 95\% percentile.
 
 These observations indicate that overhead in the earliest runs is the most likely explanation for high outlier memory usage.
-In other words, most runs stay near the mean, while certain initial sessions consume disproportionately more memory due to initialization overhead or caching.
+In other words, most runs stay near the mean, while specific initial sessions consume disproportionately more memory due to initialization overhead or caching.
 The spikes in Figure~\ref{fig:memory_safety_margin} thus represent comparatively rare events that can inflate the 95\% percentile above the mean.
 
 \begin{figure*}[htbp]
@@ -183,11 +183,11 @@ The spikes in Figure~\ref{fig:memory_safety_margin} thus represent comparatively
 \label{subsec:dimension-correlations}
 
 Figure~\ref{fig:memory_vs_dimensions_pairplot_gst3d} presents pairwise plots between \ac{GST3D} memory and each shape parameter.
-Memory exhibits strong positive correlation with all three dimensions.
+Memory exhibits a strong positive correlation with all three dimensions.
 
-Blue points represent sample values, and red lines are linear regression fits.
-Dimension--dimension scatterplots show inverse correlation in some cases, due to how the dataset was constructed.
-Nonetheless, when all dimensions increase, memory grows accordingly.
+Blue points represent sample values, and red lines indicate linear regression fits.
+Dimension–dimension scatterplots occasionally show inverse correlation due to dataset construction details.
+Nonetheless, memory grows accordingly when all dimensions increase.
 
 \begin{figure}[htbp]
     \centering
@@ -200,7 +200,7 @@ Nonetheless, when all dimensions increase, memory grows accordingly.
 \label{subsec:resource-usage-summary}
 
 Table~\ref{tab:operator_summary_aggregates} summarizes volume ranges, memory usage, and execution time per operator.
-\ac{GST3D} shows the highest resource usage, both in memory and time.
+\ac{GST3D} shows the highest resource usage in memory and time.
 All operators reflect the volume-based trend discussed previously.
 
 \begin{table}[htbp]
@@ -214,6 +214,6 @@ All operators reflect the volume-based trend discussed previously.
         Gaussian Filter   & $10^6 \to 5.1\times10^8$ & 0.11 – 3.92                  & 0.17 – 46.23            \\
         \hline
     \end{tabular}
-    \caption{Resource usage summary for Envelope, \ac{GST3D}, and Gaussian Filter. Volume is in number of elements.}
+    \caption{Resource usage summary for Envelope, \ac{GST3D}, and Gaussian Filter. Volume is in the number of elements.}
     \label{tab:operator_summary_aggregates}
 \end{table}
