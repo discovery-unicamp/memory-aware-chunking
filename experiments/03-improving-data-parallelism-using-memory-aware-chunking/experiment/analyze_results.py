@@ -1,7 +1,3 @@
-"""
-Analyze memory-profile CSVs: generate charts, leaderboard, and stats to compare chunking modes.
-"""
-
 import argparse
 import os
 
@@ -56,6 +52,7 @@ def prepare(summary, detail):
 
 
 def merge_totals(summary, detail):
+    """Merge the per-process memory usage into a total for each session."""
     if detail.empty:
         summary["total_peak_memory_usage_bytes"] = np.nan
         return summary
@@ -88,7 +85,6 @@ def plot_by_shape(df, charts_dir):
             continue
         label = f"{inl}x{xl}x{smp}"
 
-        # Exec Time
         fig, ax = plt.subplots()
         sns.lineplot(
             data=sel[~sel["oom_or_failed"]],
@@ -106,7 +102,6 @@ def plot_by_shape(df, charts_dir):
         fig.savefig(os.path.join(charts_dir, f"{label}_time.pdf"), dpi=150)
         plt.close(fig)
 
-        # Memory Usage
         fig, ax = plt.subplots()
         sns.lineplot(
             data=sel[~sel["oom_or_failed"]],
@@ -164,9 +159,30 @@ def oom_stats(df, out_dir):
 
 
 def mode_summary(df, out_dir):
-    ok = df[~df["oom_or_failed"]]
+    """
+    Build mode-level summary but exclude memaware runs in any shape/worker_count
+    config if either 'autom' or 'evenly_split' had OOM for that same config.
+    """
+    shape_cols = ["inlines", "xlines", "samples", "worker_count"]
+
+    trouble = df[
+        df["chunking_mode"].isin(["autom", "evenly_split"]) & (df["oom_or_failed"])
+    ]
+    trouble_cfgs = trouble[shape_cols].drop_duplicates()
+
+    trouble_set = set(tuple(x) for x in trouble_cfgs.values)
+
+    ok = df[~df["oom_or_failed"]].copy()
+
+    def is_trouble(row):
+        key = (row["inlines"], row["xlines"], row["samples"], row["worker_count"])
+        return (row["chunking_mode"] == "memaware") and (key in trouble_set)
+
+    ok = ok[~ok.apply(is_trouble, axis=1)]
+
     if ok.empty:
         return
+
     summary = (
         ok.groupby("chunking_mode")
         .agg(
@@ -178,6 +194,7 @@ def mode_summary(df, out_dir):
         )
         .reset_index()
     )
+
     summary.to_csv(os.path.join(out_dir, "mode_summary_stats.csv"), index=False)
 
 
@@ -204,11 +221,14 @@ def main():
     summary, detail = load_data(args.results_dir)
     summary, detail = prepare(summary, detail)
     combined = merge_totals(summary, detail)
+
     plot_by_shape(combined, args.charts_dir)
+
     make_leaderboard(combined, args.results_dir)
     oom_stats(combined, args.results_dir)
     mode_summary(combined, args.results_dir)
     shape_summary(combined, args.results_dir)
+
     print(
         f"Analysis complete. Charts at {args.charts_dir}, CSV summaries in {args.results_dir}"
     )
