@@ -14,7 +14,7 @@ The final part of this chapter, along with Table~\ref{tab:related-work-compare},
 
 Rodrigues \etal~\cite{rodrigues2016} introduced a tool that employs \ac{ML} to improve how \ac{HPC} users request memory.
 It classifies job memory usage (peak \ac{RSS}) into bins based on features such as user ID, number of requested processors, submission weekday, and job name.
-This classification scheme simplifies integration into batch schedulers (\ac{LSF}, \ac{PBS}/\ac{TORQUE}) by limiting the range of predicted memory requests.
+This classification scheme simplifies integration into batch schedulers (\ac{LSF}~\cite{ibm_spectrum_lsf_2020}, \ac{PBS}, \ac{TORQUE}~\cite{staples2006torque}) by limiting the range of predicted memory requests.
 The models tested included \ac{SVM}, \ac{MLP}, and random forests, combined in an ensemble voting strategy.
 Reported accuracy reached up to 98\%.
 
@@ -65,12 +65,12 @@ The feedback loop is conceptually similar to the iterative refinements used here
 
 Myung and Choi~\cite{myung2021} addressed memory misconfiguration in Spark, treating the size of each data element (record) and workload type as key features.
 They observed that Spark's iterative processing often keeps the peak memory usage relatively stable, so element size rather than overall dataset size is the main predictor.
-Their model combined analytical insight with \ac{ML} (Lasso, Ridge, MLP) to estimate peak memory usage with around 95--99\% accuracy.
+Their model combined analytical insight with \ac{ML} (Lasso, Ridge, \ac{MLP}) to estimate peak memory usage with around 95--99\% accuracy.
 
 This study validated the usefulness of shape-based predictors, a principle closely aligned with the direction pursued here.
-However, it remained Spark-specific and did not explicitly account for container overhead or HPC schedulers.
+However, it remained Spark-specific and did not explicitly account for container overhead or \ac{HPC} schedulers.
 Dask, in particular, processes partitioned or chunked data similarly to Spark, but with different runtime and scheduling characteristics.
-The current thesis adopts a similar shape-based logic for Python tasks but integrates additional container-oriented measurements and HPC constraints.
+The current thesis adopts a similar shape-based logic for Python tasks but integrates additional container-oriented measurements and \ac{HPC} constraints.
 
 
 \section{AMPRO-HPCC: Predicting Job Resources on Slurm Clusters}
@@ -192,6 +192,6 @@ Furthermore, the design integrates shape-based regressors with a measurement lib
 This design draws inspiration from the lessons in Myung and Choi~\cite{myung2021} regarding shape-driven predictions but extends the strategy to containerized Python tasks and HPC scheduling constraints.
 
 Several techniques from the literature guided specific aspects of this work.
-Some ideas were adapted from Rodrigues \etal~\cite{rodrigues2016} and Tanash \etal~\cite{tanash2021ampro} regarding offline ML model building, although the target here is more granular (per-task) and shape-oriented rather than aggregate job logs.
+Some ideas were adapted from Rodrigues \etal~\cite{rodrigues2016} and Tanash \etal~\cite{tanash2021ampro} regarding offline \ac{ML} model building, although the target here is more granular (per-task) and shape-oriented rather than aggregate job logs.
 Methods from Witt~\cite{witt2020} inspired a feedback loop concept for refining predictions, which is valuable when handling multiple tasks iteratively.
 Overall, this thesis's approach synthesizes shape-based modeling, container-aware measurement, and a flexible chunking system for Dask, bridging important gaps identified in previous work.

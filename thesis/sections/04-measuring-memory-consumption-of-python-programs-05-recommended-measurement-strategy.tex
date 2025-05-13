@@ -14,7 +14,7 @@ Four foundational principles guide this approach:
 
     \item \textbf{Containerized Isolation.} Run each measurement within a nested \ac{DIND} container to minimize interference from the host \ac{OS} and background processes.
 
-    \item \textbf{\ac{CPU} Affinity and Cache Clearing.} Pin the container to a single core (\eg, \texttt{--cpuset-cpus=0}) and clear file system caches (\eg, \texttt{echo 3 > /proc/sys/vm/drop\_caches}) before each run, ensuring a stable and uncontaminated environment.
+    \item \textbf{\ac{CPU} Affinity and Cache Clearing.} Pin the container to a single core (\eg, \texttt{--cpuset-cpus=0}) and also force the clear of file system caches (\eg, \texttt{echo 3 > /proc/sys/vm/drop\_caches}) before each run, ensuring a stable and uncontaminated environment.
 
     \item \textbf{Deterministic Startup.} Preload libraries, disable lazy imports, and run a brief warm‑up to stabilize caches and just‑in‑time compilation mechanisms.
 
@@ -31,7 +31,7 @@ Note that while native baseline profiling is functional for comparison, it is no
 \paragraph{1. Environment Provisioning}
 \begin{itemize}
     \item \textbf{\ac{DIND}} Launch a nested container that includes only essential application code and dependencies, isolating the workload from host system noise.
-    \item \textbf{\ac{CPU} Pinning and Cache Clearing.} Specify a single \ac{CPU} core (\eg, \texttt{--cpuset-cpus=0}) and clear caches before each run to ensure identical startup conditions.
+    \item \textbf{\ac{CPU} Pinning and Cache Clearing.} Specify a single \ac{CPU} core to pin (\eg, \texttt{--cpuset-cpus=0}) and clear caches before each run to ensure identical startup conditions.
     \item \textbf{Predictable Startup.} Preload all libraries, disable lazy imports, and warm up the environment (\eg, through a dry run) to stabilize overhead.
 \end{itemize}
 
@@ -139,7 +139,7 @@ Finally, Figure~\ref{fig:memory_history} provides a representative time‑series
 \begin{figure}[!ht]
     \centering
     \includegraphics[width=0.75\textwidth]{assets/images/04/memory_history_no_traceq}
-    \caption{Time‐series comparison of baseline (no \traceq) memory measurements over a single trial. Each curve shows the memory footprint (in \ac{MB}) recorded at each sampling step by one of the native tools—kernel, psutil, resource, and tracemalloc—highlighting their characteristic ramp-up, steady-state plateau, and teardown phases.}
+    \caption{Time‐series comparison of baseline (no \traceq) memory measurements over a single trial. Each curve shows the memory footprint (in \ac{MB}) recorded at each sampling step by one of the native tools, kernel, psutil, resource, and tracemalloc, highlighting their characteristic ramp-up, steady-state plateau, and teardown phases.}
     \label{fig:memory_history}
 \end{figure}
 

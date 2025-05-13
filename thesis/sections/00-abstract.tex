@@ -1,6 +1,6 @@
 \begin{resumo}
     Aplicações em Computação de Alto Desempenho (HPC) exigem precisão na alocação de memória devido ao risco iminente de falhas causadas por subestimativas dos requisitos.
-    Frameworks paralelos em Python, como o Dask~\cite{Rocklin2015}, utilizam estratégias automáticas de particionamento para dividir grandes volumes de dados em blocos menores.
+    \emph{Frameworks} paralelos em Python, como o Dask~\cite{rocklin2015dask}, utilizam estratégias automáticas de particionamento para dividir grandes volumes de dados em blocos menores.
     Contudo, as heurísticas padrão do Dask tipicamente ignoram os requisitos específicos de memória dos diferentes operadores, causando falhas por falta de memória (Out-of-Memory, OOM).
 
     Esta dissertação apresenta uma metodologia automatizada de particionamento com consciência de memória, melhorando significativamente a confiabilidade em aplicações Dask ao prever o consumo de memória a partir das dimensões dos dados.
@@ -22,7 +22,7 @@
 
 \begin{abstract}
     \ac{HPC} workloads frequently demand precise memory allocation due to the risk of job failure caused by underestimated memory requirements.
-    Python-based data-parallel frameworks, such as Dask~\cite{Rocklin2015}, employ automatic chunking strategies to divide large datasets into smaller blocks that fit into memory.
+    Python-based data-parallel frameworks, such as Dask~\cite{rocklin2015dask}, employ automatic chunking strategies to divide large datasets into smaller blocks that fit into memory.
     However, Dask's default chunking heuristics typically neglect the specific memory requirements of diverse operations, leading to unpredictable memory spikes and, consequently, \ac{OOM} errors.
 
     This thesis presents an automated memory-aware chunking methodology that enhances the reliability of Dask-based applications by accurately predicting memory consumption from input data dimensions.

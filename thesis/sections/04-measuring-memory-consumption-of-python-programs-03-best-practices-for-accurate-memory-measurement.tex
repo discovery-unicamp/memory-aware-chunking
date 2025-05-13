@@ -90,7 +90,7 @@ Regular interval sampling of metrics like \ac{RSS} with tools such as \texttt{ps
 Excessive sampling frequency can introduce performance degradation and memory perturbation.
 
 \paragraph{Peak-Based Measurement.}
-Measuring peak memory usage, such as through Python's \texttt{resource.getrusage} or \texttt{psutil.Process().memory\_info().rss}, ensures capturing worst-case scenarios.
+Measuring peak memory usage, such as through Python's \texttt{resource.getrusage} or \texttt{psutil.Process().memory\_info().rss}, ensures capturing the worst-case scenarios.
 While useful for resource allocation and scheduling, this method might miss detailed internal memory allocation patterns.
 
 \paragraph{Optimal Strategy.}
@@ -110,7 +110,7 @@ Implementing explicit memory constraints slightly below measured peak usage vali
 Successful execution under tighter constraints indicates measurement inflation, whereas failures confirm realistic minimum memory requirements.
 
 \paragraph{Multiple Tool Comparative Analysis.}
-Overlaying \texttt{psutil}, \texttt{resource}, and \texttt{tracemalloc} data allows detection of divergences between Python-level allocations and system-level reported memory, clarifying allocation behaviors and memory usage subtleties.
+Overlaying different data sources, such as \texttt{psutil}, \texttt{resource}, and \texttt{tracemalloc}, allows detection of divergences between Python-level allocations and system-level reported memory, clarifying allocation behaviors and memory usage subtleties.
 
 \subsection{Summary of Recommended Workflow}
 \label{subsec:mmc-bestpractices-summary}

@@ -22,7 +22,7 @@ Thus, memory profiling in Python typically represents a transient snapshot rathe
 \subsection{Residual State and Fragmentation}
 \label{subsec:mmc-challenges-fragmentation}
 
-\textbf{Residual State.} Interactive environments, such as Jupyter notebooks, or repetitive execution within a single process, can create residual references and partially reclaimed memory segments.
+\textbf{Residual State.} Interactive environments, such as Jupyter notebooks~\cite{kluyver2016jupyter}, or repetitive execution within a single process, can create residual references and partially reclaimed memory segments.
 Deletion of objects does not necessarily release memory back to the \ac{OS} or Python interpreter immediately, potentially skewing results when tests are run repeatedly without process resets.
 
 \textbf{Memory Fragmentation.} Fragmentation may occur from repeated memory allocations and deallocations at both Python's allocator level (\texttt{pymalloc}~\cite{pymalloc}) and underlying C libraries (\eg, \texttt{malloc}~\cite{malloc}).

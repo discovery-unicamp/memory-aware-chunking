@@ -10,7 +10,7 @@ Seismic workloads are an example of large-scale data processing where input volu
 These volumes require significant memory capacity for storage, intermediate computations, and output generation.
 Numerical methods in seismic analysis also introduce additional complexity by creating temporary buffers, running matrix operations on large arrays, or storing partial results for subsequent steps.
 
-Distributed platforms such as Dask~\cite{rocklin2015dask} facilitate horizontal scaling, enabling multiple workers to process segments (\emph{chunks}) of the data in parallel.
+Distributed platforms such as Dask~\cite{rocklin2015dask} facilitate horizontal scaling, enabling multiple workers to process segments (chunks) of the data in parallel.
 This concurrency level substantially reduces execution time but carries important risks if users underestimate resource demands.
 Dask's default chunking heuristics do not consider the memory requirements of specific operators or data types.
 They distribute data primarily based on file-block boundaries or user-defined size targets.
@@ -24,8 +24,8 @@ As shown in Figure~\ref{fig:chunking-example}, chunk configurations can vary wid
 \end{figure}
 
 These challenges motivate the development of more reliable strategies for anticipating memory usage.
-When the computation is \emph{memory-intensive}, knowledge of memory requirements is critical, because one miscalculation can crash a job or underutilize the system.
-In seismic processing, for instance, convolution-based algorithms or three-dimensional filtering often exhibit unpredictable memory spikes due to short-lived but large intermediate arrays.
+When the computation is memory-intensive, knowledge of memory requirements is critical, because one miscalculation can crash a job or underutilize the system.
+In seismic processing, for instance, convolution-based algorithms or \ac{3D} filtering often exhibit unpredictable memory spikes due to short-lived but large intermediate arrays.
 Therefore, a robust memory-aware method to define chunk dimensions is essential for \ac{HPC} and distributed systems, eliminating tedious attempts to guess resource allocations.
 
 
@@ -33,7 +33,7 @@ Therefore, a robust memory-aware method to define chunk dimensions is essential 
 \label{sec:intro-objectives}
 
 The overarching objective of this thesis is to create a systematic and efficient method for estimating memory consumption in large-scale, Python-based data processing tasks, using a minimal number of experimental runs.
-Specifically, the work seeks to integrate such predictive insights into Dask's chunking logic, making it \emph{memory-aware} rather than relying on naive file-size or user-defined heuristics.
+Specifically, the work seeks to integrate such predictive insights into Dask's chunking logic, making it memory-aware rather than relying on naive file-size or user-defined heuristics.
 
 More concretely, this thesis pursues the following:
 \begin{itemize}
@@ -59,7 +59,7 @@ The contributions of this thesis can be summarized as follows:
     This thesis presents a method to reduce the profiling effort required, eliminating the need for multiple full-scale executions.
     The strategy isolates key data points or shapes to accurately capture operator memory behavior with minimal overhead, enabling more straightforward integration with real-world \ac{HPC} pipelines.
 
-    \item \textbf{\traceq: A Memory Profiling and Visualization Tool.}
+    \item \textbf{\traceq: A Memory Profiling Tool.}
     This thesis introduces \traceq, a lightweight library designed to collect memory usage traces with minimal overhead.
     It provides low-level logs and high-level visualizations of peak and intermediate memory consumption, assisting developers and researchers in identifying bottlenecks.
     In conjunction with the predictive model, \traceq simplifies and accelerates the creation of operator-specific memory profiles.
@@ -82,22 +82,22 @@ The solutions outlined here streamline distributed computing workflows that rely
 \section{Thesis Organization}
 \label{sec:thesis-organization}
 
-The remainder of this document consists of six chapters (Chapters~\ref{ch:fundamental-concepts}–\ref{ch:conclusion}) plus one appendix, each detailing a different aspect of this work:
+The remainder of this document consists of six chapters (Chapters~\ref{ch:fundamental-concepts}–\ref{ch:conclusion}) plus one appendix, each detailing a different aspect of this work.
 
 Chapter~\ref{ch:fundamental-concepts} presents foundational material that clarifies how high-performance computing environments manage resources and concurrency.
 It examines the principles behind data-intensive tasks and discusses seismic data characteristics, often creating heavy computational and memory demands.
 It also describes Python's memory model, emphasizing the intricacies of garbage collection, fragmentation, and the differences between \ac{RSS} and \ac{VMS}.
-Containerization practices like Docker and Singularity appear next, explaining how \ac{cgroup} enforces memory limits and how nested containers affect measurement strategies.
+Containerization practices like Docker and Singularity~\cite{singularity} appear next, explaining how \ac{cgroup} enforces memory limits and how nested containers affect measurement strategies.
 This chapter closes by exploring data-parallel frameworks like Dask, where chunking decisions influence performance and reliability.
 
 Chapter~\ref{ch:related-work} surveys the research on predictive memory management in high-performance and large-scale data-processing contexts.
-It compares studies that help users specify job memory requirements more accurately and overviews algorithms for optimizing memory usage in frameworks like Apache Spark.
+It compares studies that help users specify job memory requirements more accurately and overviews algorithms for optimizing memory usage in frameworks like Apache Spark~\cite{zaharia2010spark}.
 It then highlights gaps in the literature concerning robust and minimally invasive measurement strategies, providing a rationale for the approach pursued in subsequent chapters.
 
 Chapter~\ref{ch:measuring-memory-consumption} focuses on accurately gauging Python's memory consumption.
 It discusses pitfalls arising from dynamic allocation, container-level caching, and the overhead introduced by different profiling tools.
 It demonstrates a recommended measurement strategy that ensures consistent and reliable peak-memory metrics.
-This chapter also introduces the \traceq library, which automates data collection and visualization, simplifying the profiling workflow.
+This chapter also introduces the \traceq library, which automates and simplifies memory profile data collection.
 
 Chapter~\ref{ch:predicting-memory-consumption-from-input-shapes} proposes a shape-based model that estimates peak memory usage from several carefully chosen profiler runs.
 It explains the choice of input features, the process of collecting ground-truth data, and the empirical evaluation of multiple regression and machine learning methods.

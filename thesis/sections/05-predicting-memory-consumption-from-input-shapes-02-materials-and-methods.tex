@@ -253,7 +253,7 @@ Partial dependence plots and tree-based model interpretations expose how inlines
     This standardized environment preserves consistent results by preventing version drift.
     \item \emph{\ac{CPU} Affinity:}
     The \texttt{--cpuset-cpus=0} parameter restricts execution to a single core and reduces background noise.
-    Multiple runs per dataset shape (\texttt{EXPERIMENT\_N\_RUNS}) further stabilizes performance measurements by smoothing out random fluctuations, often described as stochastic variance.
+    Multiple runs per dataset shape further stabilizes performance measurements by smoothing out random fluctuations, often described as stochastic variance.
     \item \emph{Parallelization:}
     The Docker orchestration scales to multiple \ac{CPU} cores, but the design imposes single-core experiments for repeatability.
     Actual \ac{HPC} clusters manage concurrency at the scheduler level, but the core principle of shape-driven memory profiling remains applicable.

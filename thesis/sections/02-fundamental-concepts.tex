@@ -1,11 +1,11 @@
 \chapter{Fundamental Concepts}
 \label{ch:fundamental-concepts}
 
-\ac{HPC} accelerates large-scale scientific, engineering, and data-driven tasks by distributing computation over multiple nodes, \ac{CPU}, or specialized accelerators~\cite{Yoo2003,Snir1998MPI,Dagum1998OpenMP}.
+\ac{HPC} accelerates large-scale scientific, engineering, and data-driven tasks by distributing computation over multiple nodes, \ac{CPU}, or specialized accelerators~\cite{yoo2003slurm,Snir1998MPI,Dagum1998OpenMP}.
 These environments demand careful planning of memory and processing resources, because errors in estimation can degrade throughput or cause \ac{OOM} failures~\cite{Bader2023}.
 Python's increasing adoption in \ac{HPC} contexts offers accessibility and a rich ecosystem of libraries, but it also introduces a unique set of challenges related to memory usage~\cite{Nanjekye2023}.
 Containerization has evolved as a lightweight alternative to full virtualization, adding another dimension to resource management~\cite{Boettiger2015,Kurtzer2017}.
-Data-parallel frameworks such as Dask further enhance performance by partitioning data into chunks, where naive chunking strategies can ignore memory-intensive stages~\cite{Rocklin2015}.
+Data-parallel frameworks, such as Dask, further enhance performance by partitioning data into chunks, where naive chunking strategies can ignore memory-intensive stages~\cite{rocklin2015dask}.
 Predictive modeling of resource needs arises as an effective solution to reduce trial-and-error~\cite{Bader2023,Bader2024}.
 This chapter details these core \ac{HPC} and Python concepts, illuminating why memory measurement and prediction strategies require specialized approaches.
 
@@ -14,7 +14,7 @@ This chapter details these core \ac{HPC} and Python concepts, illuminating why m
 \label{sec:fundamentals-hpc-overview}
 
 \ac{HPC} platforms integrate numerous compute nodes, each containing multiple \ac{CPU} cores or \ac{GPU}, unified through high-speed interconnects such as InfiniBand~\cite{infiniband-ta-2015}.
-Jobs typically request resources through a batch scheduler, for example, Slurm or \ac{PBS}\cite{Yoo2003}.
+Jobs typically request resources through a batch scheduler, for example, Slurm~\cite{yoo2003slurm} or \ac{PBS}\cite{yoo2003slurm}.
 Schedulers queue and dispatch these jobs according to priority, availability, and requested resource constraints.
 Users must specify memory allocation in advance, and erroneous estimates have direct consequences.
 Overestimation wastes cluster capacity.
@@ -23,7 +23,7 @@ Underestimation results in abrupt terminations when jobs exceed the requested me
 \subsection{Resource Allocation and Scheduling}
 \label{subsec:fundamentals-resource-allocation}
 
-Schedulers organize job placement by matching requests to available hardware resources~\cite{Yoo2003}.
+Schedulers organize job placement by matching requests to available hardware resources~\cite{yoo2003slurm}.
 A job requesting memory and \ac{CPU} time receives an exclusive allocation until completion.
 This exclusivity makes memory misuse or imprecise estimates especially costly, since \ac{HPC} nodes cannot effectively share resources beyond scheduled allocations.
 If a program demands more memory than predicted, node-level \ac{OOM} kills, requeuing, or job failures may occur~\cite{Bader2023}.
@@ -32,7 +32,7 @@ Such inefficiencies motivate improved predictive models and measurement tools~\c
 \subsection{Parallel Workloads and Concurrency}
 \label{subsec:fundamentals-parallel-concurrency}
 
-\ac{HPC} workloads often rely on parallelization interfaces like \ac{OpenMP} (thread-based)~\cite{Dagum1998OpenMP}, \ac{MPI} (message passing)~\cite{Snir1998MPI}, or higher-level abstractions such as array partitioning frameworks~\cite{Rocklin2015}.
+In large-scale scientific and engineering computing, \ac{HPC} workloads often rely on parallelization interfaces like \ac{OpenMP}~\cite{Dagum1998OpenMP} (thread-based), \ac{MPI}~\cite{Snir1998MPI} (message passing), or higher-level abstractions such as array partitioning frameworks~\cite{rocklin2015dask}.
 Parallel processes operate on different data segments or tasks within the same workflow.
 Memory usage then must be balanced across multiple workers or nodes to avoid local \ac{OOM} incidents.
 In distributed-memory architectures, each node has private memory.
@@ -59,7 +59,7 @@ Typical transformations include:
     \item \emph{Data Restructuring:} Aggregating or pivoting tables, splitting or merging columns, and performing type conversions.
     \item \emph{Business Logic or Domain-Specific Rules:} Converting raw measurements to domain-specific metrics or applying specialized filters.
 \end{itemize}
-In Python-based \ac{HPC} environments, libraries like Pandas or Dask handle transformation steps at scale, enabling distributed processing of large datasets~\cite{Rocklin2015}.
+In Python-based \ac{HPC} environments, libraries like Pandas~\cite{pandas} or Dask handle transformation steps at scale, enabling distributed processing of large datasets~\cite{rocklin2015dask}.
 However, memory consumption may spike when transformations involve heavy reshuffling or create intermediate copies of the data (Section~\ref{sec:fundamentals-python-memory}).
 
 \paragraph{Loading.}
@@ -87,20 +87,20 @@ Understanding its memory footprint and performance demands helps \ac{HPC} admini
 \subsection{Task Execution in Dask}
 \label{subsec:fundamentals-dask-execution}
 
-Dask is a flexible parallel computing library in Python that enables users to scale their code from single-machine multi-core setups to large \ac{HPC} clusters or cloud environments~\cite{Rocklin2015}.
+Dask is a flexible parallel computing library in Python that enables users to scale their code from single-machine multi-core setups to large \ac{HPC} clusters or cloud environments~\cite{rocklin2015dask}.
 At its core, Dask translates high-level operations (\eg, array or dataframe transformations) into a \ac{DAG} of tasks.
 Each node in the graph represents a discrete unit of work, and edges capture inter-task dependencies (for instance, one chunk of an array depends on another chunk's partial result).
 
 \paragraph{DAG Construction.}
 When a user calls methods on a Dask collection (like \texttt{dask.array} or \texttt{dask.dataframe}), the library does not immediately execute those operations.
 Instead, it records them as nodes and edges in a \ac{DAG}.
-Only when the user explicitly requests a result (\eg, by calling \texttt{.compute()}) does Dask traverse this graph to determine the order in which tasks must run~\cite{Rocklin2015}.
+Only when the user explicitly requests a result (\eg, by calling \texttt{.compute()}) does Dask traverse this graph to determine the order in which tasks must run~\cite{rocklin2015dask}.
 
 \paragraph{Schedulers and Worker Processes.}
 Dask supports multiple schedulers:
 \begin{itemize}
     \item \emph{Single-Threaded or Multi-Threaded Scheduler:} Useful for debugging or quick, local computations.
-    \item \emph{Distributed Scheduler:} Typically used in an \ac{HPC} or multi-machine context. A central scheduler process coordinates a cluster of workers executing subsets of the task graph~\cite{Rocklin2015}.
+    \item \emph{Distributed Scheduler:} Typically used in an \ac{HPC} or multi-machine context. A central scheduler process coordinates a cluster of workers executing subsets of the task graph~\cite{rocklin2015dask}.
 \end{itemize}
 Each worker typically has its process (or multiple threads), allowing parallel execution of tasks on different chunks of data.
 The scheduler tracks task dependencies, idle workers, and data locality, deciding which worker should handle each task to minimize network overhead and memory pressure.
@@ -111,20 +111,20 @@ That worker loads or receives the required data (possibly reading from disk or p
 If subsequent tasks depend on that result, the scheduler can direct them to the same worker (to minimize data movement) or another worker (if balancing load or addressing memory constraints).
 
 \paragraph{Importance of Chunk Sizing.}
-Dask collections frequently revolve around chunked data structures—\textit{dask arrays} split along one or more axes, or \textit{dask dataframes} partitioned by index or row groups~\cite{Rocklin2015}:
+Dask collections frequently revolve around chunked data structures (\textit{dask arrays}) split along one or more axes, or \textit{dask dataframes} partitioned by index or row groups~\cite{rocklin2015dask}:
 \begin{itemize}
-    \item \textbf{Memory Efficiency:} Chunks that are too significant increase the likelihood of \ac{OOM} failures on a worker, as each chunk requires processing in \ac{RAM}.
+    \item \textbf{Memory Efficiency:} Chunks that are too large increase the likelihood of \ac{OOM} failures on a worker, as each chunk requires processing in \ac{RAM}.
     \item \textbf{Scheduling Overhead:} Conversely, overly small chunks cause scheduling overhead to dominate, as the number of tasks in the \ac{DAG} grows and the scheduler spends more time orchestrating tasks than performing computations~\cite{Dean2004}.
     \item \textbf{Operator Complexity:} Some operations (e.g., \ac{FFT}, convolutions, or data shuffles) inflate memory usage beyond the raw size of the input chunk. Accurate estimation of this inflation (see Section~\ref{sec:fundamentals-predictive-modeling}) helps prevent improper chunk sizing that inadvertently leads to worker crashes~\cite{Bader2024}.
 \end{itemize}
 
 \paragraph{Adaptive Scheduling and Dynamic Rebalancing.}
-Recent Dask enhancements include adaptive scheduling features, where the cluster can scale the number of workers up or down based on the current demand~\cite{Rocklin2015}.
+Recent Dask enhancements include adaptive scheduling features, where the cluster can scale the number of workers up or down based on the current demand~\cite{rocklin2015dask}.
 In \ac{HPC} clusters or containerized environments, this may mean provisioning extra workers for a memory-intensive phase and then releasing them once the workflow moves to a lighter stage.
-Meanwhile, Dask can optionally \emph{rebalance} data across workers if one worker's memory usage grows too high, although such rebalancing introduces additional data movement costs.
+Meanwhile, Dask can optionally rebalance data across workers if one worker's memory usage grows too high, although such rebalancing introduces additional data movement costs.
 
 \paragraph{Takeaways.}
-By building and executing tasks from a \ac{DAG}, Dask enables parallelism across many computational resources, making it well-suited for data-intensive tasks in Python~\cite{Rocklin2015}.
+By building and executing tasks from a \ac{DAG}, Dask enables parallelism across many computational resources, making it well-suited for data-intensive tasks in Python~\cite{rocklin2015dask}.
 However, the design of that \ac{DAG}, particularly how users chunk data and distribute tasks, directly impacts performance, memory overhead, and reliability.
 Therefore, understanding Dask's scheduling behavior and the interplay between chunk size and operator resource usage becomes crucial for creating robust, high-performance applications in scientific computing, data analytics, and beyond.
 
@@ -139,7 +139,7 @@ These processes are computationally and memory-intensive, making \ac{HPC} an ind
 \subsection{Seismic Fundamentals}
 \label{subsec:fundamentals-seismic-fundamentals}
 
-A \textit{seismic survey} typically involves emitting controlled energy sources (\eg, vibroseis trucks or air guns) and recording the returned echoes at numerous receiver locations.
+A seismic survey typically involves emitting controlled energy sources (\eg, vibroseis trucks or air guns) and recording the returned echoes at numerous receiver locations.
 The recorded signals form traces, each capturing how the subsurface reflects these signals over time.
 Merging, correcting, and positioning these traces into a consistent spatial grid produces a \ac{3D} volume of amplitude values~\cite{Yilmaz2001}.
 
@@ -172,7 +172,7 @@ Insufficient partitioning can lead to \ac{OOM} issues, while over-partitioning c
 \subsection{Seismic Operators}
 \label{subsec:fundamentals-seismic-operators}
 
-\textit{Seismic operators} refer to the mathematical or algorithmic transformations applied to raw seismic data to enhance signal quality and improve interpretability~\cite{Yilmaz2001,yilmaz-seismic-data-analysis}.
+Seismic operators refer to the mathematical or algorithmic transformations applied to raw seismic data to enhance signal quality and improve interpretability~\cite{Yilmaz2001,yilmaz-seismic-data-analysis}.
 They can range from relatively simple filters to sophisticated wave-equation migrations:
 
 \begin{itemize}
@@ -190,7 +190,7 @@ Modeling these memory footprints in advance (Section~\ref{sec:fundamentals-predi
 
 \begin{itemize}
     \item \textbf{Large Data Volumes:} Modern seismic surveys can produce thousands of inlines/xlines, each containing thousands of samples. Straightforward approaches to load an entire volume often exceed per-node memory limits~\cite{Yilmaz2001}.
-    \item \textbf{Complex Workflows:} Real seismic processing pipelines involve dozens of operators chained together. Intermediate representations—such as partial migrations or stacked volumes—can quadruple or quintuple the original data size.
+    \item \textbf{Complex Workflows:} Real seismic processing pipelines involve dozens of operators chained together. Intermediate representations, such as partial migrations or stacked volumes, can quadruple or quintuple the original data size.
     \item \textbf{Parallel \ac{I/O} and Distribution:} Efficient reading and writing of chunks (\eg, inlines or xlines) demands parallel file systems or distributed object stores. Otherwise, \ac{I/O} becomes a bottleneck, overshadowing the benefits of \ac{HPC} parallelism~\cite{Folk2011}.
     \item \textbf{Operator-Specific Memory Peaks:} Some algorithms, like \ac{RTM}, store multiple timesteps of wavefields in memory, leading to spike-and-release usage patterns that are challenging to predict without operator-level insight.
 \end{itemize}
@@ -201,7 +201,7 @@ By uniting seismic domain knowledge (the structure of inlines/xlines, operator c
 \section{Python Memory Model and Measurement Challenges}
 \label{sec:fundamentals-python-memory}
 
-Python's ecosystem provides convenient libraries (\eg, NumPy, SciPy, Pandas, Dask, PyTorch) that enable rapid development of \ac{HPC} applications.
+Python's ecosystem provides convenient libraries (\eg, NumPy~\cite{numpy}, SciPy~\cite{virtanen2020scipy}, Pandas, Dask, PyTorch~\cite{paszke2019pytorch}) that enable rapid development of \ac{HPC} applications.
 However, Python's memory subsystem complicates direct measurement and reliable estimates~\cite{Nanjekye2023}.
 
 \subsection{Reference Counting}
@@ -290,7 +290,7 @@ Docker~\cite{Boettiger2015} is a popular container platform for microservices an
 Singularity~\cite{Kurtzer2017} is another container solution aimed at \ac{HPC} settings, granting user-level container execution without privileged operations.
 Both can isolate Python processes and dependencies to ensure reproducible states for measurement or production runs.
 
-\subsection{Nested Containers and \ac{DIND}}
+\subsection{Nested Containers and Docker-in-Docker}
 \label{subsec:fundamentals-nested-dind}
 
 \ac{DIND} enables running new containers within an existing container environment, offering an additional isolation layer that can prevent external interference.
@@ -309,14 +309,14 @@ Python-level measurement thus remains necessary for precise insight into dynamic
 \label{sec:fundamentals-data-parallel}
 
 Data partitioning becomes crucial when large datasets exceed the memory capacity of a single node or require parallel processing.
-Frameworks like Dask enable splitting arrays or dataframes into smaller \emph{chunks} across multiple workers, facilitating concurrent execution~\cite{Rocklin2015,Dean2004}.
+Frameworks like Dask enable splitting arrays or dataframes into smaller chunks across multiple workers, facilitating concurrent execution~\cite{rocklin2015dask,Dean2004}.
 
 \subsection{Dask Arrays and Task Graphs}
 \label{subsec:fundamentals-dask-overview}
 
 Dask builds a \ac{DAG} of tasks, each representing an operation (for instance, array slicing, map operations, or reductions) on one or more chunks.
 Workers consume and produce chunks as scheduled.
-Heuristic-based auto-chunking sets chunk sizes with limited awareness of actual operator memory usage~\cite{Rocklin2015}.
+Heuristic-based auto-chunking sets chunk sizes with limited awareness of actual operator memory usage~\cite{rocklin2015dask}.
 
 This naive approach leads to frequent imbalance:
 \begin{itemize}
@@ -353,7 +353,7 @@ Chapter~\ref{ch:related-work} examines these and other established techniques in
 \subsection{Shape-Based Memory Prediction}
 \label{subsec:fundamentals-shape-prediction}
 
-Some tasks often revolve around multi-dimensional data, where memory usage correlates closely with array volume or dimension sizes~\cite{Rocklin2015,Bader2023}.
+Some tasks often revolve around multi-dimensional data, where memory usage correlates closely with array volume or dimension sizes~\cite{rocklin2015dask,Bader2023}.
 Large arrays, by definition, store more elements, leading to proportionally higher memory demands.
 Certain operators add overhead that scales with the same dimension or offset.
 Empirical studies repeatedly show near-linear relationships between array size and peak memory for filters, transforms, or deep learning layers~\cite{Bader2024}.
@@ -403,7 +403,7 @@ Historical logs can train machine learning models, but shape-driven methods rely
 Chunked data-parallel systems like Dask gain efficiency from these models by adjusting chunk sizes or scheduling decisions based on forecasted peaks.
 Combined with containerization and dynamic memory management techniques (such as ballooning in virtualized environments), these predictors enable more reliable workflows that scale while minimizing idle capacity and avoiding mid-job crashes.
 
-Overall, \ac{HPC} environments—ranging from multi-node clusters to containerized setups—depend on rigorous memory planning for Python-based applications.
+Overall, \ac{HPC} environments, ranging from multi-node clusters to containerized setups, depend on rigorous memory planning for Python-based applications.
 Data partitioning strategies, seismic processing pipelines, and \ac{ETL} workloads all illustrate why naive assumptions about memory usage can derail tasks.
 Predictive frameworks that factor in Python's allocation patterns, operator overhead, and data shapes offer a solution.
 The following chapters of this thesis will explore measurement techniques, model construction, and how to integrate these tools with Dask to enhance memory-aware parallel processing in \ac{HPC}.
