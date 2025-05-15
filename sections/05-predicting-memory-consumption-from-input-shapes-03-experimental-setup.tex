@@ -8,7 +8,8 @@ The subsections below detail the execution environment, data generation, operato
 \subsection{Execution Environment and Workflow Automation}
 \label{subsec:pmc-execution-environment-and-workflow-automation}
 
-All experiments were executed on a single \ac{HPC} node at the \ac{UNICAMP} Discovery Labs, equipped with an Intel\textregistered\ Xeon\textregistered\ Silver 4310 processor, 256~\ac{GB} of \ac{RAM}, and two \ac{RTX}~A6000 \ac{GPU}s. Despite the presence of \ac{GPU} resources, all memory profiling runs relied exclusively on \ac{CPU} execution to ensure comparability across input shapes.
+All experiments ran on a single \ac{HPC} node at the \ac{UNICAMP} Discovery Labs, equipped with an Intel\textregistered\ Xeon\textregistered\ Silver 4310 processor, 256~\ac{GB} of \ac{RAM}, and two \ac{RTX}~A6000 \ac{GPU}s.
+Despite available \ac{GPU} resources, all memory profiling runs exclusively used \ac{CPU} execution to ensure comparability across input shapes.
 
 A Python-based container environment managed via Docker provided reproducibility and isolation.
 Docker containers pinned to specific \ac{CPU} cores (\texttt{–cpuset-cpus=0}) maintained execution consistency and minimized process interference.
@@ -16,7 +17,7 @@ Docker containers pinned to specific \ac{CPU} cores (\texttt{–cpuset-cpus=0}) 
 A single shell script, \texttt{scripts/experiment.sh}\footnote{Experiment Script. Available at \url{https://github.com/discovery-unicamp/memory-aware-chunking/blob/main/experiments/02-predicting-memory-consumption-from-input-shapes/scripts/experiment.sh}. Accessed: 2025-04-29.}, orchestrated the full workflow, including:
 \begin{enumerate}
     \item Creation of Docker volumes for intermediate and output data storage.
-    \item Generation of synthetic \ac{3D} seismic volumes, as described in Section\ref{sec:pmc-materials-and-methods}.
+    \item Generation of synthetic \ac{3D} seismic volumes, as described in Section~\ref{sec:pmc-materials-and-methods}.
     \item Execution of seismic operators within containers, using \texttt{EXPERIMENT\_N\_RUNS} runs per input shape configuration.
     \item Memory profiling using \traceq, which captured \ac{RSS} measurements over time.
     \item Extraction and consolidation of peak memory values, shape metadata, and execution logs into structured \texttt{.csv} files.
@@ -32,19 +33,19 @@ The final output consisted of a consolidated dataset for model fitting.
 A comprehensive enumeration of \ac{3D} input shapes defined the experimental space.
 Input volumes ranged from $100$ $\times$ $100$ $\times$ $100$ to shapes approaching system memory limits.
 Each synthetic volume was written in the \ac{SEG-Y} format to maintain consistency with the seismic processing pipeline.
-This method enabled a controlled exploration of both common and extreme input configurations.
+This method enabled a controlled exploration of both standard and extreme input configurations.
 
 \paragraph{Netherlands F3 Dataset~\cite{f3dataset}.}
 The standard Netherlands F3 seismic volume ($651$ $\times$ $951$ $\times$ $462$) served as a real-data validation benchmark.
-That dataset can be downloaded from the Terranubis website~\cite{f3dataset}.
-Memory usage predictions from the trained models were compared against actual measurements on this dataset, enabling evaluation of model generalization to real-world data.
+Users can download the dataset from the Terranubis website~\cite{f3dataset}.
+The experiments compared memory usage predictions from the trained models against actual measurements on this dataset, enabling evaluation of model generalization to real-world data.
 
 \subsection{Containerized Seismic Operators and Memory Profiling}
 \label{subsec:containerized-seismic-operators-and-memory-profiling}
 
-Each shape configuration was processed in a dedicated Docker container with exclusive \ac{CPU} pinning to reduce runtime variance.
-Three memory-intensive seismic operators were evaluated: \emph{Envelope}, \emph{\ac{GST3D}}, and a \emph{3D Gaussian Filter}.
-These operators were treated as black-box transformations that received seismic volumes and returned transformed data, with no internal modifications or visibility into their implementation.
+Each shape configuration ran in a dedicated Docker container with exclusive \ac{CPU} pinning to reduce runtime variance.
+The experiments evaluated three memory-intensive seismic operators: \emph{Envelope}, \emph{\ac{GST3D}}, and a \emph{3D Gaussian Filter}.
+The analysis treated these operators as black-box transformations that received seismic volumes and returned transformed data, without internal modifications or visibility into their implementation.
 
 The container startup routine activated \traceq, which monitored the Python process and recorded \ac{RSS} snapshots at regular intervals.
 Upon operator completion, \traceq wrote a \texttt{.prof} file containing the memory usage timeline.
@@ -58,7 +59,7 @@ The consolidation included:
 
 \begin{itemize}
     \item \textbf{Peak Memory Values:} Extracted from each \texttt{.prof} file as the highest recorded \ac{RSS}.
-    \item \textbf{Shape and Operator Metadata:} Inline, xline, and sample dimensions, as well as the applied seismic operator and associated attributes.
+    \item \textbf{Shape and Operator Metadata:} Inline, xline, sample dimensions, applied seismic operator, and associated attributes.
     \item \textbf{Derived Features:} Calculated values such as total volume (\text{inlines} $\times$ \text{xlines} $\times$ \text{samples}), logarithmic transformations, and geometric descriptors including surface area and diagonal length.
 \end{itemize}
 
@@ -69,12 +70,11 @@ This merged dataset was stored in structured \ac{CSV} files under \texttt{OUTPUT
 
 The entire experiment is publicly available at a Github repository~\footnote{Experiment Folder. Available at \url{https://github.com/discovery-unicamp/memory-aware-chunking/blob/main/experiments/02-predicting-memory-consumption-from-input-shapes}. Accessed: 2025-04-29.}.
 This repository contains source code, setup instructions, and automation scripts that orchestrate data generation, processing, and profiling.
-All artifacts for this experiment resides in \texttt{experiments/02-predicting-memory-consumption-from-input-shapes}.
+All artifacts for this experiment reside in the folder \texttt{experiments/02-predicting-memory-consumption-from-input-shapes}.
 A detailed \texttt{README.md} file describes environment requirements, including Docker, and explains how to run each step.
-\EB{Daniel, algumas frases estão violando a margem da página. Após todas as correções e antes de gerar a versão final, seria bom corrigir estes problemas - sugiro fazer uma revisão visual do PDF.}
 
 The \texttt{scripts/experiment.sh} script~\footnote{Experiment Script. Available at \url{https://github.com/discovery-unicamp/memory-aware-chunking/blob/main/experiments/02-predicting-memory-consumption-from-input-shapes/scripts/experiment.sh}. Accessed: 2025-04-29.} automates the entire pipeline.
-Users must install Docker, clone the repository, and execute \texttt{experiment.sh} to reproduce every stage of data processing and analysis.
+Users must install Docker, clone the repository, and execute \texttt{experiment.sh} to reproduce every data processing and analysis stage.
 The \texttt{notebooks/} directory~\footnote{Notebooks Folder. Available at \url{https://github.com/discovery-unicamp/memory-aware-chunking/blob/main/experiments/02-predicting-memory-consumption-from-input-shapes/notebooks}. Accessed: 2025-04-29.} includes Jupyter notebooks for data exploration, model training, hyperparameter tuning, and error diagnostics.
 This structure provides reproducibility and supports extensibility.
 Users can modify input shapes, seismic operators, or container settings without altering the orchestration logic.

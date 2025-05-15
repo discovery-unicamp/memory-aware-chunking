@@ -2,7 +2,7 @@
 \label{sec:mmc-best-practices}
 
 Accurate memory measurement in Python applications requires a systematic approach to address challenges identified in Section~\ref{sec:mmc-common-challenges-and-pitfalls} and elaborated further in Appendix~\ref{ch:appendix-challenges-pitfalls}.
-This section outlines comprehensive best practices aimed at minimizing measurement biases, ensuring reproducible results, and reliably determining an application’s true memory footprint.
+This section outlines comprehensive best practices for minimizing measurement biases, ensuring reproducible results, and reliably determining an application's actual memory footprint.
 
 \subsection{Environment Isolation}
 \label{subsec:mmc-bestpractices-env-isolation}
@@ -16,25 +16,25 @@ Docker and similar container technologies offer effective isolation through name
 Containerized environments provide two primary benefits:
 \begin{enumerate}
     \item \textbf{Minimization of Background Processes:} Containers initialized from minimal base images significantly reduce baseline memory overhead.
-    \item \textbf{Explicit Resource Management:} Containers allow defined memory constraints using flags such as \texttt{–memory} or \ac{cgroup} configurations, useful for validating memory usage limits (detailed in Section~\ref{subsec:mmc-bestpractices-validation}).
+    \item \textbf{Explicit Resource Management:} Containers allow defined memory constraints using flags such as \texttt{–memory} or \ac{cgroup} configurations, helpful in validating memory usage limits (detailed in Section~\ref{subsec:mmc-bestpractices-validation}).
 \end{enumerate}
 Despite these advantages, container-level abstractions can introduce measurement inaccuracies due to caching or shared kernel resources.
-Cross-validation of container metrics against system-level metrics (\eg, via Linux’s \texttt{/proc/[pid]/smaps}) is essential to ensure accuracy.
+Cross-validation of container metrics against system-level metrics (\eg, via Linux's \texttt{/proc/[pid]/smaps}) is essential to ensure accuracy.
 
 \paragraph{Subprocess-Based Isolation.}
 Subprocess invocation serves as an effective isolation alternative where containerization is impractical.
 Each subprocess starts a new Python interpreter session, eliminating residual memory references or fragmentation effects from previous executions.
-This method suits short-lived batch experiments or iterative test scenarios, provided that the overhead from subprocess creation remains acceptable.
+This method suits short-lived batch experiments or iterative test scenarios, provided the overhead from subprocess creation remains acceptable.
 
 \paragraph{Preventing Cross-Contamination.}
-Effective isolation demands that each experiment commences from a pristine environment.
+Effective isolation demands that each experiment commence from a pristine environment.
 Residual data structures, loaded libraries, or persistent memory allocations from earlier executions must not contaminate subsequent measurements.
 Ensuring complete isolation guarantees accurate reflection of actual memory requirements for each run.
 
 \subsection{Clean Slate Strategy}
 \label{subsec:mmc-bestpractices-clean-slate}
 
-Establishing a “clean slate” between experimental runs complements environmental isolation, further enhancing accuracy:
+Establishing a "clean slate" between experimental runs complements environmental isolation, further enhancing accuracy:
 
 \begin{itemize}
 
@@ -56,7 +56,7 @@ Combining system-level (external) and Python-level (internal) memory measurement
 Reliance on a single approach risks incomplete or misleading results.
 
 \paragraph{System-Level Metrics.}
-Tools such as \texttt{psutil}~\cite{psutil}, Docker statistics, and Linux’s \texttt{/proc} filesystem measure system-wide metrics including \ac{RSS}, \ac{VMS}, and shared memory.
+Tools such as \texttt{psutil}~\cite{psutil}, Docker statistics, and Linux's \texttt{/proc} filesystem measure system-wide metrics including \ac{RSS}, \ac{VMS}, and shared memory.
 These metrics provide insights into:
 \begin{itemize}
 
@@ -77,20 +77,20 @@ Internal profiling tools like \texttt{tracemalloc}~\cite{tracemalloc} offer gran
 \end{itemize}
 
 \paragraph{Resolving Discrepancies.}
-Differences between system-level and Python-level measurements are common and arise from various factors including Python’s internal overhead, external library allocations, and \ac{OS}-level caching.
+Differences between system-level and Python-level measurements are common and arise from various factors, including Python's internal overhead, external library allocations, and \ac{OS}-level caching.
 Reconciling these measurements by analyzing temporal correlations enhances understanding of memory consumption dynamics.
 
 \subsection{Frequency and Granularity of Measurement}
 \label{subsec:mmc-bestpractices-frequency-granularity}
 
-Selecting appropriate measurement frequency and granularity is crucial to accurately capture memory usage without excessive overhead:
+Selecting appropriate measurement frequency and granularity is crucial to capture memory usage without excessive overhead accurately:
 
 \paragraph{Sampling Frequency.}
 Regular interval sampling of metrics like \ac{RSS} with tools such as \texttt{psutil} provides a balance between capturing short-lived spikes and avoiding significant runtime overhead.
 Excessive sampling frequency can introduce performance degradation and memory perturbation.
 
 \paragraph{Peak-Based Measurement.}
-Measuring peak memory usage, such as through Python’s \texttt{resource.getrusage} or \texttt{psutil.Process().memory\_info().rss}, ensures capturing worst-case scenarios.
+Measuring peak memory usage, such as through Python's \texttt{resource.getrusage} or \texttt{psutil.Process().memory\_info().rss}, ensures capturing the worst-case scenarios.
 While useful for resource allocation and scheduling, this method might miss detailed internal memory allocation patterns.
 
 \paragraph{Optimal Strategy.}
@@ -100,17 +100,17 @@ Event-triggered sampling or strategically placed internal snapshots with \texttt
 \subsection{Validation Techniques}
 \label{subsec:mmc-bestpractices-validation}
 
-Rigorous validation ensures reliability and accuracy of memory measurements:
+Rigorous validation ensures the reliability and accuracy of memory measurements:
 
 \paragraph{Cross-Validation with Docker Statistics.}
-Comparing container-level memory metrics from Docker’s built-in monitoring tools with Python-level internal measurements identifies discrepancies due to \ac{OS}-level caches, external libraries, or Python internal memory management.
+Comparing container-level memory metrics from Docker's built-in monitoring tools with Python-level internal measurements identifies discrepancies due to \ac{OS}-level caches, external libraries, or Python internal memory management.
 
 \paragraph{Memory Limit Testing.}
 Implementing explicit memory constraints slightly below measured peak usage validates memory profiling accuracy.
 Successful execution under tighter constraints indicates measurement inflation, whereas failures confirm realistic minimum memory requirements.
 
 \paragraph{Multiple Tool Comparative Analysis.}
-Overlaying \texttt{psutil}, \texttt{resource}, and \texttt{tracemalloc} data allows detection of divergences between Python-level allocations and system-level reported memory, clarifying allocation behaviors and memory usage subtleties.
+Overlaying different data sources, such as \texttt{psutil}, \texttt{resource}, and \texttt{tracemalloc}, allows detection of divergences between Python-level allocations and system-level reported memory, clarifying allocation behaviors and memory usage subtleties.
 
 \subsection{Summary of Recommended Workflow}
 \label{subsec:mmc-bestpractices-summary}
@@ -126,4 +126,4 @@ Integrating the outlined practices, the recommended workflow consists of:
     \item \textbf{Comparative Cross-Analysis:} Reconcile internal and external metrics to identify and clarify measurement discrepancies.
 \end{enumerate}
 
-Adherence to these best practices ensures precise, reliable, and reproducible memory profiling essential for efficient resource management in Python-based high-performance computing and large-scale computational contexts.
+Adherence to these best practices ensures precise, reliable, and reproducible memory profiling, which is essential for efficient resource management in Python-based high-performance computing and large-scale computational contexts.

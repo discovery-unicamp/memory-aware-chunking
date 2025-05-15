@@ -2,11 +2,11 @@
 \label{sec:idp-materials-methods}
 
 This section outlines the comprehensive experimental methodology employed to evaluate the performance and efficacy of memory-aware chunking.
-The experiment is structured as a multi-stage pipeline that encompasses data generation, systematic computational profiling within isolated Docker containers, rigorous aggregation of profiling results, and detailed analysis supported by visualization.
+The experiment follows a multi-stage pipeline encompassing data generation, systematic computational profiling within isolated Docker containers, rigorous aggregation of profiling results, and detailed analysis supported by visualization.
 
 \subsection*{Overall Structure}
 
-The experimental pipeline is orchestrated by a single Bash script, \texttt{experiment.sh}, which sequentially coordinates four core Python scripts:
+A single Bash script orchestrates the experimental pipeline, \texttt{experiment.sh}, which sequentially coordinates four core Python scripts:
 
 \begin{enumerate}
     \item \textbf{Data Generation} (\texttt{generate\_data.py})
@@ -15,11 +15,11 @@ The experimental pipeline is orchestrated by a single Bash script, \texttt{exper
     \item \textbf{Analysis and Plotting} (\texttt{analyze\_results.py})
 \end{enumerate}
 
-Each step executes within \ac{DIND} containers, ensuring consistent environments, reproducibility of results, and clear isolation of software dependencies.
+Each step executes within \ac{DIND} containers, ensuring consistent environments, reproducibility of results, and apparent isolation of software dependencies.
 
 \subsection*{Configuration and Environment}
 
-All experiments were executed on a single \ac{HPC} node at the \ac{UNICAMP} Discovery Labs, equipped with an Intel\textregistered\ Xeon\textregistered\ Silver 4310 processor, 256~\ac{GB} of \ac{RAM}, and two \ac{RTX}~A6000 \ac{GPU}s. Despite the presence of \ac{GPU} resources, all runs relied exclusively on \ac{CPU} execution to ensure comparability across input shapes.
+All experiments ran on a single \ac{HPC} node at the \ac{UNICAMP} Discovery Labs, equipped with an Intel\textregistered\ Xeon\textregistered\ Silver 4310 processor, 256~\ac{GB} of \ac{RAM}, and two \ac{RTX}~A6000 \ac{GPU}s. Despite having \ac{GPU} resources available, all runs exclusively used \ac{CPU} execution to ensure comparability across input shapes.
 
 The experiment is extensively configurable through environment variables specified at the beginning of the orchestrator script.
 Important configurable parameters include:
@@ -27,7 +27,7 @@ Important configurable parameters include:
 \begin{itemize}
     \item \texttt{TIMESTAMP}: Unique identifier for output directories, defaulting to the current date and time.
     \item \texttt{CPUSET\_CPUS}: Specifies the CPU cores available to Docker, defaulting to core 0.
-    \item \texttt{EXPERIMENT\_IMAGE\_TAG}: Docker image tag used for executing Python scripts.
+    \item \texttt{EXPERIMENT\_IMAGE\_TAG}: Docker image tag for executing Python scripts.
     \item \texttt{EXPERIMENT\_N\_RUNS}: Number of repetitions for each scenario, defaulting to 3 runs per configuration.
     \item \texttt{DATASET\_INITIAL\_SIZE}, \texttt{DATASET\_FINAL\_SIZE}, \texttt{DATASET\_STEP\_SIZE}: Control the dimensions of synthetic seismic data generated, ranging from 100³ to 400³ voxels, incremented by steps of 100.
     \item \texttt{WORKER\_SCENARIOS}: Specifies worker configurations (\eg, \texttt{single:1}, \texttt{two:2}, \texttt{smalln:4}, \texttt{bign:8}).
@@ -36,7 +36,7 @@ Important configurable parameters include:
     \item \texttt{MEMORY\_LIMIT\_GB}: Defines the total memory allocation available per scenario, partitioned evenly among workers.
 \end{itemize}
 
-All configuration settings are logged at the experiment’s initiation for transparency and debugging purposes.
+The experiment logs all configuration settings at initiation for transparency and debugging purposes.
 
 \subsection*{Step 1: Data Generation}
 
@@ -45,7 +45,7 @@ It iteratively generates data volumes for all combinations of dimensions defined
 
 \subsection*{Step 2: Profiling Scenarios}
 
-This stage represents the experiment’s core, systematically evaluating the computational performance of different chunking methods.
+This stage represents the experiment's core, systematically evaluating the computational performance of different chunking methods.
 For each synthetic dataset, the pipeline:
 
 \begin{enumerate}

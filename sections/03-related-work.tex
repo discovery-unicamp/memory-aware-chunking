@@ -1,7 +1,7 @@
 \chapter{Related Work}
 \label{ch:related-work}
 
-\ac{HPC} workloads often present uncertain memory requirements, leading to either overestimation—which wastes resources and prolongs queue times~\cite{tanash2021ampro}—or underestimation, which can cause \ac{OOM} errors or excessive garbage collection~\cite{myung2021}.
+\ac{HPC} workloads often present uncertain memory requirements, leading to either overestimation, which wastes resources and prolongs queue times~\cite{tanash2021ampro}, or underestimation, which can cause \ac{OOM} errors or excessive garbage collection~\cite{myung2021}.
 Research on memory usage prediction in \ac{HPC} environments includes a range of \ac{ML}-based models that leverage log data, shape-based approaches for data-intensive frameworks, and adaptive methods that integrate with parallel schedulers and workflow systems.
 Several studies also address containerized execution and system-level profiling.
 
@@ -14,7 +14,7 @@ The final part of this chapter, along with Table~\ref{tab:related-work-compare},
 
 Rodrigues \etal~\cite{rodrigues2016} introduced a tool that employs \ac{ML} to improve how \ac{HPC} users request memory.
 It classifies job memory usage (peak \ac{RSS}) into bins based on features such as user ID, number of requested processors, submission weekday, and job name.
-This classification scheme simplifies integration into batch schedulers (\ac{LSF}, \ac{PBS}/\ac{TORQUE}) by limiting the range of predicted memory requests.
+This classification scheme simplifies integration into batch schedulers (\ac{LSF}~\cite{ibm_spectrum_lsf_2020}, \ac{PBS}, \ac{TORQUE}~\cite{staples2006torque}) by limiting the range of predicted memory requests.
 The models tested included \ac{SVM}, \ac{MLP}, and random forests, combined in an ensemble voting strategy.
 Reported accuracy reached up to 98\%.
 
@@ -22,7 +22,7 @@ This study demonstrated that large-scale logs can inform accurate memory bin pre
 Its main limitation arises from dependence on historical scheduler data and job-level resolution.
 As a result, new users or novel workflows are harder to handle.
 The work also lacks container overhead consideration, assuming a relatively static, bare-metal environment.
-By contrast, the approach in this thesis focuses on shape-based, per-task prediction within Python frameworks, allowing more granular control over memory usage and chunk sizes.
+By contrast, this thesis's approach focuses on shape-based, per-task prediction within Python frameworks, allowing more granular control over memory usage and chunk sizes.
 
 
 \section{Survey of Memory Management Techniques for HPC and Cloud}
@@ -33,15 +33,15 @@ This survey identified the growing complexity of heterogeneous architectures, co
 It also emphasized the importance of predictive mechanisms to avoid memory contention in multi-tenant or overcommitted settings.
 
 Since it was a survey rather than an implementation, it did not present any particular modeling technique or comprehensive evaluation.
-It instead highlighted the challenges of container overhead and system-level tracing, which the present thesis addresses through careful container-based measurement of Python memory usage, in contrast to the broader, high-level discussion in the survey.
+Instead, it highlighted the challenges of container overhead and system-level tracing, which the present thesis addresses through careful container-based measurement of Python memory usage, in contrast to the broader, high-level discussion in the survey.
 
 
 \section{Practical Prediction for Large Memory Jobs in HPC}
 \label{sec:rw-practical-prediction}
 
-Li \etal~\cite{li2019} tackled large-memory \ac{HPC} jobs by splitting the prediction model into two stages.
+Li \etal~\cite{li2019} addressed large-memory \ac{HPC} jobs by splitting the prediction model into two stages.
 A classifier first flags whether a job likely belongs to a high-memory category.
-If it is classified as such, a dedicated regressor is applied.
+The model applies a dedicated regressor if the classifier identifies a high-memory job.
 This strategy improved accuracy for the subset of extreme memory jobs and reduced total training costs by focusing on relevant job partitions.
 
 Their approach relies on job logs (user ID, requested resources) rather than shape or data-level features.
@@ -52,25 +52,25 @@ The present thesis uses a different strategy by directly modeling the memory foo
 \section{Predictive Resource Management for Scientific Workflows}
 \label{sec:rw-predictive-resource-management}
 
-Carl Witt’s dissertation~\cite{witt2020} centers on resource prediction in scientific workflow systems and integrates these predictions into scheduling decisions.
+Carl Witt's dissertation~\cite{witt2020} centers on resource prediction in scientific workflow systems and integrates these predictions into scheduling decisions.
 A distinguishing feature is the feedback-based methodology that updates models after each workflow task completes, thus reducing the impact of mispredictions.
 The dissertation also stresses the asymmetric cost of underestimating memory, which can cause task failures and resubmissions.
 
-Although Witt’s work covers a broad range of workflows (bioinformatics, astronomy, etc.) and delves into scheduling policies, it does not focus on container overhead or specifically on shape-driven tasks such as multidimensional array operations in Python.
-The feedback loop is conceptually similar to the iterative refinements used here, but the focus of this thesis is to achieve accurate, shape-based memory modeling at the operator level (\eg, Gaussian filtering), combined with careful container-based measurement.
+Although Witt's work covers a broad range of workflows (bioinformatics, astronomy, etc.) and delves into scheduling policies, it does not focus on container overhead or specifically on shape-driven tasks such as multidimensional array operations in Python.
+The feedback loop is conceptually similar to the iterative refinements used here. However, this thesis focuses on achieving accurate, shape-based memory modeling at the operator level (\eg, Gaussian filtering), combined with careful container-based measurement.
 
 
 \section{\ac{ML}-Based Memory Prediction for Apache Spark}
 \label{sec:rw-spark-prediction}
 
 Myung and Choi~\cite{myung2021} addressed memory misconfiguration in Spark, treating the size of each data element (record) and workload type as key features.
-They observed that Spark’s iterative processing often keeps the peak memory usage relatively stable, so element size rather than overall dataset size is the main predictor.
-Their model combined analytical insight with \ac{ML} (Lasso, Ridge, MLP) to estimate peak memory usage with around 95--99\% accuracy.
+They observed that Spark's iterative processing often keeps the peak memory usage relatively stable, so element size rather than overall dataset size is the main predictor.
+Their model combined analytical insight with \ac{ML} (Lasso, Ridge, \ac{MLP}) to estimate peak memory usage with around 95--99\% accuracy.
 
 This study validated the usefulness of shape-based predictors, a principle closely aligned with the direction pursued here.
-However, it remained Spark-specific and did not explicitly account for container overhead or HPC schedulers.
+However, it remained Spark-specific and did not explicitly account for container overhead or \ac{HPC} schedulers.
 Dask, in particular, processes partitioned or chunked data similarly to Spark, but with different runtime and scheduling characteristics.
-The current thesis adopts a similar shape-based logic for Python tasks but integrates additional container-oriented measurements and HPC constraints.
+The current thesis adopts a similar shape-based logic for Python tasks but integrates additional container-oriented measurements and \ac{HPC} constraints.
 
 
 \section{AMPRO-HPCC: Predicting Job Resources on Slurm Clusters}
@@ -80,8 +80,8 @@ Tanash \etal~\cite{tanash2021ampro} developed AMPRO-HPCC, using large volumes of
 LightGBM achieved an $R^2$ of about 0.72 for memory usage, and the tool is integrated with Slurm to guide users on appropriate memory requests.
 
 Despite the large-scale results, AMPRO-HPCC relies on historical records rather than analytical or shape-based modeling.
-It also does not provide detailed handling of container overhead.
-The work demonstrates that \ac{ML} can succeed at scale, but it does not differentiate sub-job tasks (\eg, Dask-based array computations).
+It also does not provide details on the handling of container overhead.
+The work demonstrates that \ac{ML} can succeed at scale but does not differentiate sub-job tasks (\eg, Dask-based array computations).
 The approach here focuses on per-task shape attributes to predict memory demands, enabling chunk-level resource control for distributed Python workloads.
 
 
@@ -94,7 +94,7 @@ Their classification approach achieved about 90\% exact bin accuracy and over 95
 
 This approach highlights how extensive historical logs and feature engineering can yield high accuracy.
 However, it remains focused on user-level or application-level grouping and does not rely on explicit shape modeling or container introspection.
-By contrast, the method in this thesis learns memory usage from the size of input arrays or tensors and applies it to per-chunk tasks, which is particularly suited to Python data analytics and seismic workloads.
+By contrast, the method in this thesis learns memory usage from the size of input arrays or tensors and applies it to per-chunk tasks. This method is particularly suited to Python data analytics and seismic workloads.
 
 
 \section{Discussion: Towards Memory-Aware Scheduling and Chunking}
@@ -109,11 +109,11 @@ Table~\ref{tab:related-work-compare} compares the main characteristics of each a
     \centering
     \footnotesize
     \renewcommand{\arraystretch}{1.15}
-    \caption{Comparison of related approaches and key features.
+    \caption{Comparison of related approaches and key features.}
     \ac{ML}-based indicates whether machine learning is a core part of the method.
     Shape-based refers to explicit modeling of data dimensions.
-    Container Overhead identifies whether container or cgroup-level metrics are used.
-    Evaluate on Dask indicates whether the technique was validated in a Dask setting.}
+    Container Overhead indicates whether the metrics originate from container or cgroup-level monitoring.
+    Evaluate on Dask indicates whether the validation occurred within a Dask environment.
     \label{tab:related-work-compare}
     \begin{tabular}{>{\centering\arraybackslash}m{2.3cm}m{5cm}m{1.2cm}m{1.3cm}m{2.0cm}m{1.6cm}}
         \toprule
@@ -184,7 +184,7 @@ Table~\ref{tab:related-work-compare} compares the main characteristics of each a
 \end{table}
 
 The table indicates that most prior works are \ac{ML}-based but rarely adopt a shape-based approach (an exception is Myung and Choi~\cite{myung2021}, focused on Spark).
-Few studies account for container overhead, and none validate on Dask in a comprehensive manner.
+Few studies account for container overhead, and none fully validate on Dask.
 The method proposed in this thesis differs by explicitly modeling memory usage from input data shapes, incorporating container-level metrics, and demonstrating its effectiveness on Dask-based workloads.
 
 These features align with the increasing prevalence of Python and containerized \ac{HPC} pipelines, where chunk-level control and dynamic scheduling play a crucial role.
@@ -192,8 +192,6 @@ Furthermore, the design integrates shape-based regressors with a measurement lib
 This design draws inspiration from the lessons in Myung and Choi~\cite{myung2021} regarding shape-driven predictions but extends the strategy to containerized Python tasks and HPC scheduling constraints.
 
 Several techniques from the literature guided specific aspects of this work.
-Some ideas were adapted from Rodrigues \etal~\cite{rodrigues2016} and Tanash \etal~\cite{tanash2021ampro} regarding offline ML model building, although the target here is more granular (per-task) and shape-oriented rather than aggregate job logs.
+Some ideas were adapted from Rodrigues \etal~\cite{rodrigues2016} and Tanash \etal~\cite{tanash2021ampro} regarding offline \ac{ML} model building, although the target here is more granular (per-task) and shape-oriented rather than aggregate job logs.
 Methods from Witt~\cite{witt2020} inspired a feedback loop concept for refining predictions, which is valuable when handling multiple tasks iteratively.
-Overall, the approach in this thesis synthesizes shape-based modeling, container-aware measurement, and a flexible chunking system for Dask, bridging important gaps identified in previous work.
-
-\EB{Muito bom!}
+Overall, this thesis's approach synthesizes shape-based modeling, container-aware measurement, and a flexible chunking system for Dask, bridging important gaps identified in previous work.
