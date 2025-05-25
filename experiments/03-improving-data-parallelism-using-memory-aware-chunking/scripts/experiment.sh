@@ -70,6 +70,7 @@ echo "  OUTPUT_DIR=${OUTPUT_DIR}"
 echo "  HOST_UID=${HOST_UID}"
 echo "  HOST_GID=${HOST_GID}"
 echo "  MEMORY_LIMIT_GB=${MEMORY_LIMIT_GB}"
+echo "  SAFETY_FACTOR=${SAFETY_FACTOR}"
 echo
 
 echo "Starting Memory-Aware Chunking experiment [${TIMESTAMP}]..."
