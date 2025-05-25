@@ -47,6 +47,9 @@ HOST_GID="${HOST_GID:-$(id -g)}"
 # Host memory limit
 MEMORY_LIMIT_GB="${MEMORY_LIMIT_GB:-16}"
 
+# Safety factor (larger is less conservative)
+SAFETY_FACTOR="${SAFETY_FACTOR:-0.8}"
+
 echo "Args:"
 echo "  TIMESTAMP=${TIMESTAMP}"
 echo "  CPUSET_CPUS=${CPUSET_CPUS}"
@@ -172,6 +175,7 @@ for segy_file in "${OUTPUT_DIR}/inputs"/*.segy; do
           -e WORKER_COUNT=${scenario_workers} \
           -e CHUNKING_MODE=${chunk_mode} \
           -e MEMORY_LIMIT_GB=${MEMORY_LIMIT_GB} \
+          -e SAFETY_FACTOR=${SAFETY_FACTOR} \
           -e GST3D_MODEL_FILE=/experiment/out/models/gst3d.pkl \
         " \
         --env EXPERIMENT_VOLUMES="-v /mnt${OUTPUT_DIR}:/experiment/out:rw" \
