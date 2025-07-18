@@ -10,6 +10,12 @@
     pdfkeywords={high-performance computing, memory management, dask, auto-chunking, memory-aware scheduling, python parallelization, chunk size optimization, out-of-memory errors, performance optimization, predictive modeling, resource management, cloud computing, scalability, data parallelism, computational efficiency},
     pdfproducer={Latex with hyperref},
     pdfcreator={pdflatex},
+    colorlinks=true,
+    linkcolor=black,
+    citecolor=black,
+    filecolor=black,
+    urlcolor=black,
+    pdfborder={0 0 0},
 ]{hyperref}
 
 % Remover antes da versão final
@@ -63,7 +69,19 @@
 
 \usepackage{booktabs}
 
-\usepackage{cleveref}
+% Using prettyref instead of cleveref to avoid conflicts with acronym package
+\usepackage{prettyref}
+
+% Define reference formats for prettyref
+\newrefformat{fig}{Figure~\ref{#1}}
+\newrefformat{tab}{Table~\ref{#1}}
+\newrefformat{sec}{Section~\ref{#1}}
+\newrefformat{subsec}{Section~\ref{#1}}
+\newrefformat{ch}{Chapter~\ref{#1}}
+\newrefformat{app}{Appendix~\ref{#1}}
+\newrefformat{eq}{Equation~\ref{#1}}
+\newrefformat{lst}{Listing~\ref{#1}}
+\newrefformat{alg}{Algorithm~\ref{#1}}
 
 \usepackage{algorithm}
 \usepackage{algorithmic}
