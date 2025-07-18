@@ -1,0 +1,120 @@
+{
+  // LaTeX Workshop configuration
+  "latex-workshop.latex.autoBuild.run": "onSave",
+  "latex-workshop.latex.autoBuild.cleanAndRetry.enabled": true,
+  "latex-workshop.message.update.show": false,
+  "latex-workshop.latex.autoClean.run": "onBuilt",
+  "latex-workshop.message.error.show": true,
+  "latex-workshop.message.warning.show": false,
+  "latex-workshop.latex.build.forceRecipeUsage": false,
+  
+  // Build recipe configuration
+  "latex-workshop.latex.recipes": [
+    {
+      "name": "latexmk (pdflatex)",
+      "tools": [
+        "latexmk"
+      ]
+    },
+    {
+      "name": "pdflatex → bibtex → pdflatex × 2",
+      "tools": [
+        "pdflatex",
+        "bibtex",
+        "pdflatex",
+        "pdflatex"
+      ]
+    }
+  ],
+  
+  // Set default recipe
+  "latex-workshop.latex.recipe.default": "latexmk (pdflatex)",
+  
+  // Tool definitions
+  "latex-workshop.latex.tools": [
+    {
+      "name": "latexmk",
+      "command": "latexmk",
+      "args": [
+        "-synctex=1",
+        "-interaction=nonstopmode",
+        "-file-line-error",
+        "-pdf",
+        "-outdir=%OUTDIR%",
+        "-cd",
+        "%DOC%"
+      ],
+      "env": {}
+    },
+    {
+      "name": "pdflatex",
+      "command": "pdflatex",
+      "args": [
+        "-synctex=1",
+        "-interaction=nonstopmode",
+        "-file-line-error",
+        "%DOC%"
+      ],
+      "env": {}
+    },
+    {
+      "name": "bibtex",
+      "command": "bibtex",
+      "args": [
+        "%DOCFILE%"
+      ],
+      "env": {}
+    }
+  ],
+  
+  // Output directory configuration
+  "latex-workshop.latex.outDir": "%DIR%/out",
+  
+  // PDF viewer settings - use VS Code tab
+  "latex-workshop.view.pdf.viewer": "tab",
+  "latex-workshop.view.pdf.tab.editorGroup": "right",
+  
+  // Auto-open PDF after successful build
+  "latex-workshop.synctex.afterBuild.enabled": true,
+  "latex-workshop.view.autoFocus.enabled": true,
+  "latex-workshop.view.pdf.zoom": "page-width",
+  
+  // Set root file
+  "latex-workshop.latex.rootFile.useSubFile": false,
+  "latex-workshop.latex.rootFile.doNotPrompt": true,
+  
+  // Intellisense
+  "latex-workshop.intellisense.package.enabled": true,
+  
+  // File associations
+  "files.associations": {
+    "*.tex": "latex"
+  },
+  
+  // Clean auxiliary files
+  "latex-workshop.latex.clean.fileTypes": [
+    "*.aux",
+    "*.bbl",
+    "*.blg",
+    "*.idx",
+    "*.ind",
+    "*.lof",
+    "*.lot",
+    "*.out",
+    "*.toc",
+    "*.acn",
+    "*.acr",
+    "*.alg",
+    "*.glg",
+    "*.glo",
+    "*.gls",
+    "*.ist",
+    "*.fls",
+    "*.log",
+    "*.fdb_latexmk",
+    "*.snm",
+    "*.nav",
+    "*.loc",
+    "*.soc"
+  ]
+} 

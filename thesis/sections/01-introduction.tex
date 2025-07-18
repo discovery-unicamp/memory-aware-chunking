@@ -14,12 +14,14 @@ Distributed platforms such as Dask~\cite{rocklin2015dask} facilitate horizontal 
 This concurrency level substantially reduces execution time but carries important risks if users underestimate resource demands.
 Dask's default chunking heuristics do not consider the memory requirements of specific operators or data types.
 They distribute data primarily based on file-block boundaries or user-defined size targets.
-As shown in Figure~\ref{fig:chunking-example}, chunk configurations can vary widely, and naive chunk size choices can lead to an overfragmented pipeline, where overhead from excessively many tasks slows the job, or conversely, oversized chunks, where memory usage exceeds available capacity and triggers \ac{OOM} errors.
+As shown in Figure~\ref{fig:chunking-example}, chunk configurations can vary widely, and naive chunk size choices can lead to suboptimal performance. 
+The figure illustrates this trade-off: the orange configuration shows an overfragmented approach with many small chunks that would fail (marked with red "×") due to excessive task scheduling overhead and poor computational efficiency, while the green configuration demonstrates a more balanced chunking strategy with fewer, larger chunks that better utilize available resources.
+Conversely, chunks that are too large can cause memory usage to exceed available capacity and trigger \ac{OOM} errors.
 
 \begin{figure}[ht]
     \centering
     \includegraphics[width=0.95\textwidth]{assets/images/01/chunking-example}
-    \caption{Example of seismic data chunking. Each colored rectangle indicates a potential chunk configuration, illustrating how different sizes and shapes can influence memory usage in the processing pipeline.}
+    \caption{Example of seismic data chunking. The seismic data volume (grayscale background) can be partitioned into chunks of different sizes and shapes. The purple rectangle shows the entire data volume. The orange rectangles represent an overly fine-grained chunking strategy with many small chunks, where the red "×" marks indicate that this configuration may fail due to excessive task overhead and poor computational efficiency. The green rectangles show a more balanced chunking approach with fewer, larger chunks that better utilize memory and computational resources. The choice of chunk configuration directly impacts both memory usage and processing performance in the pipeline.}
     \label{fig:chunking-example}
 \end{figure}
 
