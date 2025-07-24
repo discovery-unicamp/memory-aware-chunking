@@ -38,7 +38,7 @@ Modern operating system features introduce complexities into accurate memory mea
     \item \textbf{Caching Mechanisms.} \ac{OS}-level caching strategies such as filesystem caches and memory compression technologies (\eg, Linux's \texttt{zswap}~\cite{zswap}, \texttt{zram}~\cite{zram}) can misleadingly indicate reserved or compressed memory as actively used.
 
     \item \textbf{\ac{COW}.} Processes that employ forking behavior copy memory pages only upon modification.
-    This mechanism can artificially inflate memory usage readings unless properly accounted for.
+    While this mechanism primarily affects \ac{VMS} readings (the virtual address space appears duplicated), \ac{RSS} measurements remain accurate as they only count physically resident pages that have been modified and thus truly copied.
 
     \item \textbf{Container Overheads.} Containerization tools like Docker abstract memory usage in ways that standard process-level profilers may inaccurately represent.
     Container-specific caching mechanisms can distort traditional \ac{OS}-level memory metrics.
