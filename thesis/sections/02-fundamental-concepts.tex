@@ -43,7 +43,7 @@ Either approach demands a clear understanding of per-worker memory behavior~\cit
 \label{subsec:fundamentals-etl}
 
 \ac{ETL}, a foundational process in data warehousing, analytics, and large-scale data management~\cite{Vassiliadis2009ETL}.
-The core idea involves moving data from various sources into a target repository (\eg, a data lake or \ac{HPC} storage system) in a structured and consistent manner.
+The core idea involves moving data from various sources into a target repository (\eg{}, a data lake or \ac{HPC} storage system) in a structured and consistent manner.
 Although often considered an enterprise or business-intelligence technique, \ac{ETL} also significantly contributes to scientific computing pipelines, where researchers must standardize heterogeneous datasets for further analysis or simulation~\cite{Vassiliadis2009ETL}.
 
 \paragraph{Extraction.}
@@ -61,6 +61,7 @@ Typical transformations include:
 \end{itemize}
 In Python-based \ac{HPC} environments, libraries like Pandas~\cite{pandas} or Dask handle transformation steps at scale, enabling distributed processing of large datasets~\cite{rocklin2015dask}.
 However, memory consumption may spike when transformations involve heavy reshuffling or create intermediate copies of the data (Section~\ref{sec:fundamentals-python-memory}).
+These spiky memory patterns make predictive models (see Section~\ref{sec:fundamentals-predictive-modeling}) particularly valuable for informing chunk sizing and resource allocation, helping avoid \ac{OOM} failures from unforeseen memory peaks~\cite{Bader2023,Bader2024}.
 
 \paragraph{Loading.}
 Finally, the data moves into a target system, such as a data warehouse, an \ac{HPC} file system, or a distributed data store.
@@ -73,13 +74,8 @@ In \ac{HPC} contexts, \ac{ETL} must cope with:
 \begin{itemize}
     \item \textbf{Massive Data Volumes:} Source datasets can reach petabyte scale, demanding careful partitioning and parallelism.
     \item \textbf{Performance Constraints:} Minimizing \ac{I/O} overhead and memory usage is crucial; naive approaches might trigger \ac{OOM} events or \ac{I/O} bottlenecks.
-    \item \textbf{Multi-Stage Pipelines:} Data often undergoes iterative transformations (\eg, cleaning, feature engineering, subsetting) before final storage, requiring scheduling strategies that optimize each \ac{ETL} phase across available cluster resources.
+    \item \textbf{Multi-Stage Pipelines:} Data often undergoes iterative transformations (\eg{}, cleaning, feature engineering, subsetting) before final storage, requiring scheduling strategies that optimize each \ac{ETL} phase across available cluster resources.
 \end{itemize}
-
-\paragraph{Relation to Memory Measurement and Prediction.}
-\ac{ETL} jobs exhibit spiky memory usage due to bulky transformations and intermediate data copies.
-Predictive models that estimate memory consumption (see Section~\ref{sec:fundamentals-predictive-modeling}) can inform better chunk sizing and resource allocation, reducing failures from unforeseen memory peaks~\cite{Bader2023,Bader2024}.
-By integrating \ac{ETL}-aware memory planning with HPC schedulers, large workflows can avoid over-allocation (leading to wasted capacity) or under-allocation (causing abrupt crashes).
 
 \ac{ETL} thus serves as a critical building block for data-driven workflows in enterprise and scientific domains~\cite{Vassiliadis2009ETL}.
 Understanding its memory footprint and performance demands helps \ac{HPC} administrators and data engineers plan more efficient pipelines, ensuring that each stage, from extraction to loading, remains within the available cluster resources.
@@ -215,7 +211,7 @@ Code that repeatedly creates temporary arrays (\eg, sub-slices, filtering masks,
 \subsection{Garbage Collection}
 \label{subsec:fundamentals-gc}
 
-Aside from reference counting, Python also uses a cyclic garbage collector to handle objects that reference each other (so-called "reference cycles"), simple reference counting alone cannot reclaim these objects~\cite{Nanjekye2023}.
+Aside from reference counting, Python also uses a cyclic garbage collector to handle objects that reference each other (so-called "reference cycles"), since reference counting alone cannot reclaim these objects~\cite{Nanjekye2023}.
 This garbage collector periodically scans the program's object graph to detect and free cycles.
 Since this collector runs intermittently, memory usage may peak just before a collection cycle, and the process occasionally introduces spikes in \ac{CPU} usage.
 
@@ -232,8 +228,8 @@ At the Python level, the allocator requests memory from the operating system in 
 Frequent allocations and deallocations can fragment these chunks, resulting in internal fragmentation.
 At the \ac{OS} level, calls to \texttt{malloc} and \texttt{free} do not always immediately return memory to the kernel.
 Thus, \ac{RSS} might remain elevated even after Python internally frees objects.
-Metrics may also undercount peaks if certain memory pages remain cached without appearing as "used" in standard \ac{OS} metrics~\cite{Nanjekye2023}.
-These conditions complicate interpreting a single memory usage metric.
+Additionally, when the \ac{OS} caches data in memory pages (for example, recently accessed files), these cached pages may not be counted as "used" memory by standard monitoring tools, even though they consume physical memory that could otherwise be available to the application~\cite{Nanjekye2023}.
+This discrepancy means that a process might experience memory pressure or even \ac{OOM} errors before reaching the reported memory limit, making it difficult to rely on any single memory metric for accurate capacity planning.
 
 \subsection{Resident Set Size (RSS) and Virtual Memory Size (VMS)}
 \label{subsec:fundamentals-rss-vms}
@@ -267,8 +263,15 @@ Effective \ac{HPC} resource management often involves monitoring both \ac{RSS} (
 \label{subsec:fundamentals-memory-ballooning}
 
 Memory ballooning is a dynamic memory management technique that redistributes RAM across multiple running virtual machines or containers~\cite{waldspurger-ballooning-2002}.
-A small "balloon" driver within each guest (or container runtime) inflates to claim unused memory pages, effectively returning them to the host or other guests under memory pressure.
-When more memory is needed, the balloon deflates, giving pages back to the guest.
+The technique works through a specialized driver (the "balloon driver") installed within each guest OS or container runtime that can dynamically adjust its memory footprint based on host-level memory pressure.
+
+The ballooning mechanism operates as follows:
+\begin{itemize}
+    \item \textbf{Inflation:} When the host detects memory pressure or needs to reclaim memory from a guest, it signals the balloon driver to "inflate." The driver then allocates memory pages within the guest (making them unavailable to guest applications) and marks these pages as reclaimable by the host. From the guest's perspective, these pages appear used, but the host can repurpose their physical memory for other guests.
+    \item \textbf{Deflation:} When the guest requires more memory for its applications, the balloon driver "deflates" by releasing previously allocated pages back to the guest's free memory pool. This process requires the host to have sufficient free memory to back these pages with physical RAM.
+\end{itemize}
+
+This metaphor of inflation and deflation mirrors a balloon's behavior: inflating the balloon takes up space (memory) within the guest, effectively reducing available memory for applications; deflating releases that space back for use.
 
 While initially designed for hypervisors like \ac{KVM} or VMware, similar concepts can apply to containerized or \ac{HPC} environments aiming to maximize node utilization.
 In Python-heavy \ac{HPC} contexts, memory ballooning can intersect with Python's allocation patterns.
@@ -320,8 +323,8 @@ Heuristic-based auto-chunking sets chunk sizes with limited awareness of actual 
 
 This naive approach leads to frequent imbalance:
 \begin{itemize}
-    \item \emph{Over-fragmentation} if chunks are too small, increasing overhead from task scheduling.
-    \item \emph{\ac{OOM} errors} if chunks are too large, surpassing worker memory.
+    \item \emph{Over-fragmentation} when chunks fall below optimal size thresholds, causing task scheduling overhead to dominate actual computation time.
+    \item \emph{Memory exhaustion} when chunks exceed worker capacity, particularly problematic for operators with non-linear memory scaling.
 \end{itemize}
 
 \subsection{Memory-Intensive Operators}
@@ -330,7 +333,7 @@ This naive approach leads to frequent imbalance:
 Many \ac{HPC} workloads involve \ac{3D} convolutions, Fourier transforms, or matrix decompositions that create large intermediate buffers.
 Allocating these buffers can multiply memory usage beyond the size of the input array itself.
 If an operator amplifies the memory footprint when processing each chunk, then chunk boundary decisions become critical~\cite{Bader2023,Bader2024}.
-Too small chunks might hamper parallel efficiency, while oversized chunks can exceed memory capacity and trigger \ac{OOM} errors.
+Understanding these operator-specific memory amplification factors enables more informed chunking strategies that balance computational efficiency with available memory constraints.
 
 
 \section{Predictive Modeling in HPC Resource Management}
