@@ -15,7 +15,3 @@ Section~\ref{sec:mmc-best-practices} consolidates best practices for environment
 Section~\ref{sec:mmc-traceq} introduces the \traceq library, designed to allow a memory-footprint free profiling for both Python-internal (\eg, \texttt{tracemalloc}) and system-level metrics (\eg, \texttt{psutil}~\cite{psutil}).
 Section~\ref{sec:mmc-recommended-strategy} walks through a step-by-step recommended measurement workflow, culminating in an example experiment that benchmarks overhead and accuracy.
 Section~\ref{sec:mmc-conclusion} concludes with the main findings and outlines how these measurements underpin later chapters (notably Chapter~\ref{ch:predicting-memory-consumption-from-input-shapes} and Chapter~\ref{ch:improving-data-parallelism-using-memory-aware-chunking}).
-
-Achieving robust, consistent, and reproducible memory metrics requires more than one tool invocation.
-It calls for isolation strategies, methodical sampling, and cross-validation.
-The following sections provide those details.

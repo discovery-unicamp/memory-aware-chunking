@@ -13,8 +13,8 @@ Python employs a dual approach to memory management involving reference counting
 Prominent scenarios include:
 
 \begin{itemize}
-    \item \textbf{Transient Memory Peaks.} Short-lived objects may lead to temporary memory spikes since the garbage collector does not immediately reclaim freed memory, inflating observed peak usage.
-    \item \textbf{Delayed Cleanup.} Garbage collection triggers are based on internal thresholds, causing potential delays. Consequently, memory profiling may reflect artificially elevated or reduced memory usage depending on timing relative to garbage collection cycles.
+    \item \textbf{Transient Memory Peaks.} Short-lived objects may lead to temporary memory spikes, a phenomenon common to many garbage-collected languages. In Python, the garbage collector does not immediately reclaim freed memory, which can inflate observed peak usage.
+    \item \textbf{Delayed Cleanup.} Garbage collection triggers are based on internal thresholds, causing potential delays. Consequently, memory profiling may reflect artificially elevated memory usage when measurements occur before garbage collection runs.
 \end{itemize}
 
 Thus, memory profiling in Python typically represents a transient snapshot rather than a stable, continuous state.
@@ -26,7 +26,7 @@ Thus, memory profiling in Python typically represents a transient snapshot rathe
 Deletion of objects does not necessarily release memory back to the \ac{OS} or Python interpreter immediately, potentially skewing results when tests are run repeatedly without process resets.
 
 \textbf{Memory Fragmentation.} Fragmentation may occur from repeated memory allocations and deallocations at both Python's allocator level (\texttt{pymalloc}~\cite{pymalloc}) and underlying C libraries (\eg, \texttt{malloc}~\cite{malloc}).
-Fragmentation restricts effective reuse of memory segments, inflating the reported \ac{RSS} beyond the actual requirements of Python objects~\cite{lamprakos2022impact}.
+While fragmentation does not represent a measurement inaccuracy, the reported \ac{RSS} correctly reflects the memory that will trigger \ac{OOM} errors, it creates a discrepancy between the theoretical memory requirements of Python objects and the actual memory footprint due to inefficient space utilization~\cite{lamprakos2022impact}.
 
 \subsection{\ac{OS} Caching and Containerization Effects}
 \label{subsec:mmc-challenges-os-caching}
