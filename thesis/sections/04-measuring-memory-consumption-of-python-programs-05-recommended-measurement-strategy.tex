@@ -85,7 +85,7 @@ Although the strategy does not require native baseline profiling, this experimen
 \paragraph{Results and Observations}
 Figure~\ref{fig:fig-sub-comparison} compares the memory consumption distributions, cumulative distributions, and kernel density estimates, showing minimal differences between native and \traceq results.
 Figure~\ref{fig:fig-sub-points} highlights the increased number of samples collected by \traceq and the negligible difference in maximum memory.
-Finally, Figure~\ref{fig:memory_history} provides a representative time‑series trace for one test scenario, illustrating stable performance under \traceq.
+Finally, Figure~\ref{fig:memory_history} provides a baseline time-series trace showing how different native memory measurement tools (kernel, psutil, resource, and tracemalloc) behave without \traceq, establishing their characteristic memory patterns for comparison.
 
 \begin{figure}[!ht]
     \centering
