@@ -189,8 +189,8 @@ Four standard regression metrics evaluate model performance:
 \ac{RMSE}~\cite{hyndman2006},
 \ac{MAE}~\cite{willmott2005mae},
 \(R^2\)~\cite{draper1998applied},
-and a custom “accuracy” measure ($\mathrm{acc}$).
-These metrics form a single optimization target:
+and a custom "accuracy" measure ($\mathrm{acc}$).
+During hyperparameter tuning, these metrics form a single optimization target:
 \[
     \texttt{score} \;=\;
     w_\mathrm{acc}\,\cdot\,\mathrm{acc}
@@ -201,8 +201,8 @@ These metrics form a single optimization target:
     \;+\;
     w_{R^2}\,\cdot\,R^2,
 \]
-where \(w_\mathrm{acc}, w_\mathrm{RMSE}, w_\mathrm{MAE},\) and \(w_{R^2}\) indicate how strongly the pipeline rewards or penalizes each metric.
-Maximizing \(\texttt{score}\) balances the risk of underestimating memory (which can trigger job failures) against the cost of over-provisioning (which wastes resources).
+where \(w_\mathrm{acc}, w_\mathrm{RMSE}, w_\mathrm{MAE},\) and \(w_{R^2}\) indicate how strongly the hyperparameter optimization process rewards or penalizes each metric.
+Maximizing this composite \(\texttt{score}\) during tuning balances the risk of underestimating memory (which can trigger job failures) against the cost of over-provisioning (which wastes resources).
 
 The \texttt{Optuna} framework~\cite{akiba2019optuna} orchestrates hyperparameter tuning.
 Each trial within the study trains the model using a k-fold split on the training data and measures a combined score.
