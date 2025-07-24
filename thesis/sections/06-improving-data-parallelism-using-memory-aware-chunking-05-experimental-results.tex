@@ -192,7 +192,7 @@ To provide an at-a-glance view of which mode wins under each shape/worker combin
 Table~\ref{tab:leaderboard-100-100} shows the detailed breakdown for our canonical small shape, while Table~\ref{tab:leaderboard-summary} aggregates the winners across all 256 combinations.
 In Table~\ref{tab:leaderboard-100-100}, the column \emph{MemAware Slowdown} quantifies how much slower the memaware strategy was relative to the fastest alternative in that particular scenario (a value of $1.00\times$ means memaware tied for first).
 
-As shapes get larger or concurrency rises, the winner column shifts toward memaware, and the slowdown values shrink, mirroring the reliability-versus-speed trade-off highlighted earlier.
+While the aggregated results in Table~\ref{tab:leaderboard-summary} show that auto-chunking and evenly-split modes win more frequently overall, the median slowdown of memaware when it is not the fastest increases modestly with worker count (from $1.57\times$ to $1.78\times$), suggesting a reliability-versus-speed trade-off.
 
 \subsection{Performance Visualization}
 \label{subsec:performance-visualization}
