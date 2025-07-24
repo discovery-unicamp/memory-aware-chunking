@@ -41,7 +41,7 @@ The feature selection procedure applies a stepwise elimination strategy:
     \item Rank features using SelectKBest, a simple yet effective scikit-learn method~\cite{pedregosa2011scikit} that scores each feature according to a chosen statistical test and retains only the highest-scoring one.
     \item Iteratively remove features starting with the least relevant.
     \item Track changes in \ac{RMSE}, $R^2$, accuracy, and score.
-    \item Repeat until only feature remains.
+    \item Repeat until only one feature remains.
 \end{enumerate}
 
 Table~\ref{tab:feature_selection_minimal_impact} summarizes example results.
