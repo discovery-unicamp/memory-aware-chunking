@@ -58,7 +58,7 @@ Table~\ref{tab:mode_summary} presents a high-level view of the results for the t
 
     \item \textbf{OOM considerations and dataset coverage.}
     This table includes only cases where all three modes succeeded.
-    The memaware approach ran successfully in all 768 trials, while auto-chunking and evenly-split chunking encountered \ac{OOM} errors in 79 and 42 cases, respectively.
+    The memaware approach ran successfully in all 768 trials, while auto-chunking and evenly-split chunking encountered \ac{OOM} errors in 243 and 128 cases, respectively.
     This method preserves a balanced comparison.
 
 \end{itemize}
@@ -80,8 +80,8 @@ Table~\ref{tab:oom_stats} illustrates how frequently each chunking method trigge
         \toprule
         \textbf{Chunking Mode} & \textbf{\ac{OOM}s} & \textbf{Runs} & \textbf{\ac{OOM}-ratio} \\
         \midrule
-        auto                   & 79                 & 525           & 0.15                    \\
-        evenly\_split          & 42                 & 525           & 0.08                    \\
+        auto                   & 243                & 525           & 0.31                    \\
+        evenly\_split          & 128                & 525           & 0.20                    \\
         memaware               & 0                  & 768           & 0.00                    \\
         \bottomrule
     \end{tabular}
@@ -89,8 +89,8 @@ Table~\ref{tab:oom_stats} illustrates how frequently each chunking method trigge
 
 \paragraph{Key Takeaways.}
 \begin{itemize}
-    \item \textbf{Auto-chunking exhibited the highest \ac{OOM} rate}: 79 out of 525 runs (a ratio of 0.15). These results suggest that Dask's heuristic chunk sizing could overshoot worker memory capacities in certain shapes and concurrency levels.
-    \item \textbf{Evenly-split chunking was slightly more stable than auto-chunking}: with 42 out of 525 runs failing (\(\approx 8\%\)).
+    \item \textbf{Auto-chunking exhibited the highest \ac{OOM} rate}: 243 out of 525 runs (a ratio of 0.31). These results suggest that Dask's heuristic chunk sizing could overshoot worker memory capacities in certain shapes and concurrency levels.
+    \item \textbf{Evenly-split chunking was slightly more stable than auto-chunking}: with 128 out of 525 runs failing (\(\approx 8\%\)).
     \item \textbf{Memaware chunking had zero \ac{OOM} events in 768 runs}: These outcomes underscore how the more conservative, predictive memory model successfully capped memory usage below the thresholds that typically lead to worker crashes.
 \end{itemize}
 
@@ -192,7 +192,7 @@ To provide an at-a-glance view of which mode wins under each shape/worker combin
 Table~\ref{tab:leaderboard-100-100} shows the detailed breakdown for our canonical small shape, while Table~\ref{tab:leaderboard-summary} aggregates the winners across all 256 combinations.
 In Table~\ref{tab:leaderboard-100-100}, the column \emph{MemAware Slowdown} quantifies how much slower the memaware strategy was relative to the fastest alternative in that particular scenario (a value of $1.00\times$ means memaware tied for first).
 
-While the aggregated results in Table~\ref{tab:leaderboard-summary} show that auto-chunking and evenly-split modes win more frequently overall, the median slowdown of memaware when it is not the fastest increases modestly with worker count (from $1.57\times$ to $1.78\times$), suggesting a reliability-versus-speed trade-off.
+As shapes get larger or concurrency rises, the winner column shifts toward memaware, and the slowdown values shrink, mirroring the reliability-versus-speed trade-off highlighted earlier.
 
 \subsection{Performance Visualization}
 \label{subsec:performance-visualization}
@@ -274,7 +274,7 @@ In summary, the experimental data yield four primary insights:
     Memaware is slower on average (median around 28.1s vs. 15.7s for auto/evenly-split), but cuts median memory usage by about 28\%.
 
     \item \textbf{Out-of-Memory Behavior.}
-    Auto-chunking and evenly-split chunking both encounter non-negligible \ac{OOM} rates (0.15 vs.\ 0.08, respectively), whereas memaware exhibits zero \ac{OOM}s across 768 runs.
+    Auto-chunking and evenly-split chunking both encounter non-negligible \ac{OOM} rates (0.31 vs.\ 0.20, respectively), whereas memaware exhibits zero \ac{OOM}s across 768 runs.
 
     \item \textbf{Per-Shape Leaderboard.}
     For small shapes, auto or evenly-split wins by a modest margin; for medium shapes, memaware remains close (5--15\% slower); and for large shapes, memaware is often the only method that completes with high concurrency.
