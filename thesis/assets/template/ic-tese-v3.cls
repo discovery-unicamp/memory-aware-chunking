@@ -176,7 +176,7 @@
       \textbf{\@IC} \\
     \end{minipage}
     &
-    \raisebox{-.45\height}{\scalebox{1.11}{\LogoIcUnicampWithName}}
+    \hspace{60pt} % Espaço vazio onde estava o logo do IC
   \end{tabular}
   \end{center}
 }
@@ -226,7 +226,7 @@
   \hfill\begin{minipage}[t]{0.54\textwidth}
     \supresshyphen
     \@monopt\xspace apresentada ao Instituto de Computa\c{c}\~ao da
-    Universidade Estadual de Campinas como parte dos requisitos para a
+    Universidade Estadual de Campinas como parte dos requisitos exigidos para a
     obten\c{c}\~ao do t\'{\i}tulo de \@degnamept\xspace em Ci\^encia da
     Computa\c{c}\~ao\ifx\@cotutela\relax\else\xspace no \^ambito do acordo
     de Cotutela firmado entre a Unicamp e a \@cotutela\fi.
@@ -320,50 +320,22 @@
 
 \def\approvalpage{
   \iffinalversion
-    \logos
-    \vskip 20mm
-    \begin{center}
-      \large
-      {\bf \if\@autora\relax\@autor\else\@autora\fi}
-      \vskip 15mm
-      \ifcase\@thesislanguage
-        {\bf\@title}
-        \vskip 8mm
-      \or
-        {\bf\@title}
-        \vskip 8mm
-      \fi
-      {\bf \@titulo}
-    \end{center}
     \vfill
-    {\bf Banca Examinadora:}
-    \ifx\@avalA\relax
-    \else
-      \begin{itemize}
-      \item \@avalA\newline\@instavalA
+    \begin{itemize}
+      \item \if\@orientadora\relax\@orientador\else\@orientadora\fi\newline\@IC~- \@UNICAMP
+      \ifx\@avalA\relax\else \item \@avalA\newline\@instavalA\fi
       \ifx\@avalB\relax\else \item \@avalB\newline\@instavalB\fi
       \ifx\@avalC\relax\else \item \@avalC\newline\@instavalC\fi
       \ifx\@avalD\relax\else \item \@avalD\newline\@instavalD\fi
       \ifx\@avalE\relax\else \item \@avalE\newline\@instavalE\fi
       \ifx\@avalF\relax\else \item \@avalF\newline\@instavalF\fi
-      \end{itemize}
-    \fi
+    \end{itemize}
     \vfill
     \hfill\begin{minipage}[t]{\textwidth}
       \begin{center}
       \supresshyphen
       A ata da defesa, assinada pelos membros da Comiss\~ao Examinadora, consta no
       SIGA/Sistema de Fluxo de Disserta\c{c}\~ao/Tese e na Secretaria do Programa da Unidade.
-      \end{center}
-    \end{minipage}
-    \vfill
-    \hfill\begin{minipage}[t]{\textwidth}
-      \begin{center}
-      Campinas, \@dia\xspace de
-      \ifcase \@mes \or janeiro\or fevereiro\or mar\c{c}o\or abril\or maio\or
-      junho\or julho\or agosto\or setembro\or outubro\or novembro\or
-      dezembro\fi\xspace
-      de \@ano
       \end{center}
     \end{minipage}
     \vfill
