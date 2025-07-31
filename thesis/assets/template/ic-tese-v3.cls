@@ -322,13 +322,13 @@
   \iffinalversion
     \vfill
     \begin{itemize}
-      \item \if\@orientadora\relax\@orientador\else\@orientadora\fi\newline\@IC~- \@UNICAMP
-      \ifx\@avalA\relax\else \item \@avalA\newline\@instavalA\fi
-      \ifx\@avalB\relax\else \item \@avalB\newline\@instavalB\fi
-      \ifx\@avalC\relax\else \item \@avalC\newline\@instavalC\fi
-      \ifx\@avalD\relax\else \item \@avalD\newline\@instavalD\fi
-      \ifx\@avalE\relax\else \item \@avalE\newline\@instavalE\fi
-      \ifx\@avalF\relax\else \item \@avalF\newline\@instavalF\fi
+      \item \if\@orientadora\relax\@orientador\else\@orientadora\fi
+      \ifx\@avalA\relax\else \item \@avalA\ifx\@instavalA\empty\else\newline\@instavalA\fi\fi
+      \ifx\@avalB\relax\else \item \@avalB\ifx\@instavalB\empty\else\newline\@instavalB\fi\fi
+      \ifx\@avalC\relax\else \item \@avalC\ifx\@instavalC\empty\else\newline\@instavalC\fi\fi
+      \ifx\@avalD\relax\else \item \@avalD\ifx\@instavalD\empty\else\newline\@instavalD\fi\fi
+      \ifx\@avalE\relax\else \item \@avalE\ifx\@instavalE\empty\else\newline\@instavalE\fi\fi
+      \ifx\@avalF\relax\else \item \@avalF\ifx\@instavalF\empty\else\newline\@instavalF\fi\fi
     \end{itemize}
     \vfill
     \hfill\begin{minipage}[t]{\textwidth}
