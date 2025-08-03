@@ -120,6 +120,7 @@ Figure~\ref{fig:memory-usage} demonstrates the memory efficiency of our approach
 
 Memory-aware chunking consistently maintains lower peak memory usage, staying well within configured limits even as worker counts increase.
 
+\iffalse
 \subsection{Performance Leadership Analysis}
 
 Table~\ref{tab:performance-leadership} summarizes which strategy performs best across different scenarios.
@@ -293,6 +294,7 @@ Resource utilization    & 62\%                   & 89\%                 \\
 Despite longer nominal execution time, memory-aware chunking achieved higher effective throughput by eliminating failures and restarts.
 The improved resource utilization demonstrates better load balancing across workers.
 
+\fi
 \subsection{Sensitivity Analysis}
 
 To understand the robustness of our approach, we conducted sensitivity analysis on key parameters.
