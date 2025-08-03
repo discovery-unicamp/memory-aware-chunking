@@ -1,0 +1,86 @@
+\section{Related Work}
+\label{sec:related-work}
+
+Memory management in \ac{HPC} environments has been extensively studied, with research spanning predictive modeling, runtime adaptation, and distributed scheduling strategies.
+This section reviews key approaches and highlights how our work advances the state of the art.
+
+\subsection{Memory Prediction in HPC}
+
+Several studies have addressed memory prediction for \ac{HPC} workloads.
+Rodrigues et al.~\cite{rodrigues2016} employed machine learning to classify job memory usage into bins based on features such as user ID, number of processors, and job names, achieving up to 98\% accuracy.
+However, their approach relies on historical scheduler data and operates at job-level granularity, limiting applicability to new users or novel workflows.
+
+Li et al.~\cite{li2019} developed a two-stage prediction model that first classifies jobs as high-memory or normal, then applies specialized regressors for extreme cases.
+While effective for outlier detection, this approach still depends on job logs rather than data-level features, preventing runtime adjustments for data-intensive tasks.
+
+\subsection{Memory-Aware Scheduling}
+
+Memory-aware scheduling has gained attention in distributed computing frameworks.
+Khandelwal et al.~\cite{khandelwal2020} presented Cleo, which profiles application memory usage and migrates memory-intensive containers.
+Thamsen et al.~\cite{thamsen2017} introduced Mary, a system that monitors resource usage and adjusts allocations dynamically.
+These systems focus on container-level management rather than data partitioning strategies.
+
+For data-parallel frameworks specifically, Shi et al.~\cite{shi2014} proposed MRTuner for automatic MapReduce configuration, including memory settings.
+However, their approach targets Hadoop environments and does not address the unique challenges of scientific computing workloads with complex memory patterns.
+
+\subsection{Chunking Strategies in Distributed Computing}
+
+Chunking strategies have been explored primarily in the context of \ac{I/O} optimization and cache efficiency.
+Zhang et al.~\cite{zhang2019} developed adaptive chunking for scientific datasets stored in HDF5, focusing on storage layout rather than runtime memory constraints.
+Tantisiriroj et al.~\cite{tantisiriroj2011} examined chunking for parallel file systems but did not consider operator-specific memory requirements.
+
+Dask's auto-chunking mechanism~\cite{rocklin2015dask} represents the current state of practice for Python-based distributed computing.
+It employs simple heuristics based on target chunk sizes (typically 128MB) without considering algorithm complexity or intermediate memory expansion.
+This limitation is particularly problematic for tensor operations and scientific computing workflows where memory usage can vary dramatically based on operator characteristics.
+
+\subsection{Performance Modeling in Scientific Computing}
+
+Performance modeling for scientific applications has been extensively studied.
+Carrington et al.~\cite{carrington2006} developed performance models for \ac{HPC} applications using machine learning, though focusing on execution time rather than memory.
+Bhimji et al.~\cite{bhimji2016} analyzed \ac{I/O} patterns in scientific workflows but did not address memory constraints in distributed settings.
+
+For Python-specific workloads, Harris et al.~\cite{harris2020} demonstrated that array computing libraries exhibit predictable performance patterns.
+However, their work focused on single-node execution rather than distributed memory management.
+
+\subsection{Memory Measurement Challenges}
+
+Accurate memory measurement in Python presents unique challenges due to:
+\begin{itemize}
+    \item Reference counting and garbage collection overhead
+    \item C extension memory allocations invisible to Python
+    \item Operating system page caching and memory sharing
+    \item Container virtualization layers
+\end{itemize}
+
+Our work addresses these challenges through comprehensive profiling infrastructure that captures memory usage at multiple system levels, ensuring accurate predictions for distributed execution.
+
+\subsection{Distinguishing Features of Our Approach}
+
+Our work differs from existing approaches in several key aspects:
+
+\begin{enumerate}
+    \item \textbf{Shape-based prediction}: We model memory consumption based on input tensor dimensions and operator characteristics, enabling accurate predictions for scientific workloads
+    \item \textbf{Integration with existing frameworks}: Our solution extends Dask's chunking mechanism rather than requiring a new runtime system
+    \item \textbf{Operator-aware modeling}: We account for algorithm-specific memory patterns, including intermediate expansions common in tensor operations
+    \item \textbf{Practical validation}: We demonstrate effectiveness on real seismic processing workloads with complex memory requirements
+\end{enumerate}
+
+Table~\ref{tab:comparison} summarizes how our approach compares to representative prior work.
+
+\begin{table}[ht]
+\centering
+\caption{Comparison with Related Work}
+\label{tab:comparison}
+\begin{tabular}{lcccc}
+\toprule
+\textbf{Approach} & \textbf{Prediction} & \textbf{Data-} & \textbf{Operator-} & \textbf{Runtime} \\
+                  & \textbf{Basis}      & \textbf{aware} & \textbf{specific}  & \textbf{Adjust.} \\
+\midrule
+Rodrigues~\cite{rodrigues2016} & Job logs    & No  & No  & No  \\
+Li~\cite{li2019}               & Job logs    & No  & No  & No  \\
+Khandelwal~\cite{khandelwal2020} & Runtime  & No  & No  & Yes \\
+Dask auto~\cite{rocklin2015dask}  & File size & Yes & No  & No  \\
+\textbf{Our work}              & Shape+Op    & Yes & Yes & Yes \\
+\bottomrule
+\end{tabular}
+\end{table}

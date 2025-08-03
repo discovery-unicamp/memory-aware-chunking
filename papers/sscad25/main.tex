@@ -1,0 +1,97 @@
+\documentclass[12pt]{article}
+
+\usepackage{assets/template/sbc-template}
+\usepackage{graphicx,url}
+\usepackage[utf8]{inputenc}
+\usepackage[english]{babel}
+
+% Additional packages needed for the paper
+\usepackage{amsmath,amssymb,amsfonts}
+\usepackage{algorithmic}
+\usepackage{algorithm}
+\usepackage{booktabs}
+\usepackage{subcaption}
+\usepackage{listings}
+\usepackage{xcolor}
+\usepackage[printonlyused]{acronym}
+
+% Code listing configuration
+\lstset{
+    basicstyle=\footnotesize\ttfamily,
+    breaklines=true,
+    frame=single,
+    numbers=left,
+    numberstyle=\tiny,
+    captionpos=b,
+    tabsize=2
+}
+
+% Define acronyms used in the paper
+\acrodef{HPC}{High-Performance Computing}
+\acrodef{OOM}{Out-Of-Memory}
+\acrodef{CPU}{Central Processing Unit}
+\acrodef{GPU}{Graphics Processing Unit}
+\acrodef{RAM}{Random Access Memory}
+\acrodef{API}{Application Programming Interface}
+\acrodef{I/O}{Input/Output}
+\acrodef{OS}{Operating System}
+\acrodef{RSS}{Resident Set Size}
+\acrodef{PSS}{Proportional Set Size}
+\acrodef{USS}{Unique Set Size}
+\acrodef{GST3D}{Gradient Structure Tensor 3D}
+\acrodef{RMSE}{Root Mean Square Error}
+\acrodef{GB}{Gigabyte}
+\acrodef{MB}{Megabyte}
+\acrodef{TB}{Terabyte}
+
+\sloppy
+
+\title{Preventing Out-Of-Memory Errors in Dask through Automated Memory-Aware Chunking}
+
+\author{Daniel De Lucca Fonseca\inst{1}, Edson Borin\inst{1}}
+
+\address{Institute of Computing -- University of Campinas (UNICAMP)\\
+  Av. Albert Einstein, 1251 -- 13083-852 -- Campinas -- SP -- Brazil
+  \email{\{d263253,edson\}@ic.unicamp.br}
+}
+
+\begin{document}
+
+\maketitle
+
+\begin{abstract}
+\input{sections/00-abstract}
+\end{abstract}
+
+\input{sections/01-introduction}
+\input{sections/02-related-work}
+\input{sections/03-methodology}
+\input{sections/04-experimental-results}
+\input{sections/05-conclusion}
+
+\section*{Acknowledgment}
+The authors thank the Discovery Lab at UNICAMP for providing computational resources. This work was supported by grants from FAPESP, CNPq, and Petrobras.
+
+% List of acronyms (only those used in the paper will be shown)
+\section*{List of Acronyms}
+\begin{acronym}[RMSE]
+\acro{HPC}{High-Performance Computing}
+\acro{OOM}{Out-Of-Memory}
+\acro{CPU}{Central Processing Unit}
+\acro{GPU}{Graphics Processing Unit}
+\acro{RAM}{Random Access Memory}
+\acro{I/O}{Input/Output}
+\acro{RSS}{Resident Set Size}
+\acro{PSS}{Proportional Set Size}
+\acro{USS}{Unique Set Size}
+\acro{GST3D}{Gradient Structure Tensor 3D}
+\acro{RMSE}{Root Mean Square Error}
+\acro{GB}{Gigabyte}
+\acro{MB}{Megabyte}
+\acro{TB}{Terabyte}
+\end{acronym}
+
+\bibliographystyle{assets/template/sbc}
+\bibliography{bibliography}
+
+\end{document}

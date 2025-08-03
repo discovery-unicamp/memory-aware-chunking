@@ -1,0 +1,97 @@
+\section{Conclusion}
+\label{sec:conclusion}
+
+This paper presented a memory-aware chunking mechanism for distributed data-parallel computing that addresses the critical challenge of balancing computational efficiency with memory constraints.
+By leveraging predictive modeling to estimate memory requirements based on input shapes and operator characteristics, our approach eliminates out-of-memory errors while maintaining competitive performance.
+
+\subsection{Key Contributions}
+
+Our experimental evaluation demonstrated several significant achievements:
+
+\begin{itemize}
+    \item \textbf{Complete \ac{OOM} elimination}: Zero failures across 768 experimental runs, compared to 31.6\% failure rate for Dask's auto-chunking
+    \item \textbf{Memory efficiency}: 52\% reduction in peak memory usage compared to conventional approaches
+    \item \textbf{Scalability enablement}: Successful execution of large datasets with multiple workers where existing methods fail
+    \item \textbf{Practical integration}: Seamless incorporation into Dask's distributed computing framework
+\end{itemize}
+
+The trade-off between execution speed and reliability proves reasonable for production environments.
+While memory-aware chunking incurs a median slowdown of 1.65× when not the fastest option, this overhead is offset by guaranteed job completion and the ability to handle larger workloads.
+
+\subsection{Practical Impact}
+
+For \ac{HPC} environments, our approach offers substantial operational benefits:
+
+\begin{enumerate}
+    \item \textbf{Reduced operational costs}: Eliminating \ac{OOM}-induced job failures saves computational resources and queue time
+    \item \textbf{Simplified resource planning}: Predictable memory usage patterns enable better capacity management
+    \item \textbf{Enhanced productivity}: Automated chunk sizing eliminates tedious trial-and-error tuning
+    \item \textbf{Broader applicability}: Support for larger datasets and higher concurrency levels
+\end{enumerate}
+
+\subsection{Limitations and Future Directions}
+
+While our approach demonstrates significant improvements, several limitations warrant discussion:
+
+\subsubsection{Current Limitations}
+
+\begin{itemize}
+    \item \textbf{Training data requirements}: The predictive model requires profiling data for each operator, limiting immediate applicability to new algorithms
+    \item \textbf{Homogeneous assumptions}: Current implementation assumes uniform memory availability across workers
+    \item \textbf{Static predictions}: Memory estimates are based on input shapes without considering data content or sparsity
+    \item \textbf{Single-operator focus}: The model does not yet handle complex pipelines with multiple operators
+\end{itemize}
+
+\subsubsection{Future Research Directions}
+
+Several promising avenues could address these limitations and extend the approach:
+
+\textbf{1. Dynamic Memory Adaptation}
+Real-time monitoring of memory usage during execution could enable dynamic chunk resizing.
+This would allow the system to:
+\begin{itemize}
+    \item Detect memory pressure early and reduce chunk sizes proactively
+    \item Increase chunk sizes when memory is underutilized
+    \item Adapt to heterogeneous worker configurations
+\end{itemize}
+
+\textbf{2. Transfer Learning for New Operators}
+Developing transfer learning techniques could reduce the profiling burden for new operators by:
+\begin{itemize}
+    \item Leveraging similarity between related algorithms
+    \item Using meta-features to predict memory patterns
+    \item Requiring only minimal calibration runs
+\end{itemize}
+
+\textbf{3. Multi-Stage Pipeline Optimization}
+Extending memory-aware chunking to complex computational pipelines requires:
+\begin{itemize}
+    \item Modeling inter-operator data dependencies
+    \item Optimizing chunk boundaries to minimize data movement
+    \item Coordinating memory allocation across pipeline stages
+\end{itemize}
+
+\textbf{4. Integration with Cloud Auto-Scaling}
+Cloud environments offer unique opportunities for memory-aware optimization:
+\begin{itemize}
+    \item Automatically provision workers based on predicted memory needs
+    \item Select instance types that match workload requirements
+    \item Optimize cost-performance trade-offs
+\end{itemize}
+
+\textbf{5. Hybrid CPU-GPU Memory Management}
+As scientific computing increasingly leverages \ac{GPU}s, extending our approach to:
+\begin{itemize}
+    \item Model \ac{GPU} memory consumption patterns
+    \item Optimize data movement between \ac{CPU} and \ac{GPU} memory
+    \item Handle unified memory architectures
+\end{itemize}
+
+\subsection{Final Remarks}
+
+Memory-aware chunking represents a significant advance in automated resource management for distributed computing frameworks.
+By replacing heuristic-based approaches with data-driven prediction, we enable reliable execution of memory-intensive workloads while maintaining reasonable performance.
+As dataset sizes continue to grow and computational complexity increases, such intelligent resource management becomes essential for productive scientific computing.
+
+Our work demonstrates that predictive modeling can effectively guide system-level decisions in distributed computing, opening new possibilities for automated optimization in \ac{HPC} environments.
+The complete elimination of \ac{OOM} errors, combined with the ability to handle previously infeasible workload configurations, validates the practical value of this approach for production systems where reliability is paramount.

@@ -1,0 +1,8 @@
+Data parallelism is essential for processing large-scale datasets in high-performance computing (\ac{HPC}) environments, particularly for memory-intensive applications such as seismic analysis and tensor-based computations.
+However, achieving optimal performance requires careful management of workload distribution through appropriate data chunking.
+Conventional approaches rely on heuristic methods or trial-and-error, which often lead to either out-of-memory (\ac{OOM}) errors from oversized chunks or excessive overhead from overfragmentation.
+This paper presents a novel memory-aware chunking mechanism for Dask that leverages predictive modeling to automatically determine optimal chunk sizes based on anticipated memory consumption.
+Our approach employs a pre-trained regression model that estimates memory requirements from input data shapes and operator characteristics, ensuring chunks remain within specified memory limits while maximizing computational efficiency.
+Experimental evaluation on seismic data processing workloads demonstrates that memory-aware chunking eliminates \ac{OOM} errors entirely (0\% failure rate compared to 31\% for Dask's auto-chunking), while maintaining competitive execution times.
+Although memory-aware chunking incurs a median slowdown of 1.65× compared to the fastest alternative in scenarios where memory is abundant, it provides the only viable solution for large datasets and high worker counts where conventional methods fail.
+This work advances the state of automated resource management in distributed computing frameworks, offering a robust solution for memory-constrained \ac{HPC} environments.
