@@ -10,7 +10,7 @@ All experiments were conducted on a single \ac{HPC} node equipped with an Intel 
 Despite \ac{GPU} availability, all runs used \ac{CPU} execution to ensure comparability across configurations.
 
 \subsubsection{Datasets and Workloads}
-We evaluated performance using synthetic seismic datasets with the gradient structure tensor (\ac{GST3D}) operator, a memory-intensive computation common in seismic analysis.
+We evaluated performance using synthetic seismic datasets with the \ac{GST3D} operator, a memory-intensive computation common in seismic analysis.
 Dataset dimensions ranged from $100^3$ to $400^3$ voxels, covering small to large-scale workloads.
 Each configuration was tested with 1, 2, 4, and 8 workers to assess scalability.
 
@@ -164,7 +164,7 @@ Our approach relies on regression models trained to predict peak memory consumpt
 \subsubsection{Model Selection and Validation}
 
 We evaluated nine regression models including Linear Regression, Polynomial Regression, Decision Tree, Random Forest, Gradient Boosting, XGBoost, Support Vector Regression, and Elastic Net.
-The models were trained on profiling data from three seismic operators: Envelope, Gradient Structure Tensor (\ac{GST3D}), and Gaussian Filter.
+The models were trained on profiling data from three seismic operators: Envelope, \ac{GST3D}, and Gaussian Filter.
 
 Performance metrics revealed that simple linear models achieved near-perfect predictive power:
 \begin{itemize}

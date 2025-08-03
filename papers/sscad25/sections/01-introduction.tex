@@ -1,7 +1,7 @@
 \section{Introduction}
 \label{sec:introduction}
 
-High-performance computing (\ac{HPC}) systems increasingly handle massive, resource-intensive tasks that demand significant memory capacity for storage, intermediate computations, and output generation.
+\ac{HPC} systems increasingly handle massive, resource-intensive tasks that demand significant memory capacity for storage, intermediate computations, and output generation.
 Seismic workloads exemplify this challenge, with input volumes often spanning hundreds of gigabytes and numerical methods introducing additional complexity through temporary buffers, matrix operations on large arrays, and partial result storage.
 
 Distributed platforms such as Dask~\cite{rocklin2015dask} address these challenges by facilitating horizontal scaling, enabling multiple workers to process data segments (chunks) in parallel.
@@ -12,7 +12,7 @@ Dask's default chunking heuristics distribute data based on file-block boundarie
 
 The selection of appropriate chunk sizes is fundamental to efficient data-parallel processing.
 As illustrated in Figure~\ref{fig:chunking-example}, chunk configurations can vary widely, and naive choices lead to suboptimal performance.
-Overfragmented approaches with many small chunks incur excessive task scheduling overhead and poor computational efficiency, while oversized chunks can exceed available memory capacity and trigger out-of-memory (\ac{OOM}) errors.
+Overfragmented approaches with many small chunks incur excessive task scheduling overhead and poor computational efficiency, while oversized chunks can exceed available memory capacity and trigger \ac{OOM} errors.
 
 \subsubsection{Memory Consumption Patterns}
 
