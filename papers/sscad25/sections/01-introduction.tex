@@ -3,17 +3,17 @@
 
 The exponential growth of scientific data has fundamentally transformed computational workflows across disciplines.
 High-performance computing (HPC) facilities now routinely process datasets ranging from hundreds of gigabytes to several terabytes, with processing pipelines that allocate multiple intermediate arrays during computation.
-This growth has been particularly pronounced in domains such as seismic imaging, climate modeling, genomics, and astronomical surveys, where data volumes have increased by orders of magnitude over the past decade.
+This growth has been particularly pronounced in geophysical applications, where data volumes have increased by orders of magnitude over the past decade.
 
-Seismic imaging exemplifies these computational challenges.
-Modern seismic surveys generate three-dimensional volumes containing billions of samples, where each processing step—from noise attenuation to structural analysis—may require scratch arrays several times larger than the input data.
-For instance, computing the Gradient Structure Tensor (GST3D) on a 400×400×300 seismic volume allocates intermediate tensors that can consume over 10GB of memory per chunk.
+In seismic processing, modern surveys generate three-dimensional volumes containing billions of samples.
+Each processing step, from noise attenuation to structural analysis, may require scratch arrays several times larger than the input data.
+For instance, computing the Gradient Structure Tensor (GST3D) on a 400×400×300 volume allocates intermediate tensors that can consume over 10GB of memory per chunk.
 These memory requirements compound when multiple operators are chained in complex workflows, creating a critical bottleneck that limits the scale of problems that can be practically solved.
 
 Dask~\cite{rocklin2015dask} mitigates compute demand by partitioning data into \emph{chunks} that execute in parallel across a cluster.
 Chunk dimensions strongly influence performance.
 Oversized chunks exceed device memory and provoke out-of-memory (OOM) failures; excessively small chunks inflate scheduling overhead and impede cache locality.
-Dask's default heuristics favour simplicity—either inherit file-block boundaries or aim for a fixed 128 MB target size—yet disregard operator complexity and intermediate allocations.
+Dask's default heuristics favour simplicity, either inherit file-block boundaries or aim for a fixed 128 MB target size, yet disregard operator complexity and intermediate allocations.
 
 \subsection{Chunk-Size Selection as an Optimisation Problem}
 
