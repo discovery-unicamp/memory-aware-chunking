@@ -4,7 +4,7 @@
 The memory-aware chunking problem can be formally stated as an optimization problem.
 Given a three-dimensional volume $V=[d_1,d_2,d_3]$ representing the input data dimensions, a worker memory budget $M$ (typically 80\% of physical RAM to allow for system overhead), and an operator \textit{op} from the computational workflow, the objective is to derive the largest cubic chunk dimension $c$ that guarantees execution without out-of-memory (OOM) failures.
 
-The cubic constraint simplifies the search space while maintaining good cache locality—non-cubic chunks often lead to strided memory access patterns that degrade performance.
+The cubic constraint simplifies the search space while maintaining good cache locality, since non-cubic chunks often lead to strided memory access patterns that degrade performance.
 The optimization must balance multiple objectives: maximizing chunk size to reduce scheduling overhead, ensuring memory safety with appropriate margins, and maintaining divisibility constraints so chunks evenly partition the volume.
 
 \subsection{Memory Model}
