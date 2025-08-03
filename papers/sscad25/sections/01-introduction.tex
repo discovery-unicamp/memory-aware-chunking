@@ -1,69 +1,77 @@
 \section{Introduction}
 \label{sec:introduction}
 
-\ac{HPC} systems increasingly handle massive, resource-intensive tasks that demand significant memory capacity for storage, intermediate computations, and output generation.
-Seismic workloads exemplify this challenge, with input volumes often spanning hundreds of gigabytes and numerical methods introducing additional complexity through temporary buffers, matrix operations on large arrays, and partial result storage.
+The exponential growth of scientific data has fundamentally transformed computational workflows across disciplines.
+High-performance computing (HPC) facilities now routinely process datasets ranging from hundreds of gigabytes to several terabytes, with processing pipelines that allocate multiple intermediate arrays during computation.
+This growth has been particularly pronounced in domains such as seismic imaging, climate modeling, genomics, and astronomical surveys, where data volumes have increased by orders of magnitude over the past decade.
 
-Distributed platforms such as Dask~\cite{rocklin2015dask} address these challenges by facilitating horizontal scaling, enabling multiple workers to process data segments (chunks) in parallel.
-This concurrency substantially reduces execution time but introduces critical risks when resource demands are underestimated.
-Dask's default chunking heuristics distribute data based on file-block boundaries or user-defined size targets without considering operator-specific memory requirements or data types.
+Seismic imaging exemplifies these computational challenges.
+Modern seismic surveys generate three-dimensional volumes containing billions of samples, where each processing step—from noise attenuation to structural analysis—may require scratch arrays several times larger than the input data.
+For instance, computing the Gradient Structure Tensor (GST3D) on a 400×400×300 seismic volume allocates intermediate tensors that can consume over 10GB of memory per chunk.
+These memory requirements compound when multiple operators are chained in complex workflows, creating a critical bottleneck that limits the scale of problems that can be practically solved.
 
-\subsection{The Chunking Challenge}
+Dask~\cite{rocklin2015dask} mitigates compute demand by partitioning data into \emph{chunks} that execute in parallel across a cluster.
+Chunk dimensions strongly influence performance.
+Oversized chunks exceed device memory and provoke out-of-memory (OOM) failures; excessively small chunks inflate scheduling overhead and impede cache locality.
+Dask's default heuristics favour simplicity—either inherit file-block boundaries or aim for a fixed 128 MB target size—yet disregard operator complexity and intermediate allocations.
 
-The selection of appropriate chunk sizes is fundamental to efficient data-parallel processing.
-As illustrated in Figure~\ref{fig:chunking-example}, chunk configurations can vary widely, and naive choices lead to suboptimal performance.
-Overfragmented approaches with many small chunks incur excessive task scheduling overhead and poor computational efficiency, while oversized chunks can exceed available memory capacity and trigger \ac{OOM} errors.
+\subsection{Chunk-Size Selection as an Optimisation Problem}
 
-\subsubsection{Memory Consumption Patterns}
+Figure~\ref{fig:chunking-example} outlines the search space.
+Suitable chunk dimensions balance four competing goals: (i) respect the memory budget of each worker, (ii) maximise computational granularity, (iii) preserve contiguous memory accesses, and (iv) divide the volume evenly.
+Manual tuning, commonly practised today, iteratively explores this space at significant computational cost.
 
-Understanding memory consumption patterns in scientific computing workloads is crucial for effective chunking.
-Our analysis of seismic processing operators reveals several key characteristics:
-
-\begin{itemize}
-    \item \textbf{Linear scaling}: Memory usage typically scales linearly with input volume for tensor operations
-    \item \textbf{Operator-specific constants}: Different algorithms have varying memory multiplication factors
-    \item \textbf{Intermediate expansions}: Many operations create temporary arrays 2-10× the input size
-    \item \textbf{Framework overhead}: Distributed computing frameworks add 10-20\% memory overhead
-\end{itemize}
-
-These patterns make manual chunk size selection particularly challenging, as users must account for both the base memory requirements and dynamic expansions during computation.
-
-\subsubsection{Current Practice Limitations}
-
-Existing approaches to chunk size selection suffer from several limitations:
-
-\begin{enumerate}
-    \item \textbf{Trial-and-error}: Users iteratively adjust chunk sizes until finding a configuration that avoids \ac{OOM} errors, wasting computational resources on failed attempts
-    \item \textbf{Conservative overprovisioning}: To avoid failures, users often select very small chunks, leading to excessive fragmentation and poor performance
-    \item \textbf{Static heuristics}: Fixed rules like "128MB per chunk" fail to account for operator-specific memory patterns
-    \item \textbf{Lack of adaptation}: Current methods cannot adjust to different algorithms or data characteristics
-\end{enumerate}
-
-\begin{figure}[ht]
+\begin{figure}[htb]
     \centering
-    \includegraphics[width=0.7\textwidth]{assets/images/chunking-example}
-    \caption{Seismic data chunking strategies.
-    The purple rectangle shows the entire volume, orange rectangles represent overfragmented chunking (red × marks indicate failure), and green rectangles show balanced chunking that better utilizes resources.}
+    \includegraphics[width=\columnwidth]{assets/images/chunking-example}
+    \caption{Chunking strategies for a 3D seismic volume.
+    (a) Oversized chunks exceed worker memory limits, causing OOM failures.
+    (b) Undersized chunks increase scheduling overhead and reduce cache efficiency.
+    (c) Memory-aware chunking selects the largest safe size based on predicted memory usage, balancing performance and reliability.}
     \label{fig:chunking-example}
 \end{figure}
 
-In memory-intensive computations, particularly seismic processing with convolution-based algorithms or 3D filtering, unpredictable memory spikes from short-lived but large intermediate arrays make robust memory-aware chunk sizing essential.
-Current practice relies on heuristic tuning or trial-and-error approaches, where operators execute multiple iterations with various chunk configurations searching for optimal partitioning.
-This methodology is computationally expensive and inefficient, as unsuccessful trials consume significant resources without producing beneficial outcomes.
+\subsection{Limitations of Existing Approaches}
+
+Current practice suffers from three major limitations:
+
+\begin{enumerate}
+    \item \textbf{Trial-and-error}.
+    Users repeatedly execute jobs until no OOM failure occurs, wasting cluster time on unsuccessful runs.
+    \item \textbf{Static heuristics}.
+    Rules of thumb such as ``128 MB per chunk'' ignore the diversity of operator behaviours and data types.
+    \item \textbf{Lack of adaptation}.
+    Heuristics do not adjust to varying worker memories or heterogeneous clusters.
+\end{enumerate}
+
+The memory consumption patterns of scientific operators vary dramatically based on their algorithmic structure.
+Convolution operations allocate padding buffers proportional to kernel size, 3-D filtering creates temporary arrays for separable passes, and tensor computations like GST3D generate multiple intermediate derivatives.
+These patterns are often non-intuitive: a seemingly simple Gaussian filter can allocate 3-4× the input size in temporary buffers, while envelope detection might use only 1.5× despite appearing more complex.
+Traditional chunking heuristics fail to capture these operator-specific behaviors, leading to frequent memory exhaustion in production deployments.
+
+The consequences of poor chunk size selection extend beyond individual job failures.
+In shared HPC environments, OOM errors can trigger cascading failures that affect other users' workloads.
+Cloud deployments face direct financial impact, as oversized instances must be provisioned to handle worst-case memory peaks.
+Perhaps most critically, the trial-and-error process of finding suitable chunk sizes wastes valuable researcher time and computational resources, with failed jobs consuming allocation quotas without producing useful results.
+
+A reliable, operator-aware chunking method is therefore essential for sustainable scientific computing at scale.
 
 \subsection{Contributions}
 
-This paper presents a novel memory-aware chunking mechanism that addresses these limitations by employing predictive modeling to anticipate memory consumption based on input data shapes and operator characteristics.
-Our key contributions include:
+This paper proposes a predictive, memory-aware chunking mechanism that fundamentally rethinks how distributed frameworks partition data.
+Rather than applying uniform heuristics, our approach models the relationship between input shapes and peak memory consumption for each operator, enabling precise chunk size selection that maximizes performance while guaranteeing memory safety.
+The method is implemented as a seamless extension to Dask, requiring no changes to existing user code.
 
-\begin{enumerate}
-    \item A systematic approach to predict memory requirements for tensor-based operations using regression models trained on profiling data
-    \item An automated chunk sizing algorithm that ensures memory usage remains within specified thresholds while maximizing computational efficiency
-    \item Comprehensive experimental evaluation demonstrating elimination of \ac{OOM} errors and competitive performance compared to existing heuristic methods
-    \item Integration with Dask's distributed computing framework, providing a practical solution for production \ac{HPC} environments
-\end{enumerate}
+The main contributions are:
 
-The remainder of this paper is organized as follows: Section~\ref{sec:related-work} reviews related work in memory management and chunking strategies.
-Section~\ref{sec:methodology} details our memory-aware chunking approach.
-Section~\ref{sec:experimental-results} presents experimental evaluation across various workloads and configurations.
-Finally, Section~\ref{sec:conclusion} summarizes findings and discusses future directions.
+\begin{itemize}
+    \item A regression-based model that estimates peak memory usage from input dimensions and operator identity.
+    \item An algorithm that derives the largest chunk size satisfying a user-specified safety margin.
+    \item An open-source implementation compatible with Dask's scheduling interface.
+    \item An experimental evaluation on seismic workloads showing zero OOM failures and competitive performance relative to state-of-the-art heuristics.
+\end{itemize}
+
+The remainder of the paper is organised as follows: Section~\ref{sec:related-work} surveys related work in memory prediction, adaptive scheduling, and chunking techniques.
+Section~\ref{sec:methodology} details our predictive model, the chunk-size derivation algorithm, and integration with Dask's scheduling system.
+Section~\ref{sec:experimental-results} presents comprehensive experimental evaluation including reliability analysis, performance benchmarks, and production case studies.
+Section~\ref{sec:conclusion} concludes with a summary of findings and directions for future research.
