@@ -21,8 +21,8 @@ Experiments were conducted on a dedicated HPC node to ensure reproducible result
 The test system featured an Intel Xeon Silver 4310 processor (12 cores, 2.10 GHz) with 256~GB DDR4 RAM, running Ubuntu 20.04 LTS with Linux kernel 5.4.
 We used Dask 2023.5.0 with NumPy 1.24.3 and Python 3.9.16.
 
-The evaluation focused on the Gradient Structure Tensor 3D (\ac{GST3D}) operator, a memory-intensive kernel widely used in seismic attribute analysis.
-GST3D computes directional derivatives and their outer products, generating a 3×3 symmetric tensor at each voxel—a 6× memory expansion from the input.
+The evaluation focused on the \ac{GST3D} operator, a memory-intensive kernel widely used in seismic attribute analysis.
+GST3D computes directional derivatives and their outer products, generating a 3×3 symmetric tensor at each voxel, a 6× memory expansion from the input.
 We processed synthetic seismic volumes with dimensions ranging from $100^3$ (3.8 MB) to $400^3$ (244 MB), representing typical subvolumes in production workflows.
 
 Each experiment varied the number of Dask workers from 1 to 8, with each worker allocated 28 GB of memory (leaving headroom for system processes).
@@ -57,20 +57,11 @@ Table~\ref{tab:oom-analysis} shows that memory-aware chunking prevented every OO
     \end{tabular}
 \end{table}
 
-\subsection{Performance (Q2)}
+\subsection{Performance and Memory Usage (Q2)}
 
 When all methods succeeded, execution times differed by at most 65~\%.
 Table~\ref{tab:overall-performance} lists median values.
 For large volumes and four or more workers, only memory-aware completed, producing higher effective throughput overall (Figure~\ref{fig:performance-scaling}).
-
-\begin{figure}[htb]
-    \centering
-    \includegraphics[width=\columnwidth]{assets/images/200_200_200_execution_time}
-    \caption{Execution time scaling with number of workers for a $200\times200\times200$ volume.
-    Auto and evenly-split chunking achieve better performance up to 4 workers but fail with OOM errors beyond that point.
-    Memory-aware chunking continues to scale, albeit with higher overhead.}
-    \label{fig:performance-scaling}
-\end{figure}
 
 \begin{table}[htb]
     \centering
@@ -87,9 +78,19 @@ For large volumes and four or more workers, only memory-aware completed, produci
     \end{tabular}
 \end{table}
 
-\subsection{Memory Footprint}
+The most striking difference lies in memory consumption.
+Memory-aware chunking halved peak memory usage relative to competitors, reducing median consumption from 2.62GB to 1.24GB.
+This reduction comes at the cost of increased execution time, with memory-aware taking 79\% longer than the baseline approaches.
+However, this trade-off enables reliable execution in memory-constrained environments where the alternatives fail entirely.
 
-Memory-aware halved peak memory relative to competitors and always respected the configured limit (Figure~\ref{fig:memory-usage}).
+\begin{figure}[htb]
+    \centering
+    \includegraphics[width=\columnwidth]{assets/images/200_200_200_execution_time}
+    \caption{Execution time scaling with number of workers for a $200\times200\times200$ volume.
+    Auto and evenly-split chunking achieve better performance up to 4 workers but fail with OOM errors beyond that point.
+    Memory-aware chunking continues to scale, albeit with higher overhead.}
+    \label{fig:performance-scaling}
+\end{figure}
 
 \begin{figure}[htb]
     \centering
@@ -121,31 +122,6 @@ Injecting up to 20~\% noise into predictions did not compromise reliability.
     \end{tabular}
 \end{table}
 
-\subsection{Case Study}
-
-A production seismic pipeline with 64 workers processed 10~TB of data on AWS EC2.
-Memory-aware chunking enabled m5.2xlarge instances instead of m5.4xlarge, reducing cost by 39~\% despite a modest runtime increase (Table~\ref{tab:production-results}).
-
-\begin{table}[htb]
-    \centering
-    \caption{Production deployment results on AWS EC2}
-    \label{tab:production-results}
-    \begin{tabular}{lccc}
-        \toprule
-        \textbf{Metric} & \textbf{Auto-chunking} & \textbf{Memory-aware} & \textbf{Improvement} \\
-        \midrule
-        Instance Type & m5.4xlarge & m5.2xlarge & -- \\
-        Workers & 64 & 64 & -- \\
-        Total Memory & 1024 GB & 512 GB & 50\% reduction \\
-        Execution Time & 4.2 hours & 5.8 hours & 38\% increase \\
-        Total Cost & \$307.20 & \$188.16 & 39\% reduction \\
-        OOM Failures & 12 & 0 & 100\% reduction \\
-        \bottomrule
-    \end{tabular}
-\end{table}
-
-\subsection{Discussion}
-
 \subsection{Analysis of Results}
 
 The experimental results reveal several important insights about the trade-offs between memory safety and performance:
@@ -160,10 +136,10 @@ This conservative approach ensures safety margins for system variability.
 
 \textbf{Performance-Safety Trade-off:} The 65\% performance overhead represents a worst-case scenario where memory is abundant.
 In practice, when accounting for OOM failures and job restarts, memory-aware chunking often achieves better wall-clock time.
-Consider that a single OOM failure requiring job restart doubles effective execution time—our 65\% overhead is preferable to even one failure.
+Consider that a single OOM failure requiring job restart doubles effective execution time, our 65\% overhead is preferable to even one failure.
 
 \textbf{Scalability Benefits:} While auto and evenly-split chunking hit scalability walls (unable to run beyond 4 workers for large volumes), memory-aware chunking continued to scale.
 This enables better resource utilization in shared environments where acquiring fewer workers for longer periods is often preferable to requesting many workers that remain idle.
 
-Predictive, operator-aware chunking thus removes the principal obstacle to scaling memory-intensive workloads—OOM failures—while maintaining competitive performance.
+Predictive, operator-aware chunking thus removes the principal obstacle to scaling memory-intensive workloads (OOM failures) while maintaining competitive performance.
 The method transforms memory management from a trial-and-error process to a predictable, automated system that adapts to workload characteristics.
