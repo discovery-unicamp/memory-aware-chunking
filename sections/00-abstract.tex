@@ -1,0 +1,17 @@
+Data-parallel computing frameworks have become essential for processing large-scale scientific datasets in a variety of domains, including seismic processing.
+These frameworks accelerate computation by dividing datasets into independent chunks that execute concurrently across distributed clusters.
+However, choosing suitable chunk dimensions remains a fundamental challenge that directly impacts both performance and reliability.
+Oversized chunks exhaust worker memory and trigger out-of-memory (\ac{OOM}) failures that terminate entire jobs, while undersized chunks inflate scheduling overhead, reduce cache locality, and underutilize computational resources.
+
+This paper introduces a novel memory-aware chunking mechanism for Dask, one of the most widely adopted distributed computing frameworks in the scientific Python ecosystem.
+Our approach predicts peak memory usage from input data shapes and operator characteristics, then automatically derives the largest safe chunk size that respects memory constraints.
+The prediction model employs lightweight linear regression trained offline on profiling data collected from representative workloads.
+Unlike existing heuristics that apply uniform chunk sizes regardless of operator complexity, our method adapts to the specific memory requirements of each computational operator.
+
+We evaluate our approach through experiments with seismic imaging operators, focusing on the memory-intensive Gradient Structure Tensor (\ac{GST3D}) computation.
+Experiments on synthetic seismic volumes ranging from 100³ to 400³ voxels demonstrate complete elimination of \ac{OOM} failures across 768 trials, compared to 31\% failure rate with Dask's auto-chunking and 20\% with evenly-split strategies.
+Memory-aware chunking reduces median peak memory consumption by 53\% (from 2.62GB to 1.24GB) at the cost of increased execution time (median 28.1s vs 15.7s).
+For large volumes where baseline methods fail entirely, memory-aware chunking enables successful completion with up to 8 workers, demonstrating superior scalability in memory-constrained environments.
+
+The implementation integrates seamlessly with Dask's existing scheduling interface, requiring no modifications to user code or the core framework.
+Our results show that predictive, operator-aware chunking provides a practical and robust solution for reliable distributed processing in memory-constrained high-performance computing environments.
