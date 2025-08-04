@@ -2,7 +2,7 @@
 \label{sec:methodology}
 
 The memory-aware chunking problem can be formally stated as an optimization problem.
-Given a three-dimensional volume $V=[d_1,d_2,d_3]$ representing the input data dimensions, a worker memory budget $M$ (typically 80\% of physical \ac{RAM} to allow for system overhead), and an operator \textit{op} from the computational workflow, the objective is to derive the largest cubic chunk dimension $c$ that guarantees execution without out-of-memory (\ac{OOM}) failures.
+Given a three-dimensional volume $V=[d_1,d_2,d_3]$ representing the input data dimensions, a worker memory budget $M$ (typically 80\% of physical \ac{RAM} to allow for system overhead), and an operator \textit{op} from the computational workflow, the objective is to derive the largest cubic chunk dimension $c$ that guarantees execution without \ac{OOM} failures.
 
 The cubic constraint simplifies the search space while maintaining good cache locality, since non-cubic chunks often lead to strided memory access patterns that degrade performance.
 The optimization must balance multiple objectives: maximizing chunk size to reduce scheduling overhead, ensuring memory safety with appropriate margins, and maintaining divisibility constraints so chunks evenly partition the volume.
@@ -15,7 +15,7 @@ M(V)=\alpha V+\beta f(V)+\gamma,\label{eq:model}
 \end{equation}
 where $V=d_1d_2d_3$, $f(V)$ captures operator-specific expansions, and $\alpha,\beta,\gamma$ are learned parameters.
 For the operators studied, $f(V)=V$, so a first-order regression suffices.
-Training on as few as 30 samples yields $R^2>0.999$ (Table~\ref{tab:feature-importance}).
+In our experiments, training on as few as 30 samples yields $R^2>0.999$, as indicated in Table~\ref{tab:feature-importance}.
 
 \begin{table}[htb]
     \centering
@@ -23,7 +23,7 @@ Training on as few as 30 samples yields $R^2>0.999$ (Table~\ref{tab:feature-impo
     \label{tab:feature-importance}
     \begin{tabular}{lccc}
         \toprule
-        \textbf{Operator} & \textbf{$R^2$} & \textbf{\ac{RMSE} (\ac{MB})} & \textbf{Training Samples} \\
+        \textbf{Operator} & \textbf{$R^2$} & \textbf{RMSE (MB)} & \textbf{Training Samples} \\
         \midrule
         Envelope & 0.9995 & 0.82 & 30 \\
         Gaussian Filter & 0.9997 & 0.64 & 30 \\
@@ -34,7 +34,11 @@ Training on as few as 30 samples yields $R^2>0.999$ (Table~\ref{tab:feature-impo
 
 \subsection{Chunk-Size Algorithm}
 
-Algorithm~\ref{alg:memaware} computes $c$ in four steps: (1) predict peak memory for the full volume; (2) derive per-voxel cost; (3) compute the largest cube that respects a safety factor $s$ (default $0.8$); and (4) decrement $c$ until it divides all dimensions.
+Algorithm~\ref{alg:memaware} computes $c$ in four steps: 
+(1) predict peak memory for the full volume; 
+(2) derive per-voxel cost; 
+(3) compute the largest cube that respects a safety factor $s$ (default $0.8$); and 
+(4) decrement $c$ until it divides all dimensions.
 The procedure runs in $\mathcal{O}(d_{\max})$ time, negligible relative to operator execution.
 
 \begin{algorithm}[tb]
@@ -53,13 +57,13 @@ The procedure runs in $\mathcal{O}(d_{\max})$ time, negligible relative to opera
 \end{algorithmic}
 \end{algorithm}
 
-\subsection{Integration with Dask}
+\subsection{Integration with \dask}
 
-The algorithm integrates seamlessly with Dask's lazy evaluation model through its chunk suggestion \ac{API}.
-When users create a Dask array or apply an operator, our system intercepts the chunking decision point.
+The algorithm integrates seamlessly with \dask's lazy evaluation model through its chunk suggestion \ac{API}.
+When users create a \dask array or apply an operator, our system intercepts the chunking decision point.
 At graph-construction time, before any computation begins, the function inspects the input array shape, identifies the operator being applied, and queries the corresponding predictor.
 
-The implementation leverages Dask's plugin architecture:
+The implementation leverages \dask's plugin architecture \EBADD{as follows}:
 \begin{lstlisting}[language=Python]
 def memory_aware_chunks(shape, dtype, operator_name):
     predictor = load_predictor(operator_name)
@@ -67,15 +71,15 @@ def memory_aware_chunks(shape, dtype, operator_name):
     return compute_chunk_size(shape, predictor, memory_limit)
 \end{lstlisting}
 
-This design requires no modifications to Dask's core scheduler or executor.
+This design requires no modifications to \dask's core scheduler or executor.
 Existing code continues to work unchanged, with memory-aware chunking activated by setting a configuration flag.
-The predictors are stored as lightweight pickle files (typically \textless 1KB each) that load in milliseconds, adding negligible overhead to graph construction.
+The predictors are stored as lightweight pickle files (typically \textless 1~KB each) that load in milliseconds, adding negligible overhead to graph construction.
 
 \subsection{Benefits}
 
 The memory-aware chunking method provides several key benefits that address the limitations of current approaches:
 
-\textbf{(i) Memory Safety Guarantees:} By modeling peak memory usage including all intermediate allocations, the system prevents \ac{OOM} failures that plague production deployments.
+\textbf{(i) Memory Safety Guarantees:} By modeling peak memory usage including all intermediate allocations, the system prevents OOM failures that plague production deployments.
 The safety factor provides a tunable margin for system overhead and measurement uncertainty.
 
 \textbf{(ii) Elimination of Manual Tuning:} Researchers no longer need to iteratively search for viable chunk sizes, a process that can waste days of compute time on large clusters.
