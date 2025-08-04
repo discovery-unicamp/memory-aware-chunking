@@ -4,23 +4,20 @@
 The exponential growth of scientific data has fundamentally transformed computational workflows across disciplines.
 \ac{HPC} facilities now routinely process datasets ranging from hundreds of gigabytes to several terabytes, with processing pipelines that allocate multiple intermediate arrays during computation.
 This growth has been particularly pronounced in geophysical applications, where data volumes have increased by orders of magnitude over the past decade.
+Data-parallel computing frameworks have become essential for processing these large-scale scientific datasets, accelerating computation by dividing data into independent chunks that execute concurrently across distributed clusters.
 
 In seismic processing, modern surveys generate three-dimensional volumes containing billions of samples.
 Each processing step, from noise attenuation to structural analysis, may require scratch arrays several times larger than the input data.
 For instance, computing the \ac{GST3D} on a 400×400×300 volume allocates intermediate tensors that can consume over 10~GB of memory per chunk.
 These memory requirements compound when multiple operators are chained in complex workflows, creating a critical bottleneck that limits the scale of problems that can be practically solved.
 
-Dask~\cite{rocklin2015dask} mitigates compute demand by partitioning data into \emph{chunks} that \EBRP{execute}{are processed} \EBADD{individually, potentially} in parallel, across a cluster.
+Dask~\cite{rocklin2015dask} mitigates compute demand by partitioning data into \emph{chunks} that are processed individually, potentially in parallel, across a cluster.
 Chunk dimensions strongly influence performance.
-Oversized chunks exceed device memory and provoke \ac{OOM} failures; excessively small chunks inflate scheduling overhead and impede cache locality.
+Oversized chunks exceed device memory and provoke \ac{OOM} failures that terminate entire jobs; excessively small chunks inflate scheduling overhead, reduce cache locality, and underutilize computational resources.
 \dask's default heuristics favour simplicity, either inherit file-block boundaries or aim for a fixed 128~MB target size, yet disregard operator complexity and intermediate allocations.
 
-\EB{Daniel, não é comum termos subseções na seção de Introdução em artigos. Acho que fica melhor encaixar o texto de forma contínua. Neste sentido, talvez você pudesse usar o exemplo da Figura 1 logo após o parágrafo da linha 13, para ilustrar o problema de se processar chunks muito grandes. Depois disso, você pode discutir as limitações atuais e as contribuições sem quebrar em seções.}
-
-\subsection{Chunk-Size Selection as an Optimisation Problem}
-
-Figure~\ref{fig:chunking-example} outlines the search space.
-Suitable chunk dimensions balance four competing goals: (i) respect the memory budget of each worker, (ii) maximise computational granularity, (iii) preserve contiguous memory accesses, and (iv) divide the volume evenly.
+Figure~\ref{fig:chunking-example} illustrates this challenge.
+Suitable chunk dimensions must balance four competing goals: (i) respect the memory budget of each worker, (ii) maximise computational granularity, (iii) preserve contiguous memory accesses, and (iv) divide the volume evenly.
 Manual tuning, commonly practised today, iteratively explores this space at significant computational cost.
 
 \begin{figure}[htb]
@@ -32,8 +29,6 @@ Manual tuning, commonly practised today, iteratively explores this space at sign
     (c) Memory-aware chunking selects the largest safe size based on predicted memory usage, balancing performance and reliability.}
     \label{fig:chunking-example}
 \end{figure}
-
-\subsection{Limitations of Existing Approaches}
 
 Current practice suffers from three major limitations:
 
@@ -57,8 +52,6 @@ Cloud deployments face direct financial impact, as oversized instances must be p
 Perhaps most critically, the trial-and-error process of finding suitable chunk sizes wastes valuable researcher time and computational resources, with failed jobs consuming allocation quotas without producing useful results.
 A reliable, operator-aware chunking method is therefore essential for sustainable scientific computing at scale.
 
-\subsection{Contributions}
-
 This paper proposes a predictive, memory-aware chunking mechanism that fundamentally rethinks how distributed frameworks partition data.
 Rather than applying uniform heuristics, our approach models the relationship between input shapes and peak memory consumption for each operator, enabling precise chunk size selection that maximizes performance while guaranteeing memory safety.
 The method is implemented as a seamless extension to \dask, requiring no changes to existing user code.
@@ -66,10 +59,10 @@ The method is implemented as a seamless extension to \dask, requiring no changes
 The main contributions are:
 
 \begin{itemize}
-    \item A regression-based model that estimates peak memory usage from input dimensions and operator identity.
-    \item An algorithm that derives the largest chunk size satisfying a user-specified safety margin.
-    \item An open-source implementation compatible with \dask's scheduling interface.
-    \item An experimental evaluation on seismic workloads showing zero OOM failures and competitive performance relative to state-of-the-art heuristics.
+    \item A lightweight linear regression model trained offline on profiling data that estimates peak memory usage from input dimensions and operator characteristics.
+    \item An algorithm that derives the largest chunk size satisfying a user-specified safety margin, adapting to the specific memory requirements of each computational operator.
+    \item An open-source implementation that integrates seamlessly with \dask's existing scheduling interface, requiring no modifications to user code or the core framework.
+    \item An experimental evaluation on seismic imaging workloads, focusing on the memory-intensive \ac{GST3D} computation, showing complete elimination of OOM failures across 768 trials and superior scalability in memory-constrained environments.
 \end{itemize}
 
 The remainder of the paper is organised as follows: 
