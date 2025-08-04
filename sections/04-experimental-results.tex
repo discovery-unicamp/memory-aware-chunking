@@ -13,9 +13,10 @@ While memory safety is crucial, excessive performance degradation would limit pr
 \textbf{(Q3) Robustness:} How sensitive is the method to prediction errors and safety factor selection?
 Real-world deployments must handle variability in memory usage and system conditions.
 
-\subsection{Setup}
+%\subsection{Setup}
+%\subsection{Experimental Setup}
 
-\subsection{Experimental Setup}
+\subsection{Materials and Methods}
 
 Experiments were conducted on a dedicated \ac{HPC} node to ensure reproducible results without interference from other workloads.
 The test system featured an Intel Xeon Silver 4310 processor (12 cores, 2.10 GHz) with 256~\ac{GB} DDR4 \ac{RAM}, running Ubuntu 20.04 LTS with Linux kernel 5.4.
@@ -23,24 +24,25 @@ We used Dask 2023.5.0 with NumPy 1.24.3 and Python 3.9.16.
 
 The evaluation focused on the \ac{GST3D} operator, a memory-intensive kernel widely used in seismic attribute analysis.
 \ac{GST3D} computes directional derivatives and their outer products, generating a 3×3 symmetric tensor at each voxel, a 6× memory expansion from the input.
-We processed synthetic seismic volumes with dimensions ranging from $100^3$ (3.8 \ac{MB}) to $400^3$ (244 \ac{MB}), representing typical subvolumes in production workflows.
+We processed synthetic seismic volumes with dimensions ranging from $100^3$ (3.8~MB) to $400^3$ (244~MB), representing typical sub-volumes in production workflows.
+\EB{Faltou clarificar como isso levou a 768 execuções}
 
-Each experiment varied the number of Dask workers from 1 to 8, with the available 32 \ac{GB} of \ac{RAM} evenly distributed among workers (32 \ac{GB} for 1 worker, 16 \ac{GB} each for 2 workers, 8 \ac{GB} each for 4 workers, and 4 \ac{GB} each for 8 workers).
+Each experiment varied the number of \dask workers from 1 to 8, with the available 32~GB of \ac{RAM} evenly distributed among workers (32~GB for 1 worker, 16~GB each for 2 workers, 8~GB each for 4 workers, and 4~GB each for 8 workers).
 This configuration mimics typical \ac{HPC} deployments where multiple workers share a single node's memory resources.
 We compared three chunking strategies:
 
-\textbf{(i) Auto (Dask default):} Targets 128 \ac{MB} chunks regardless of operator characteristics.
+\textbf{(i) Auto (Dask default):} Targets 128~MB chunks regardless of operator characteristics.
 
 \textbf{(ii) Evenly-split:} Divides each dimension by the number of workers, creating regular partitions.
 
 \textbf{(iii) Memory-aware:} Our proposed method using trained predictors with safety factor 0.8.
 
-Each configuration was executed 5 times, with memory usage sampled at 100ms intervals using the process-level \ac{RSS} (Resident Set Size) metric.
+Each configuration was executed 5 times, with memory usage sampled at 100~ms intervals using the process-level \ac{RSS} metric.
 Execution times exclude initial data loading to focus on computation performance.
 
 \subsection{Reliability (Q1)}
 
-Table~\ref{tab:oom-analysis} shows that memory-aware chunking prevented every \ac{OOM} failure recorded for the baselines (243 for Auto and 128 for Evenly-split across 768 trials).
+Table~\ref{tab:oom-analysis} shows that memory-aware chunking prevented every OOM failure recorded for the baselines (243 for Auto and 128 for Evenly-split across 768 trials).
 
 \begin{table}[htb]
     \centering
@@ -59,13 +61,14 @@ Table~\ref{tab:oom-analysis} shows that memory-aware chunking prevented every \a
 
 \subsection{Performance and Memory Usage (Q2)}
 
-When all methods succeeded, execution times differed by at most 65~\%.
+When all methods succeeded, execution times differed by at most 65\%.
 Table~\ref{tab:overall-performance} lists median values.
+\EB{Daniel, esta tabela não bate com o gráfico da figura 2. No caso de 1 a 4 nós, onde todos funcionam, dá pra ver que o auto e o evently\_split fica em torno de 15 segundos, no entanto, o memaware também fica em torno deste tempo, em vez de 28s. Poderia verificar isso?}
 For large volumes and four or more workers, only memory-aware completed, producing higher effective throughput overall (Figure~\ref{fig:performance-scaling}).
 
 \begin{table}[htb]
     \centering
-    \caption{Performance comparison for successful runs (median values)}
+    \caption{Performance comparison for successful runs (median values) \EB{Aqui tem os tempos apenas para as configurações/runs que funcionaram em todas as abordagens?}}
     \label{tab:overall-performance}
     \begin{tabular}{lccc}
         \toprule
@@ -79,8 +82,8 @@ For large volumes and four or more workers, only memory-aware completed, produci
 \end{table}
 
 The most striking difference lies in memory consumption.
-Memory-aware chunking halved peak memory usage relative to competitors, reducing median consumption from 2.62GB to 1.24GB.
-This reduction comes at the cost of increased execution time, with memory-aware taking 79\% longer than the baseline approaches.
+Memory-aware chunking halved peak memory usage relative to competitors, reducing median consumption from 2.62~GB to 1.24~GB.
+\EBC{This reduction comes at the cost of increased execution time, with memory-aware taking 79\% longer than the baseline approaches.}{Revisitar esta frase depois de avaliar o comentário anterior.}
 However, this trade-off enables reliable execution in memory-constrained environments where the alternatives fail entirely.
 
 \begin{figure}[htb]
@@ -102,7 +105,7 @@ However, this trade-off enables reliable execution in memory-constrained environ
 
 \subsection{Sensitivity (Q3)}
 
-Varying the safety factor between 0.6 and 1.0 established that the default 0.8 balances speed and safety (Table~\ref{tab:safety-factor}).
+Varying the \EBC{safety factor}{Acho que faltou explicar o que é este safety factor.} between 0.6 and 1.0 established that the default 0.8 balances speed and safety (Table~\ref{tab:safety-factor}).
 Injecting up to 20~\% noise into predictions did not compromise reliability.
 
 \begin{table}[htb]
@@ -122,16 +125,17 @@ Injecting up to 20~\% noise into predictions did not compromise reliability.
     \end{tabular}
 \end{table}
 
-\subsection{Analysis of Results}
+%\subsection{Analysis of Results}
+\subsection{Discussion}
 
 The experimental results reveal several important insights about the trade-offs between memory safety and performance:
 
 \textbf{Memory Prediction Accuracy:} The linear regression models achieved remarkable accuracy in predicting peak memory usage.
 Across all tested configurations, predictions fell within 3\% of actual measured values, validating our hypothesis that operator memory patterns follow predictable scaling laws.
-This accuracy held even for the largest volumes, where absolute memory usage exceeded 15 \ac{GB}.
+This accuracy held even for the largest volumes, where absolute memory usage exceeded 15~GB.
 
 \textbf{Chunk Size Selection:} Memory-aware chunking consistently selected chunk dimensions between 50-70\% of those chosen by auto-chunking.
-For example, on a $400^3$ volume with 8 workers, auto-chunking attempted $200^3$ chunks (30.5 \ac{MB} input, ~183 \ac{MB} peak), while memory-aware selected $140^3$ chunks (10.5 \ac{MB} input, ~63 \ac{MB} peak).
+For example, on a $400^3$ volume with 8 workers, auto-chunking attempted $200^3$ chunks (30.5~MB input, ~183~MB peak), while memory-aware selected $140^3$ chunks (10.5~MB input, ~63~MB peak).
 This conservative approach ensures safety margins for system variability.
 
 \textbf{Performance-Safety Trade-off:} The 65\% performance overhead represents a worst-case scenario where memory is abundant.
