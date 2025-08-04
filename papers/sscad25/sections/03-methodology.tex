@@ -57,7 +57,7 @@ The procedure runs in $\mathcal{O}(d_{\max})$ time, negligible relative to opera
 
 The algorithm integrates seamlessly with Dask's lazy evaluation model through its chunk suggestion API.
 When users create a Dask array or apply an operator, our system intercepts the chunking decision point.
-At graph-construction time—before any computation begins—the function inspects the input array shape, identifies the operator being applied, and queries the corresponding predictor.
+At graph-construction time, before any computation begins, the function inspects the input array shape, identifies the operator being applied, and queries the corresponding predictor.
 
 The implementation leverages Dask's plugin architecture:
 \begin{lstlisting}[language=Python]
@@ -69,7 +69,7 @@ def memory_aware_chunks(shape, dtype, operator_name):
 
 This design requires no modifications to Dask's core scheduler or executor.
 Existing code continues to work unchanged, with memory-aware chunking activated by setting a configuration flag.
-The predictors are stored as lightweight pickle files (typically <1KB each) that load in milliseconds, adding negligible overhead to graph construction.
+The predictors are stored as lightweight pickle files (typically \textless 1KB each) that load in milliseconds, adding negligible overhead to graph construction.
 
 \subsection{Benefits}
 
@@ -78,7 +78,7 @@ The memory-aware chunking method provides several key benefits that address the 
 \textbf{(i) Memory Safety Guarantees:} By modeling peak memory usage including all intermediate allocations, the system prevents OOM failures that plague production deployments.
 The safety factor provides a tunable margin for system overhead and measurement uncertainty.
 
-\textbf{(ii) Elimination of Manual Tuning:} Researchers no longer need to iteratively search for viable chunk sizes—a process that can waste days of compute time on large clusters.
+\textbf{(ii) Elimination of Manual Tuning:} Researchers no longer need to iteratively search for viable chunk sizes, a process that can waste days of compute time on large clusters.
 The system automatically adapts to different hardware configurations and operator characteristics.
 
 \textbf{(iii) Performance Optimization:} Because the algorithm selects the largest safe chunk size, it minimizes scheduling overhead and maximizes cache efficiency when memory permits.
@@ -87,4 +87,4 @@ This differs from conservative approaches that use unnecessarily small chunks "t
 \textbf{(iv) Operator Awareness:} Unlike fixed-size heuristics, the method adapts to each operator's specific memory profile.
 A memory-intensive operation like GST3D receives smaller chunks than a lightweight operation like element-wise multiplication.
 
-\textbf{(v) Practical Deployment:} The approach requires minimal training data (30-50 samples), integrates transparently with existing code, and adds negligible runtime overhead (<0.1\% of typical operator execution time).
+\textbf{(v) Practical Deployment:} The approach requires minimal training data (30-50 samples), integrates transparently with existing code, and adds negligible runtime overhead (\textless 0.1\% of typical operator execution time).
