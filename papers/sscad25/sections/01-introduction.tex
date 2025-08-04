@@ -2,18 +2,18 @@
 \label{sec:introduction}
 
 The exponential growth of scientific data has fundamentally transformed computational workflows across disciplines.
-High-performance computing (HPC) facilities now routinely process datasets ranging from hundreds of gigabytes to several terabytes, with processing pipelines that allocate multiple intermediate arrays during computation.
+High-performance computing (\ac{HPC}) facilities now routinely process datasets ranging from hundreds of gigabytes to several terabytes, with processing pipelines that allocate multiple intermediate arrays during computation.
 This growth has been particularly pronounced in geophysical applications, where data volumes have increased by orders of magnitude over the past decade.
 
 In seismic processing, modern surveys generate three-dimensional volumes containing billions of samples.
 Each processing step, from noise attenuation to structural analysis, may require scratch arrays several times larger than the input data.
-For instance, computing the Gradient Structure Tensor (GST3D) on a 400×400×300 volume allocates intermediate tensors that can consume over 10GB of memory per chunk.
+For instance, computing the Gradient Structure Tensor (\ac{GST3D}) on a 400×400×300 volume allocates intermediate tensors that can consume over 10\ac{GB} of memory per chunk.
 These memory requirements compound when multiple operators are chained in complex workflows, creating a critical bottleneck that limits the scale of problems that can be practically solved.
 
 Dask~\cite{rocklin2015dask} mitigates compute demand by partitioning data into \emph{chunks} that execute in parallel across a cluster.
 Chunk dimensions strongly influence performance.
-Oversized chunks exceed device memory and provoke out-of-memory (OOM) failures; excessively small chunks inflate scheduling overhead and impede cache locality.
-Dask's default heuristics favour simplicity, either inherit file-block boundaries or aim for a fixed 128 MB target size, yet disregard operator complexity and intermediate allocations.
+Oversized chunks exceed device memory and provoke out-of-memory (\ac{OOM}) failures; excessively small chunks inflate scheduling overhead and impede cache locality.
+Dask's default heuristics favour simplicity, either inherit file-block boundaries or aim for a fixed 128 \ac{MB} target size, yet disregard operator complexity and intermediate allocations.
 
 \subsection{Chunk-Size Selection as an Optimisation Problem}
 
@@ -25,7 +25,7 @@ Manual tuning, commonly practised today, iteratively explores this space at sign
     \centering
     \includegraphics[width=\columnwidth]{assets/images/chunking-example}
     \caption{Chunking strategies for a 3D seismic volume.
-    (a) Oversized chunks exceed worker memory limits, causing OOM failures.
+    (a) Oversized chunks exceed worker memory limits, causing \ac{OOM} failures.
     (b) Undersized chunks increase scheduling overhead and reduce cache efficiency.
     (c) Memory-aware chunking selects the largest safe size based on predicted memory usage, balancing performance and reliability.}
     \label{fig:chunking-example}
@@ -37,20 +37,20 @@ Current practice suffers from three major limitations:
 
 \begin{enumerate}
     \item \textbf{Trial-and-error}.
-    Users repeatedly execute jobs until no OOM failure occurs, wasting cluster time on unsuccessful runs.
+    Users repeatedly execute jobs until no \ac{OOM} failure occurs, wasting cluster time on unsuccessful runs.
     \item \textbf{Static heuristics}.
-    Rules of thumb such as ``128 MB per chunk'' ignore the diversity of operator behaviours and data types.
+    Rules of thumb such as ``128 \ac{MB} per chunk'' ignore the diversity of operator behaviours and data types.
     \item \textbf{Lack of adaptation}.
     Heuristics do not adjust to varying worker memories or heterogeneous clusters.
 \end{enumerate}
 
 The memory consumption patterns of scientific operators vary dramatically based on their algorithmic structure.
-Convolution operations allocate padding buffers proportional to kernel size, 3-D filtering creates temporary arrays for separable passes, and tensor computations like GST3D generate multiple intermediate derivatives.
+Convolution operations allocate padding buffers proportional to kernel size, 3-D filtering creates temporary arrays for separable passes, and tensor computations like \ac{GST3D} generate multiple intermediate derivatives.
 These patterns are often non-intuitive: a seemingly simple Gaussian filter can allocate 3-4× the input size in temporary buffers, while envelope detection might use only 1.5× despite appearing more complex.
 Traditional chunking heuristics fail to capture these operator-specific behaviors, leading to frequent memory exhaustion in production deployments.
 
 The consequences of poor chunk size selection extend beyond individual job failures.
-In shared HPC environments, OOM errors can trigger cascading failures that affect other users' workloads.
+In shared \ac{HPC} environments, \ac{OOM} errors can trigger cascading failures that affect other users' workloads.
 Cloud deployments face direct financial impact, as oversized instances must be provisioned to handle worst-case memory peaks.
 Perhaps most critically, the trial-and-error process of finding suitable chunk sizes wastes valuable researcher time and computational resources, with failed jobs consuming allocation quotas without producing useful results.
 
@@ -68,7 +68,7 @@ The main contributions are:
     \item A regression-based model that estimates peak memory usage from input dimensions and operator identity.
     \item An algorithm that derives the largest chunk size satisfying a user-specified safety margin.
     \item An open-source implementation compatible with Dask's scheduling interface.
-    \item An experimental evaluation on seismic workloads showing zero OOM failures and competitive performance relative to state-of-the-art heuristics.
+    \item An experimental evaluation on seismic workloads showing zero \ac{OOM} failures and competitive performance relative to state-of-the-art heuristics.
 \end{itemize}
 
 The remainder of the paper is organised as follows: Section~\ref{sec:related-work} surveys related work in memory prediction, adaptive scheduling, and chunking techniques.
