@@ -76,20 +76,3 @@ Existing code continues to work unchanged; a configuration flag activates memory
 The system stores predictors as lightweight pickle files (typically \textless 1~KB each) that load in milliseconds, adding negligible overhead to graph construction.
 The open-source implementation is available at \url{https://github.com/discovery-unicamp/memory-aware-chunking}.
 
-\subsection{Benefits}
-
-Memory-aware chunking delivers several key benefits that address the limitations of current approaches:
-
-\textbf{(i) Memory Safety Guarantees:} The system models peak memory usage including all intermediate allocations, preventing OOM failures that plague production deployments.
-The safety factor provides a tunable margin for system overhead and measurement uncertainty.
-
-\textbf{(ii) Elimination of Manual Tuning:} Researchers no longer need to iteratively search for viable chunk sizes, a process that can waste days of compute time on large clusters.
-The system automatically adapts to different hardware configurations and operator characteristics.
-
-\textbf{(iii) Performance Optimization:} The algorithm selects the largest safe chunk size, minimizing scheduling overhead and maximizing cache efficiency when memory permits.
-This approach differs from conservative methods that use unnecessarily small chunks "to be safe."
-
-\textbf{(iv) Operator Awareness:} Unlike fixed-size heuristics, the method adapts to each operator's specific memory profile.
-Memory-intensive operations like \ac{GST3D} receive smaller chunks than lightweight operations like element-wise multiplication.
-
-\textbf{(v) Practical Deployment:} The approach requires minimal training data (30-50 samples), integrates transparently with existing code, and adds negligible runtime overhead (\textless 0.1\% of typical operator execution time).

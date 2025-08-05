@@ -1,10 +1,9 @@
 \section{Introduction}
 \label{sec:introduction}
 
-The exponential growth of scientific data has fundamentally transformed computational workflows across disciplines.
-\ac{HPC} facilities now routinely process datasets ranging from hundreds of gigabytes to several terabytes, with processing pipelines that allocate multiple intermediate arrays during computation.
-This growth has been particularly pronounced in geophysical applications, where data volumes have increased by orders of magnitude over the past decade.
-Data-parallel computing frameworks now play an essential role in processing these large-scale scientific datasets, accelerating computation by dividing data into independent chunks that execute concurrently across distributed clusters.
+The exponential growth of scientific data has transformed computational workflows, with \ac{HPC} facilities routinely processing terabyte-scale datasets requiring multiple intermediate arrays.
+This growth has been particularly pronounced in geophysical applications.
+Data-parallel frameworks like Dask play an essential role by dividing data into independent chunks for concurrent execution across distributed clusters.
 
 In seismic processing, modern surveys generate three-dimensional volumes containing billions of samples.
 Each processing step, from noise attenuation to structural analysis, may require scratch arrays several times larger than the input data.
@@ -46,11 +45,9 @@ Convolution operations allocate padding buffers proportional to kernel size, 3-D
 These patterns often defy intuition: a seemingly simple Gaussian filter can allocate 3-4× the input size in temporary buffers, while envelope detection might use only 1.5× despite appearing more complex.
 Traditional chunking heuristics fail to capture these operator-specific behaviors, leading to frequent memory exhaustion in production deployments.
 
-The consequences of poor chunk size selection extend beyond individual job failures.
-In shared \ac{HPC} environments, \ac{OOM} errors can trigger cascading failures that affect other users' workloads.
-Cloud deployments face direct financial impact, as providers must provision oversized instances to handle worst-case memory peaks.
-Perhaps most critically, the trial-and-error process of finding suitable chunk sizes wastes valuable researcher time and computational resources, with failed jobs consuming allocation quotas without producing useful results.
-Therefore, sustainable scientific computing at scale requires a reliable, operator-aware chunking method.
+Poor chunk size selection causes cascading failures in shared \ac{HPC} environments and forces cloud providers to overprovision instances.
+The trial-and-error process wastes researcher time and computational resources, with failed jobs consuming allocation quotas without producing results.
+Therefore, sustainable scientific computing requires reliable, operator-aware chunking.
 
 This paper proposes a predictive, memory-aware chunking mechanism that fundamentally rethinks how distributed frameworks partition data.
 Rather than applying uniform heuristics, the approach models the relationship between input shapes and peak memory consumption for each operator, enabling precise chunk size selection that maximizes performance while guaranteeing memory safety.
