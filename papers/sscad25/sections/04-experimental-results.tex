@@ -40,7 +40,7 @@ Execution times exclude initial data loading to focus on computation performance
 
 \subsection{Reliability (Q1)}
 
-Table~\ref{tab:oom-analysis} shows that memory-aware chunking prevented every OOM failure across all 768 trials, while auto chunking experienced 243 OOM failures and evenly-split experienced 128 OOM failures.
+Table~\ref{tab:oom-analysis} shows that memory-aware chunking prevented every OOM failure across all 768 trials, while auto chunking experienced 243 OOM failures and evenly-split experienced 243 OOM failures.
 
 \begin{table}[htb]
     \centering
@@ -51,7 +51,7 @@ Table~\ref{tab:oom-analysis} shows that memory-aware chunking prevented every OO
         \textbf{Chunking Mode} & \textbf{\ac{OOM} Failures} & \textbf{Successful Runs} & \textbf{\ac{OOM} Rate} \\
         \midrule
         Auto & 243 & 525 & 31.6\% \\
-        Evenly-split & 128 & 640 & 16.7\% \\
+        Evenly-split & 243 & 525 & 31.6\% \\
         Memory-aware & 0 & 768 & 0.0\% \\
         \bottomrule
     \end{tabular}
@@ -71,15 +71,15 @@ For large volumes and four or more workers, only memory-aware completed, produci
         \toprule
         \textbf{Chunking Mode} & \textbf{Time (s)} & \textbf{Memory (\ac{GB})} \\
         \midrule
-        Auto & 15.7 & 2.22 \\
-        Evenly-split & 15.7 & 2.23 \\
-        Memory-aware & 28.1 & 0.55 \\
+        Auto & 15.7 & 2.44 \\
+        Evenly-split & 15.7 & 2.44 \\
+        Memory-aware & 28.1 & 1.16 \\
         \bottomrule
     \end{tabular}
 \end{table}
 
 The most striking difference lies in memory consumption.
-Memory-aware chunking achieved a 75\% reduction in peak memory usage relative to competitors, reducing median consumption from 2.22~GB to 0.55~GB.
+Memory-aware chunking achieved a 52\% reduction in peak memory usage relative to competitors, reducing median consumption from 2.44~GB to 1.16~GB.
 This substantial memory reduction comes at the cost of increased execution time, with memory-aware taking 79\% longer than the baseline approaches.
 However, this trade-off enables reliable execution in memory-constrained environments where the alternatives fail entirely.
 

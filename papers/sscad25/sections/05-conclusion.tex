@@ -3,7 +3,7 @@
 
 This paper presents a memory-aware chunking mechanism that fundamentally improves the reliability and efficiency of distributed data-parallel computing.
 By modeling the relationship between input shapes and peak memory consumption, the approach transforms chunk size selection from a manual, error-prone process to an automated, predictable system.
-The work makes three key contributions: (i) demonstrating that simple linear regression models can accurately predict peak memory usage for complex scientific operators, with $R^2 > 0.999$ using as few as 30 training samples; (ii) providing an algorithm that automatically derives the largest safe chunk size for any given operator and hardware configuration; and (iii) achieving perfect reliability across 768 experimental trials with zero \ac{OOM} failures, compared to 31.6\% and 16.7\% failure rates for Dask's auto-chunking and evenly-split strategies, respectively.
+The work makes three key contributions: (i) demonstrating that simple linear regression models can accurately predict peak memory usage for complex scientific operators, with $R^2 > 0.999$ using as few as 30 training samples; (ii) providing an algorithm that automatically derives the largest safe chunk size for any given operator and hardware configuration; and (iii) achieving perfect reliability across 768 experimental trials with zero \ac{OOM} failures, compared to 31.6\% failure rates for both Dask's auto-chunking and evenly-split strategies.
 
 Memory-aware chunking has implications beyond immediate performance improvements.
 By removing the expertise barrier for chunk size selection, the approach makes distributed computing more accessible to domain scientists who lack deep systems knowledge.
