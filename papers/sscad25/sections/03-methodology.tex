@@ -9,12 +9,12 @@ The optimization balances multiple objectives: maximizing chunk size to reduce s
 
 \subsection{Memory Model}
 
-Profiling reveals near-linear scaling between input volume and peak memory for tensor operators, yielding the model
+Profiling experiments demonstrate near-linear scaling between input volume and peak memory for tensor operators, establishing the model
 \begin{equation}
 M(V)=\alpha V+\beta f(V)+\gamma,\label{eq:model}
 \end{equation}
-where $V=d_1d_2d_3$, $f(V)$ captures operator-specific expansions, and $\alpha,\beta,\gamma$ represent learned parameters.
-For the operators studied, $f(V)=V$, so a first-order regression suffices.
+where $V=d_1d_2d_3$, $f(V)$ captures operator-specific expansions, and $\alpha,\beta,\gamma$ denote the model parameters.
+For the three operators under study, $f(V)=V$, making first-order regression sufficient.
 Experiments demonstrate that training on as few as 30 samples yields $R^2>0.999$, as Table~\ref{tab:feature-importance} indicates.
 
 \begin{table}[htb]
@@ -34,11 +34,11 @@ Experiments demonstrate that training on as few as 30 samples yields $R^2>0.999$
 
 \subsection{Chunk-Size Algorithm}
 
-Algorithm~\ref{alg:memaware} computes $c$ in four steps: 
-(1) predict peak memory for the full volume; 
-(2) derive per-voxel cost; 
-(3) compute the largest cube that respects a safety factor $s$ (default $0.8$); and 
-(4) decrement $c$ until it divides all dimensions.
+Algorithm~\ref{alg:memaware} computes $c$ through four steps: 
+(1) predicting peak memory for the full volume; 
+(2) deriving per-voxel cost; 
+(3) computing the largest cube that respects a safety factor $s$ (default $0.8$); and 
+(4) decrementing $c$ until it divides all dimensions.
 The procedure runs in $\mathcal{O}(d_{\max})$ time, negligible relative to operator execution.
 
 \begin{algorithm}[tb]
@@ -61,9 +61,9 @@ The procedure runs in $\mathcal{O}(d_{\max})$ time, negligible relative to opera
 
 The algorithm integrates seamlessly with \dask's lazy evaluation model through its chunk suggestion \ac{API}.
 When users create a \dask array or apply an operator, the system intercepts the chunking decision point.
-At graph-construction time, before any computation begins, the function inspects the input array shape, identifies the operator being applied, and queries the corresponding predictor.
+At graph-construction time, before any computation begins, the function inspects the input array shape, identifies the operator, and queries the corresponding predictor.
 
-The implementation leverages \dask's plugin architecture as follows:
+The implementation employs \dask's plugin architecture:
 \begin{lstlisting}[language=Python]
 def memory_aware_chunks(shape, dtype, operator_name):
     predictor = load_predictor(operator_name)
@@ -72,20 +72,21 @@ def memory_aware_chunks(shape, dtype, operator_name):
 \end{lstlisting}
 
 This design requires no modifications to \dask's core scheduler or executor.
-Existing code continues to work unchanged; setting a configuration flag activates memory-aware chunking.
+Existing code continues to work unchanged; a configuration flag activates memory-aware chunking.
 The system stores predictors as lightweight pickle files (typically \textless 1~KB each) that load in milliseconds, adding negligible overhead to graph construction.
+The open-source implementation is available at \url{https://github.com/discovery-unicamp/memory-aware-chunking}.
 
 \subsection{Benefits}
 
-The memory-aware chunking method provides several key benefits that address the limitations of current approaches:
+Memory-aware chunking delivers several key benefits that address the limitations of current approaches:
 
-\textbf{(i) Memory Safety Guarantees:} By modeling peak memory usage including all intermediate allocations, the system prevents OOM failures that plague production deployments.
+\textbf{(i) Memory Safety Guarantees:} The system models peak memory usage including all intermediate allocations, preventing OOM failures that plague production deployments.
 The safety factor provides a tunable margin for system overhead and measurement uncertainty.
 
-\textbf{(ii) Elimination of Manual Tuning:} The system eliminates the need for researchers to iteratively search for viable chunk sizes, a process that can waste days of compute time on large clusters.
+\textbf{(ii) Elimination of Manual Tuning:} Researchers no longer need to iteratively search for viable chunk sizes, a process that can waste days of compute time on large clusters.
 The system automatically adapts to different hardware configurations and operator characteristics.
 
-\textbf{(iii) Performance Optimization:} The algorithm selects the largest safe chunk size, thereby minimizing scheduling overhead and maximizing cache efficiency when memory permits.
+\textbf{(iii) Performance Optimization:} The algorithm selects the largest safe chunk size, minimizing scheduling overhead and maximizing cache efficiency when memory permits.
 This approach differs from conservative methods that use unnecessarily small chunks "to be safe."
 
 \textbf{(iv) Operator Awareness:} Unlike fixed-size heuristics, the method adapts to each operator's specific memory profile.
