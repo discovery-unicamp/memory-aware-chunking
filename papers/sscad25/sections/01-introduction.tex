@@ -4,12 +4,12 @@
 The exponential growth of scientific data has fundamentally transformed computational workflows across disciplines.
 \ac{HPC} facilities now routinely process datasets ranging from hundreds of gigabytes to several terabytes, with processing pipelines that allocate multiple intermediate arrays during computation.
 This growth has been particularly pronounced in geophysical applications, where data volumes have increased by orders of magnitude over the past decade.
-Data-parallel computing frameworks have become essential for processing these large-scale scientific datasets, accelerating computation by dividing data into independent chunks that execute concurrently across distributed clusters.
+Data-parallel computing frameworks now play an essential role in processing these large-scale scientific datasets, accelerating computation by dividing data into independent chunks that execute concurrently across distributed clusters.
 
 In seismic processing, modern surveys generate three-dimensional volumes containing billions of samples.
 Each processing step, from noise attenuation to structural analysis, may require scratch arrays several times larger than the input data.
 For instance, computing the \ac{GST3D} on a 400×400×300 volume allocates intermediate tensors that can consume over 10~GB of memory per chunk.
-These memory requirements compound when multiple operators are chained in complex workflows, creating a critical bottleneck that limits the scale of problems that can be practically solved.
+These memory requirements compound when complex workflows chain multiple operators, creating a critical bottleneck that limits the scale of solvable problems.
 
 Dask~\cite{rocklin2015dask} mitigates compute demand by partitioning data into \emph{chunks} that are processed individually, potentially in parallel, across a cluster.
 Chunk dimensions strongly influence performance.
@@ -18,7 +18,7 @@ Oversized chunks exceed device memory and provoke \ac{OOM} failures that termina
 
 Figure~\ref{fig:chunking-example} illustrates this challenge.
 Suitable chunk dimensions must balance four competing goals: (i) respect the memory budget of each worker, (ii) maximise computational granularity, (iii) preserve contiguous memory accesses, and (iv) divide the volume evenly.
-Manual tuning, commonly practised today, iteratively explores this space at significant computational cost.
+Manual tuning, a common practice today, iteratively explores this space at significant computational cost.
 
 \begin{figure}[htb]
     \centering
@@ -41,20 +41,20 @@ Current practice suffers from three major limitations:
     Heuristics do not adjust to varying worker memories or heterogeneous clusters.
 \end{enumerate}
 
-The memory consumption patterns of scientific operators vary dramatically based on their algorithmic structure.
+Scientific operators exhibit dramatically varying memory consumption patterns based on their algorithmic structure.
 Convolution operations allocate padding buffers proportional to kernel size, 3-D filtering creates temporary arrays for separable passes, and tensor computations like \ac{GST3D} generate multiple intermediate derivatives.
-These patterns are often non-intuitive: a seemingly simple Gaussian filter can allocate 3-4× the input size in temporary buffers, while envelope detection might use only 1.5× despite appearing more complex.
+These patterns often defy intuition: a seemingly simple Gaussian filter can allocate 3-4× the input size in temporary buffers, while envelope detection might use only 1.5× despite appearing more complex.
 Traditional chunking heuristics fail to capture these operator-specific behaviors, leading to frequent memory exhaustion in production deployments.
 
 The consequences of poor chunk size selection extend beyond individual job failures.
 In shared \ac{HPC} environments, \ac{OOM} errors can trigger cascading failures that affect other users' workloads.
-Cloud deployments face direct financial impact, as oversized instances must be provisioned to handle worst-case memory peaks.
+Cloud deployments face direct financial impact, as providers must provision oversized instances to handle worst-case memory peaks.
 Perhaps most critically, the trial-and-error process of finding suitable chunk sizes wastes valuable researcher time and computational resources, with failed jobs consuming allocation quotas without producing useful results.
-A reliable, operator-aware chunking method is therefore essential for sustainable scientific computing at scale.
+Therefore, sustainable scientific computing at scale requires a reliable, operator-aware chunking method.
 
 This paper proposes a predictive, memory-aware chunking mechanism that fundamentally rethinks how distributed frameworks partition data.
-Rather than applying uniform heuristics, our approach models the relationship between input shapes and peak memory consumption for each operator, enabling precise chunk size selection that maximizes performance while guaranteeing memory safety.
-The method is implemented as a seamless extension to \dask, requiring no changes to existing user code.
+Rather than applying uniform heuristics, the approach models the relationship between input shapes and peak memory consumption for each operator, enabling precise chunk size selection that maximizes performance while guaranteeing memory safety.
+The method extends \dask seamlessly, requiring no changes to existing user code.
 
 The main contributions are:
 
@@ -65,8 +65,8 @@ The main contributions are:
     \item An experimental evaluation on seismic imaging workloads, focusing on the memory-intensive \ac{GST3D} computation, showing complete elimination of OOM failures across 768 trials and superior scalability in memory-constrained environments.
 \end{itemize}
 
-The remainder of the paper is organised as follows: 
+The remainder of the paper organizes as follows: 
 Section~\ref{sec:related-work} surveys related work in memory prediction, adaptive scheduling, and chunking techniques.
-Section~\ref{sec:methodology} details our predictive model, the chunk-size derivation algorithm, and integration with \dask's scheduling system.
+Section~\ref{sec:methodology} details the predictive model, the chunk-size derivation algorithm, and integration with \dask's scheduling system.
 Section~\ref{sec:experimental-results} presents comprehensive experimental evaluation including reliability analysis, performance benchmarks, and production case studies.
 Section~\ref{sec:conclusion} concludes with a summary of findings and directions for future research.

@@ -1,21 +1,21 @@
 \section{Memory-Aware Chunking}
 \label{sec:methodology}
 
-The memory-aware chunking problem can be formally stated as an optimization problem.
+The memory-aware chunking problem constitutes an optimization problem.
 Given a three-dimensional volume $V=[d_1,d_2,d_3]$ representing the input data dimensions, a worker memory budget $M$ (typically 80\% of physical \ac{RAM} to allow for system overhead), and an operator \textit{op} from the computational workflow, the objective is to derive the largest cubic chunk dimension $c$ that guarantees execution without \ac{OOM} failures.
 
 The cubic constraint simplifies the search space while maintaining good cache locality, since non-cubic chunks often lead to strided memory access patterns that degrade performance.
-The optimization must balance multiple objectives: maximizing chunk size to reduce scheduling overhead, ensuring memory safety with appropriate margins, and maintaining divisibility constraints so chunks evenly partition the volume.
+The optimization balances multiple objectives: maximizing chunk size to reduce scheduling overhead, ensuring memory safety with appropriate margins, and maintaining divisibility constraints so chunks evenly partition the volume.
 
 \subsection{Memory Model}
 
-Profiling reveals near-linear scaling between input volume and peak memory for tensor operators, leading to the model
+Profiling reveals near-linear scaling between input volume and peak memory for tensor operators, yielding the model
 \begin{equation}
 M(V)=\alpha V+\beta f(V)+\gamma,\label{eq:model}
 \end{equation}
-where $V=d_1d_2d_3$, $f(V)$ captures operator-specific expansions, and $\alpha,\beta,\gamma$ are learned parameters.
+where $V=d_1d_2d_3$, $f(V)$ captures operator-specific expansions, and $\alpha,\beta,\gamma$ represent learned parameters.
 For the operators studied, $f(V)=V$, so a first-order regression suffices.
-In our experiments, training on as few as 30 samples yields $R^2>0.999$, as indicated in Table~\ref{tab:feature-importance}.
+Experiments demonstrate that training on as few as 30 samples yields $R^2>0.999$, as Table~\ref{tab:feature-importance} indicates.
 
 \begin{table}[htb]
     \centering
@@ -60,10 +60,10 @@ The procedure runs in $\mathcal{O}(d_{\max})$ time, negligible relative to opera
 \subsection{Integration with \dask}
 
 The algorithm integrates seamlessly with \dask's lazy evaluation model through its chunk suggestion \ac{API}.
-When users create a \dask array or apply an operator, our system intercepts the chunking decision point.
+When users create a \dask array or apply an operator, the system intercepts the chunking decision point.
 At graph-construction time, before any computation begins, the function inspects the input array shape, identifies the operator being applied, and queries the corresponding predictor.
 
-The implementation leverages \dask's plugin architecture \EBADD{as follows}:
+The implementation leverages \dask's plugin architecture as follows:
 \begin{lstlisting}[language=Python]
 def memory_aware_chunks(shape, dtype, operator_name):
     predictor = load_predictor(operator_name)
@@ -72,8 +72,8 @@ def memory_aware_chunks(shape, dtype, operator_name):
 \end{lstlisting}
 
 This design requires no modifications to \dask's core scheduler or executor.
-Existing code continues to work unchanged, with memory-aware chunking activated by setting a configuration flag.
-The predictors are stored as lightweight pickle files (typically \textless 1~KB each) that load in milliseconds, adding negligible overhead to graph construction.
+Existing code continues to work unchanged; setting a configuration flag activates memory-aware chunking.
+The system stores predictors as lightweight pickle files (typically \textless 1~KB each) that load in milliseconds, adding negligible overhead to graph construction.
 
 \subsection{Benefits}
 
@@ -82,13 +82,13 @@ The memory-aware chunking method provides several key benefits that address the 
 \textbf{(i) Memory Safety Guarantees:} By modeling peak memory usage including all intermediate allocations, the system prevents OOM failures that plague production deployments.
 The safety factor provides a tunable margin for system overhead and measurement uncertainty.
 
-\textbf{(ii) Elimination of Manual Tuning:} Researchers no longer need to iteratively search for viable chunk sizes, a process that can waste days of compute time on large clusters.
+\textbf{(ii) Elimination of Manual Tuning:} The system eliminates the need for researchers to iteratively search for viable chunk sizes, a process that can waste days of compute time on large clusters.
 The system automatically adapts to different hardware configurations and operator characteristics.
 
-\textbf{(iii) Performance Optimization:} Because the algorithm selects the largest safe chunk size, it minimizes scheduling overhead and maximizes cache efficiency when memory permits.
-This differs from conservative approaches that use unnecessarily small chunks "to be safe."
+\textbf{(iii) Performance Optimization:} The algorithm selects the largest safe chunk size, thereby minimizing scheduling overhead and maximizing cache efficiency when memory permits.
+This approach differs from conservative methods that use unnecessarily small chunks "to be safe."
 
 \textbf{(iv) Operator Awareness:} Unlike fixed-size heuristics, the method adapts to each operator's specific memory profile.
-A memory-intensive operation like \ac{GST3D} receives smaller chunks than a lightweight operation like element-wise multiplication.
+Memory-intensive operations like \ac{GST3D} receive smaller chunks than lightweight operations like element-wise multiplication.
 
 \textbf{(v) Practical Deployment:} The approach requires minimal training data (30-50 samples), integrates transparently with existing code, and adds negligible runtime overhead (\textless 0.1\% of typical operator execution time).

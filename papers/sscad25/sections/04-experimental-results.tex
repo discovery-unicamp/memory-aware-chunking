@@ -25,9 +25,10 @@ We used Dask 2023.5.0 with NumPy 1.24.3 and Python 3.9.16.
 The evaluation focused on the \ac{GST3D} operator, a memory-intensive kernel widely used in seismic attribute analysis.
 \ac{GST3D} computes directional derivatives and their outer products, generating a 3×3 symmetric tensor at each voxel, a 6× memory expansion from the input.
 We processed synthetic seismic volumes with dimensions ranging from $100^3$ (3.8~MB) to $400^3$ (244~MB), representing typical sub-volumes in production workflows.
-\EB{Faltou clarificar como isso levou a 768 execuções}
+We tested all combinations of dimensions using values 100, 200, 300, and 400 for each axis (inlines × xlines × samples), creating 64 distinct volume configurations.
+Combined with 4 worker counts (1, 2, 4, and 8 workers) and 3 repetitions per configuration, this yielded 768 trials per chunking strategy (64 volumes × 4 workers × 3 repetitions).
 
-Each experiment varied the number of \dask workers from 1 to 8, with the available 32~GB of \ac{RAM} evenly distributed among workers (32~GB for 1 worker, 16~GB each for 2 workers, 8~GB each for 4 workers, and 4~GB each for 8 workers).
+Each experiment varied the number of \dask workers from 1 to 8, with the available 32~GB of \ac{RAM} evenly distributed among workers (e.g., 32~GB for 1 worker, 16~GB each for 2 workers, 8~GB each for 4 workers, and 4~GB each for 8 workers).
 This configuration mimics typical \ac{HPC} deployments where multiple workers share a single node's memory resources.
 We compared three chunking strategies:
 
@@ -42,7 +43,7 @@ Execution times exclude initial data loading to focus on computation performance
 
 \subsection{Reliability (Q1)}
 
-Table~\ref{tab:oom-analysis} shows that memory-aware chunking prevented every OOM failure recorded for the baselines (243 for Auto and 128 for Evenly-split across 768 trials).
+Table~\ref{tab:oom-analysis} shows that memory-aware chunking prevented every OOM failure across all 768 trials, while auto chunking experienced 243 OOM failures and evenly-split experienced 128 OOM failures.
 
 \begin{table}[htb]
     \centering
@@ -50,10 +51,10 @@ Table~\ref{tab:oom-analysis} shows that memory-aware chunking prevented every OO
     \label{tab:oom-analysis}
     \begin{tabular}{lccc}
         \toprule
-        \textbf{Chunking Mode} & \textbf{\ac{OOM} Failures} & \textbf{Total Runs} & \textbf{\ac{OOM} Rate} \\
+        \textbf{Chunking Mode} & \textbf{\ac{OOM} Failures} & \textbf{Successful Runs} & \textbf{\ac{OOM} Rate} \\
         \midrule
-        Auto & 243 & 768 & 31.6\% \\
-        Evenly-split & 128 & 768 & 16.7\% \\
+        Auto & 243 & 525 & 31.6\% \\
+        Evenly-split & 128 & 640 & 16.7\% \\
         Memory-aware & 0 & 768 & 0.0\% \\
         \bottomrule
     \end{tabular}

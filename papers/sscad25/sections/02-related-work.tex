@@ -3,20 +3,20 @@
 
 Memory management in \ac{HPC} has evolved from simple static allocation to sophisticated predictive and adaptive techniques.
 The challenge of balancing memory efficiency with computational performance has driven research across multiple dimensions: predictive modeling at various granularities, runtime adaptation mechanisms, and intelligent data partitioning strategies.
-This section provides a comprehensive survey of these approaches, highlighting their strengths and limitations while positioning our memory-aware chunking method within the broader landscape of distributed computing optimization.
+This section provides a comprehensive survey of these approaches, highlighting their strengths and limitations while positioning the memory-aware chunking method within the broader landscape of distributed computing optimization.
 
 \subsection{Memory Consumption Prediction}
 
-Memory consumption prediction in \ac{HPC} systems has traditionally operated at the job level, leveraging historical execution logs to estimate resource requirements.
+\ac{HPC} systems traditionally predict memory consumption at the job level, leveraging historical execution logs to estimate resource requirements.
 Rodrigues et al.~\cite{rodrigues2016} pioneered machine learning approaches for HPC memory consumption prediction, achieving 98\% classification accuracy using features such as user ID, requested processor count, and job queue information.
 Their random forest models successfully categorized jobs into memory usage bins, enabling better scheduling decisions on IBM Blue Gene/Q systems.
 
 Li et al.~\cite{li2019} extended this work by combining binary classification with specialized regression models for outlier cases.
 Their two-stage approach first identifies whether a job will be memory-intensive, then applies targeted regressors trained on similar historical jobs.
-While effective for recurring workloads, both approaches share fundamental limitations: they require extensive historical data, cannot adapt to new application types, and operate at too coarse a granularity to guide array-level memory management.
+While effective for recurring workloads, both approaches share fundamental limitations: they require extensive historical data, lack adaptability to new application types, and operate at too coarse a granularity to guide array-level memory management.
 
 More recent work by Tanash et al.~\cite{tanash2021ampro} incorporates deep learning techniques, using LSTM networks to capture temporal patterns in job submission sequences.
-However, the black-box nature of these models makes them unsuitable for the transparent, operator-specific predictions required in scientific computing contexts.
+However, the black-box nature of these models renders them unsuitable for the transparent, operator-specific predictions that scientific computing contexts require.
 
 \subsection{Memory-Aware Scheduling}
 
@@ -34,63 +34,47 @@ Fundamentally, these runtime systems complement rather than replace intelligent 
 
 \subsection{Chunking Techniques}
 
-Data chunking strategies have evolved from simple uniform partitioning to sophisticated adaptive approaches, though most focus on I/O optimization rather than memory management.
+Data chunking strategies evolved from simple uniform partitioning to sophisticated adaptive approaches, though most focus on I/O optimization rather than memory management.
 Zhang et al.~\cite{zhang2019} developed an adaptive chunking system for HDF5 that optimizes storage layout based on access patterns, achieving 3× speedup for certain query workloads.
 Their cost model considers disk seek times and compression ratios but does not account for in-memory processing requirements.
 
 Tantisiriroj et al.~\cite{tantisiriroj2011} analyzed the duality between HDFS and PVFS chunking strategies, demonstrating that optimal chunk sizes depend heavily on workload characteristics.
 Their empirical study revealed that the common 64~MB default chunk size often leads to poor performance, motivating workload-specific tuning.
-However, their analysis focuses exclusively on I/O throughput rather than memory consumption during computation.
+However, their analysis exclusively considers I/O throughput rather than memory consumption during computation.
 
 \dask's current auto-chunking implementation~\cite{rocklin2015dask} represents the state-of-the-art in production systems.
 The heuristic targets a fixed 128~MB chunk size, attempting to balance scheduling overhead with memory usage.
 While simple and often effective, this approach has critical limitations: it ignores operator-specific memory expansion, assumes uniform memory availability across workers, and provides no safety guarantees against OOM failures.
-Our experiments show this leads to failure rates exceeding 30\% for memory-intensive operators.
 
-\subsection{Performance Modeling}
-
-\EB{Será que devemos discutir performance modeling? Talvez seja melhor focar apenas em consumo de memória.}
-
-Performance modeling in scientific computing has traditionally focused on execution time prediction, with memory treated as a secondary concern.
-Carrington et al.~\cite{carrington2006} developed comprehensive performance models for \ac{HPC} applications using hardware counters and application signatures.
-Their convolution-based approach accurately predicts runtime across different architectures but provides only aggregate memory bandwidth metrics rather than peak usage predictions.
-
-The NumPy ecosystem~\cite{harris2020} has inspired performance models specific to array computations.
-These models typically focus on vectorization efficiency and cache behavior, useful for optimization but insufficient for distributed memory management.
-Recent work has begun incorporating memory hierarchy effects, but stops short of predicting total memory footprint for complex operators.
-
-Bhimji et al.~\cite{bhimji2016} examined I/O and memory interactions in the context of burst buffers, demonstrating that memory pressure significantly impacts overall application performance.
-Their findings motivate our work: even small reductions in peak memory usage can enable dramatic improvements in system throughput by avoiding swap usage and OOM failures.
-
-The gap in memory-specific modeling is particularly acute for domain-specific operators.
-While general matrix operations have well-understood memory requirements, specialized kernels like seismic imaging operators exhibit complex, input-dependent allocation patterns.
-Our contribution addresses this gap directly, showing that simple linear models can capture these patterns with sufficient accuracy for practical chunk size selection.
-
-\subsection{Summary of Differences}
+\subsection{Summary and Research Gap}
 
 Table~\ref{tab:comparison} contrasts the proposed approach with representative baselines.
-Shape-based prediction, operator awareness, and seamless integration with \dask distinguish this work from prior efforts.
+Existing approaches either operate at too coarse a granularity (job-level prediction), react too late (runtime adaptation), or entirely ignore memory considerations (storage-focused chunking).
+The proposed method uniquely combines shape-based prediction, operator awareness, and seamless integration with \dask to provide proactive, fine-grained memory management.
+
+The key insight recognizes that memory consumption patterns, while complex, become predictable from input dimensions when considering the operator level.
+This approach enables a practical middle ground between overly simplistic heuristics and computationally expensive runtime monitoring, providing memory safety guarantees without sacrificing the simplicity that makes \dask accessible to domain scientists.
 
 \begin{table}[htb]
     \centering
-    \caption{Key characteristics of memory management approaches}
+    \caption{Comparison of memory management approaches in distributed computing}
     \label{tab:comparison}
     \begin{tabular}{p{7.5cm}ccc}
         \toprule
-        \multirow{2}{*}{\textbf{Approach}} & \textbf{Prediction} & \textbf{Operator} & \textbf{Chunk} \\
-        & \textbf{Type} & \textbf{Aware} & \textbf{Sizing} \\
+        \multirow{2}{*}{\textbf{Approach}} & \textbf{Memory} & \textbf{Operator} & \textbf{Chunk} \\
+        & \textbf{Prediction} & \textbf{Aware} & \textbf{Sizing} \\
         \midrule
-        Job-log \newline
+        Job-level prediction \newline
         \small{[Rodrigues et al. 2016, Li et al. 2019]} & Historical & No & N/A \\
         \addlinespace
-        Runtime \newline
-        \small{[Khandelwal et al. 2020, Thamsen et al. 2017]} & None & No & N/A \\
+        Runtime adaptation \newline
+        \small{[Khandelwal et al. 2020, Thamsen et al. 2017]} & Reactive & No & N/A \\
         \addlinespace
-        Storage [Zhang et al. 2019] & None & No & Static \\
+        Storage-focused [Zhang et al. 2019] & None & No & Static \\
         \addlinespace
-        Dask [Rocklin 2015] & None & No & Fixed \\
+        Dask auto-chunking [Rocklin 2015] & None & No & Fixed \\
         \addlinespace
-        \textbf{Ours} & \textbf{Shape-based} & \textbf{Yes} & \textbf{Adaptive} \\
+        \textbf{Memory-aware chunking (Proposed)} & \textbf{Proactive} & \textbf{Yes} & \textbf{Adaptive} \\
         \bottomrule
     \end{tabular}
 \end{table}
