@@ -5,13 +5,13 @@ This paper presents a memory-aware chunking mechanism that fundamentally improve
 By modeling the relationship between input shapes and peak memory consumption, the approach transforms chunk size selection from a manual, error-prone process to an automated, predictable system.
 The work makes three key contributions: (i) demonstrating that simple linear regression models can accurately predict peak memory usage for complex scientific operators, with $R^2 > 0.999$ using as few as 30 training samples; (ii) providing an algorithm that automatically derives the largest safe chunk size for any given operator and hardware configuration; and (iii) achieving perfect reliability across 768 experimental trials with zero \ac{OOM} failures, compared to 31.6\% and 16.7\% failure rates for Dask's auto-chunking and evenly-split strategies, respectively.
 
-The success of memory-aware chunking has implications beyond immediate performance improvements.
+Memory-aware chunking has implications beyond immediate performance improvements.
 By removing the expertise barrier for chunk size selection, the approach makes distributed computing more accessible to domain scientists who lack deep systems knowledge.
 Optimal memory utilization enables more efficient use of computational resources, allowing organizations to achieve the same scientific output with smaller clusters or cloud deployments.
 Furthermore, workflows that previously failed due to memory constraints now execute reliably, expanding the frontier of problems that existing infrastructure can tackle.
 
 While the results demonstrate significant advances, several areas warrant further investigation.
-The current approach selects chunk sizes statically at graph construction time; future work could explore dynamic adjustment based on runtime memory monitoring.
+The approach currently selects chunk sizes statically at graph construction time; future work could explore dynamic adjustment based on runtime memory monitoring.
 Transfer learning techniques could enable rapid deployment for new operators with minimal profiling, leveraging similarities in memory consumption patterns across related algorithms.
 As systems increasingly feature heterogeneous memory hierarchies including \ac{GPU} memory and persistent storage, extending the approach to model these complex systems becomes crucial.
 Additionally, joint optimization of memory usage, execution time, and energy consumption could provide users with Pareto-optimal chunking strategies.

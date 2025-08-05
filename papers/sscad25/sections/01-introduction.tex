@@ -53,7 +53,7 @@ This paper proposes a predictive, memory-aware chunking mechanism that fundament
 Rather than applying uniform heuristics, the approach models the relationship between input shapes and peak memory consumption for each operator, enabling precise chunk size selection that maximizes performance while guaranteeing memory safety.
 The method extends \dask seamlessly, requiring no changes to existing user code.
 
-The main contributions are:
+The main contributions include:
 
 \begin{itemize}
     \item A lightweight linear regression model trained offline on profiling data that estimates peak memory usage from input dimensions and operator characteristics.
