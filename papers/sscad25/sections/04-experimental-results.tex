@@ -59,21 +59,21 @@ Table~\ref{tab:oom-analysis} shows that memory-aware chunking prevented every OO
 
 \subsection{Performance and Memory Usage (Q2)}
 
-Table~\ref{tab:overall-performance} compares performance metrics across the 175 configurations where all three chunking strategies successfully completed.
-These configurations span various data sizes and worker counts (1-8 workers), providing a fair comparison of the strategies' relative performance.
+Table~\ref{tab:overall-performance} compares performance metrics across the 525 runs where all three chunking strategies successfully completed.
+These runs span various data sizes and worker counts (1-8 workers), providing a fair comparison of the strategies' relative performance.
 For large volumes and four or more workers, only memory-aware completed, producing higher effective throughput overall (Figure~\ref{fig:performance-scaling}).
 
 \begin{table}[htb]
     \centering
-    \caption{Performance comparison across 175 configurations where all chunking strategies succeeded (median values)}
+    \caption{Performance comparison across runs where all chunking strategies succeeded (median values, n=525)}
     \label{tab:overall-performance}
-    \begin{tabular}{lccc}
+    \begin{tabular}{lcc}
         \toprule
-        \textbf{Chunking Mode} & \textbf{Time (s)} & \textbf{Memory (\ac{GB})} & \textbf{Successful Runs} \\
+        \textbf{Chunking Mode} & \textbf{Time (s)} & \textbf{Memory (\ac{GB})} \\
         \midrule
-        Auto & 15.7 & 2.22 & 525 \\
-        Evenly-split & 15.7 & 2.23 & 525 \\
-        Memory-aware & 28.1 & 0.55 & 525 \\
+        Auto & 15.7 & 2.22 \\
+        Evenly-split & 15.7 & 2.23 \\
+        Memory-aware & 28.1 & 0.55 \\
         \bottomrule
     \end{tabular}
 \end{table}
