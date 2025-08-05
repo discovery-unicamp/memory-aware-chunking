@@ -1,0 +1,62 @@
+\section{Conclusion}
+\label{sec:conclusion}
+
+This paper presented a memory-aware chunking mechanism that fundamentally improves the reliability and efficiency of distributed data-parallel computing.
+By modeling the relationship between input shapes and peak memory consumption, our approach transforms chunk size selection from a manual, error-prone process to an automated, predictable system.
+
+\subsection{Summary of Contributions}
+
+Our work makes several key contributions to distributed computing:
+
+\textbf{Predictive Memory Modeling:} We demonstrated that simple linear regression models can accurately predict peak memory usage for complex scientific operators.
+Training on as few as 30 samples yields models with $R^2 > 0.999$, providing the foundation for reliable chunk size selection.
+This finding challenges the notion that memory prediction requires complex models or extensive training data.
+
+\textbf{Automated Chunk Sizing:} The memory-aware algorithm eliminates manual tuning by automatically deriving the largest safe chunk size for any given operator and hardware configuration.
+This automation is particularly valuable in production environments where trial-and-error approaches waste significant computational resources.
+
+\textbf{Proven Reliability:} Across 768 experimental trials, memory-aware chunking achieved zero \ac{OOM} failures compared to 31.6\% failure rate for Dask's auto-chunking and 16.7\% for evenly-split strategies.
+This perfect reliability record demonstrates the robustness of our approach across diverse workload conditions.
+
+\subsection{Broader Implications}
+\EB{Daniel, da mesma forma que na Introdução, não é comum subdividir a conclusão em múltiplas sub-seções. Tente resumir todas estas subseções em 3 ou 4 parágrafos corridos. }
+
+The success of memory-aware chunking has implications beyond immediate performance improvements:
+
+\textbf{Democratizing \ac{HPC}:} By removing the expertise barrier for chunk size selection, our approach makes distributed computing more accessible to domain scientists who lack deep systems knowledge.
+Researchers can focus on their scientific problems rather than wrestling with infrastructure constraints.
+
+\textbf{Sustainable Computing:} Optimal memory utilization enables more efficient use of computational resources.
+Organizations can achieve the same scientific output with smaller clusters or cloud deployments, reducing both costs and environmental impact.
+
+\textbf{Enabling Larger Problems:} Memory-aware chunking allows scientists to tackle larger problems on existing infrastructure.
+Workflows that previously failed due to memory constraints can now execute reliably, expanding the frontier of computational science.
+
+\subsection{Limitations and Future Work}
+
+While our results are promising, several areas warrant further investigation:
+
+\textbf{Dynamic Adaptation:} The current approach selects chunk sizes statically at graph construction time.
+Future work will explore dynamic adjustment based on runtime memory monitoring, potentially achieving better performance when memory availability varies during execution.
+
+\textbf{Transfer Learning:} Our method requires training separate models for each operator.
+Investigating transfer learning techniques could enable rapid deployment for new operators with minimal profiling, leveraging similarities in memory consumption patterns across related algorithms.
+
+\textbf{Heterogeneous Memory:} Modern systems increasingly feature heterogeneous memory hierarchies including \ac{GPU} memory, high-bandwidth memory, and persistent memory.
+Extending our approach to model these complex memory systems will be crucial for next-generation \ac{HPC} platforms.
+
+\textbf{Multi-Objective Optimization:} Current work optimizes primarily for memory safety.
+Future research will explore joint optimization of memory usage, execution time, and energy consumption, providing users with Pareto-optimal chunking strategies.
+
+\textbf{Integration with Other Frameworks:} While implemented for Dask, the memory-aware chunking concept applies broadly.
+Adapting our approach for Apache Spark, Ray, and other distributed frameworks would benefit the wider community.
+
+\subsection{Concluding Remarks}
+
+Memory management remains a fundamental challenge in distributed computing, particularly as dataset sizes continue to grow faster than memory capacities.
+This work demonstrates that principled, model-driven approaches can effectively address this challenge without sacrificing the simplicity that makes frameworks like Dask accessible.
+
+By providing reliable, automated chunk size selection, memory-aware chunking removes a significant barrier to scalable scientific computing.
+As the community moves toward exascale systems and beyond, such memory-conscious techniques will become increasingly critical for achieving both performance and reliability at scale.
+
+The open-source implementation of our method is available at \url{https://github.com/discovery-unicamp/memory-aware-chunking}, and we encourage the community to build upon this foundation for even more sophisticated memory management strategies.

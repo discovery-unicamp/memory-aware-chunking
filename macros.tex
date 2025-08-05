@@ -1,0 +1,23 @@
+\usepackage{xcolor} % More color options.
+\usepackage{soul} % \hl
+\usepackage{xspace}
+
+% TODO Macro
+\newcommand{\TODO}[1]{{\textcolor{red}{(TODO: #1)}}}
+
+% Edson's notes
+\newcommand{\EB}[1]{{\textcolor{purple}{(EB: #1)}}}
+\newcommand{\EBH}[1]{{\hl{#1}}}
+\newcommand{\EBC}[2]{\EBH{#1}{\color{red}(EB: #2)}}
+\newcommand{\EBADD}[1]{{\textcolor{purple}{#1}}}
+\newcommand{\EBRM}[1]{{\textcolor{lightgray}{(#1)}}}
+\newcommand{\EBRP}[2]{\EBRM{#1}\EBADD{#2}}
+\newcommand{\EBRPD}[2]{#1 \EB{#1 $\rightarrow$ #2?}}
+
+% Latin expressions
+\newcommand{\etal}{\emph{et al.}\xspace}
+\newcommand{\ie}{\emph{i.e.}\xspace}
+\newcommand{\eg}{\emph{e.g.}\xspace}
+
+% Other usefull macros
+\newcommand{\dask}{Dask\xspace}
