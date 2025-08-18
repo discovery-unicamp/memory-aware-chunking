@@ -81,7 +81,7 @@ For large volumes and four or more workers, only memory-aware completed, produci
 The most striking difference lies in memory consumption.
 Memory-aware chunking achieved a 52\% reduction in peak memory usage relative to competitors, reducing median consumption from 2.44~GB to 1.16~GB.
 This substantial memory reduction comes at the cost of increased execution time, with memory-aware taking 79\% longer than the baseline approaches.
-\textcolor{blue}{The performance degradation can be attributed to the memory-aware algorithm's tendency to create chunks with more balanced dimensions, approaching cubic shapes when possible. This strategy optimizes memory usage but may lead to suboptimal data locality and increased communication overhead for non-cubic input volumes. For instance, processing a volume with dimensions $100 \times 100 \times 400$ results in chunks that deviate from the natural data layout, causing additional data movement and synchronization costs compared to chunks that better align with the elongated dimension.}
+The performance degradation can be attributed to the memory-aware algorithm's tendency to create chunks with more balanced dimensions, approaching cubic shapes when possible. This strategy optimizes memory usage but may lead to suboptimal data locality and increased communication overhead for non-cubic input volumes. For instance, processing a volume with dimensions $100 \times 100 \times 400$ results in chunks that deviate from the natural data layout, causing additional data movement and synchronization costs compared to chunks that better align with the elongated dimension.
 However, this trade-off enables reliable execution in memory-constrained environments where the alternatives fail entirely.
 
 \begin{figure}[htb]
