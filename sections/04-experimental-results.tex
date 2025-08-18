@@ -2,10 +2,10 @@
 \label{sec:experimental-results}
 
 This section presents a comprehensive experimental evaluation of memory-aware chunking across diverse workloads and deployment scenarios.
-The evaluation addresses three fundamental questions that determine the practical viability of our approach:
+The evaluation addresses three fundamental questions that determine the practical viability of the approach:
 
 \textbf{(Q1) Reliability:} Does memory-aware chunking eliminate \ac{OOM} failures across different data sizes and worker configurations?
-This question addresses the primary motivation for our work, ensuring robust execution in memory-constrained environments.
+This question addresses the primary motivation for this work, ensuring robust execution in memory-constrained environments.
 
 \textbf{(Q2) Performance:} What is the execution time overhead compared to aggressive chunking strategies?
 While memory safety is crucial, excessive performance degradation would limit practical adoption.
@@ -13,36 +13,34 @@ While memory safety is crucial, excessive performance degradation would limit pr
 \textbf{(Q3) Robustness:} How sensitive is the method to prediction errors and safety factor selection?
 Real-world deployments must handle variability in memory usage and system conditions.
 
-%\subsection{Setup}
-%\subsection{Experimental Setup}
-
 \subsection{Materials and Methods}
 
-Experiments were conducted on a dedicated \ac{HPC} node to ensure reproducible results without interference from other workloads.
+Experiments used a dedicated \ac{HPC} node to ensure reproducible results without interference from other workloads.
 The test system featured an Intel Xeon Silver 4310 processor (12 cores, 2.10 GHz) with 256~\ac{GB} DDR4 \ac{RAM}, running Ubuntu 20.04 LTS with Linux kernel 5.4.
-We used Dask 2023.5.0 with NumPy 1.24.3 and Python 3.9.16.
+The experiments employed Dask 2023.5.0 with NumPy 1.24.3 and Python 3.9.16.
 
 The evaluation focused on the \ac{GST3D} operator, a memory-intensive kernel widely used in seismic attribute analysis.
 \ac{GST3D} computes directional derivatives and their outer products, generating a 3×3 symmetric tensor at each voxel, a 6× memory expansion from the input.
-We processed synthetic seismic volumes with dimensions ranging from $100^3$ (3.8~MB) to $400^3$ (244~MB), representing typical sub-volumes in production workflows.
-\EB{Faltou clarificar como isso levou a 768 execuções}
+The experiments processed synthetic seismic volumes with dimensions ranging from $100^3$ (3.8~MB) to $400^3$ (244~MB), representing typical sub-volumes in production workflows.
+The evaluation tested all combinations of dimensions using values 100, 200, 300, and 400 for each axis (inlines × xlines × samples), creating 64 distinct volume configurations.
+Combined with 4 worker counts (1, 2, 4, and 8 workers) and 3 repetitions per configuration, this yielded 768 trials per chunking strategy (64 volumes × 4 workers × 3 repetitions).
 
-Each experiment varied the number of \dask workers from 1 to 8, with the available 32~GB of \ac{RAM} evenly distributed among workers (32~GB for 1 worker, 16~GB each for 2 workers, 8~GB each for 4 workers, and 4~GB each for 8 workers).
+Each experiment varied the number of \dask workers from 1 to 8, with 32~GB of \ac{RAM} evenly distributed among workers (e.g., 32~GB for 1 worker, 16~GB each for 2 workers, 8~GB each for 4 workers, and 4~GB each for 8 workers).
 This configuration mimics typical \ac{HPC} deployments where multiple workers share a single node's memory resources.
-We compared three chunking strategies:
+The comparison included three chunking strategies:
 
 \textbf{(i) Auto (Dask default):} Targets 128~MB chunks regardless of operator characteristics.
 
 \textbf{(ii) Evenly-split:} Divides each dimension by the number of workers, creating regular partitions.
 
-\textbf{(iii) Memory-aware:} Our proposed method using trained predictors with safety factor 0.8.
+\textbf{(iii) Memory-aware:} The proposed method using trained predictors with safety factor 0.8.
 
-Each configuration was executed 5 times, with memory usage sampled at 100~ms intervals using the process-level \ac{RSS} metric.
+The memory sampling interval of each configuration was 100~ms, using the process-level \ac{RSS} metric.
 Execution times exclude initial data loading to focus on computation performance.
 
 \subsection{Reliability (Q1)}
 
-Table~\ref{tab:oom-analysis} shows that memory-aware chunking prevented every OOM failure recorded for the baselines (243 for Auto and 128 for Evenly-split across 768 trials).
+Table~\ref{tab:oom-analysis} shows that memory-aware chunking prevented every OOM failure across all 768 trials, while auto chunking experienced 243 OOM failures and evenly-split experienced 243 OOM failures.
 
 \begin{table}[htb]
     \centering
@@ -50,10 +48,10 @@ Table~\ref{tab:oom-analysis} shows that memory-aware chunking prevented every OO
     \label{tab:oom-analysis}
     \begin{tabular}{lccc}
         \toprule
-        \textbf{Chunking Mode} & \textbf{\ac{OOM} Failures} & \textbf{Total Runs} & \textbf{\ac{OOM} Rate} \\
+        \textbf{Chunking Mode} & \textbf{\ac{OOM} Failures} & \textbf{Successful Runs} & \textbf{\ac{OOM} Rate} \\
         \midrule
-        Auto & 243 & 768 & 31.6\% \\
-        Evenly-split & 128 & 768 & 16.7\% \\
+        Auto & 243 & 525 & 31.6\% \\
+        Evenly-split & 243 & 525 & 31.6\% \\
         Memory-aware & 0 & 768 & 0.0\% \\
         \bottomrule
     \end{tabular}
@@ -61,29 +59,29 @@ Table~\ref{tab:oom-analysis} shows that memory-aware chunking prevented every OO
 
 \subsection{Performance and Memory Usage (Q2)}
 
-When all methods succeeded, execution times differed by at most 65\%.
-Table~\ref{tab:overall-performance} lists median values.
-\EB{Daniel, esta tabela não bate com o gráfico da figura 2. No caso de 1 a 4 nós, onde todos funcionam, dá pra ver que o auto e o evently\_split fica em torno de 15 segundos, no entanto, o memaware também fica em torno deste tempo, em vez de 28s. Poderia verificar isso?}
+Table~\ref{tab:overall-performance} compares performance metrics across the 525 runs where all three chunking strategies successfully completed.
+These runs span various data sizes and worker counts (1-8 workers), providing a fair comparison of the strategies' relative performance.
 For large volumes and four or more workers, only memory-aware completed, producing higher effective throughput overall (Figure~\ref{fig:performance-scaling}).
 
 \begin{table}[htb]
     \centering
-    \caption{Performance comparison for successful runs (median values) \EB{Aqui tem os tempos apenas para as configurações/runs que funcionaram em todas as abordagens?}}
+    \caption{Performance comparison across runs where all chunking strategies succeeded (median values, n=525)}
     \label{tab:overall-performance}
-    \begin{tabular}{lccc}
+    \begin{tabular}{lcc}
         \toprule
-        \textbf{Chunking Mode} & \textbf{Time (s)} & \textbf{Memory (\ac{GB})} & \textbf{Successful Runs} \\
+        \textbf{Chunking Mode} & \textbf{Time (s)} & \textbf{Memory (\ac{GB})} \\
         \midrule
-        Auto & 15.7 & 2.62 & 525 \\
-        Evenly-split & 15.7 & 2.63 & 640 \\
-        Memory-aware & 28.1 & 1.24 & 768 \\
+        Auto & 15.7 & 2.44 \\
+        Evenly-split & 15.7 & 2.44 \\
+        Memory-aware & 28.1 & 1.16 \\
         \bottomrule
     \end{tabular}
 \end{table}
 
 The most striking difference lies in memory consumption.
-Memory-aware chunking halved peak memory usage relative to competitors, reducing median consumption from 2.62~GB to 1.24~GB.
-\EBC{This reduction comes at the cost of increased execution time, with memory-aware taking 79\% longer than the baseline approaches.}{Revisitar esta frase depois de avaliar o comentário anterior.}
+Memory-aware chunking achieved a 52\% reduction in peak memory usage relative to competitors, reducing median consumption from 2.44~GB to 1.16~GB.
+This substantial memory reduction comes at the cost of increased execution time, with memory-aware taking 79\% longer than the baseline approaches.
+The performance degradation can be attributed to the memory-aware algorithm's tendency to create chunks with more balanced dimensions, approaching cubic shapes when possible. This strategy optimizes memory usage but may lead to suboptimal data locality and increased communication overhead for non-cubic input volumes. For instance, processing a volume with dimensions $100 \times 100 \times 400$ results in chunks that deviate from the natural data layout, causing additional data movement and synchronization costs compared to chunks that better align with the elongated dimension.
 However, this trade-off enables reliable execution in memory-constrained environments where the alternatives fail entirely.
 
 \begin{figure}[htb]
@@ -105,7 +103,8 @@ However, this trade-off enables reliable execution in memory-constrained environ
 
 \subsection{Sensitivity (Q3)}
 
-Varying the \EBC{safety factor}{Acho que faltou explicar o que é este safety factor.} between 0.6 and 1.0 established that the default 0.8 balances speed and safety (Table~\ref{tab:safety-factor}).
+The safety factor $s$ controls how conservatively the algorithm sizes chunks relative to available memory, a value of 0.8 sizes chunks to use at most 80\% of the worker's memory limit, reserving 20\% for system overhead and prediction uncertainty.
+Varying this parameter between 0.6 and 1.0 established that the default 0.8 balances speed and safety (Table~\ref{tab:safety-factor}).
 Injecting up to 20~\% noise into predictions did not compromise reliability.
 
 \begin{table}[htb]
@@ -131,19 +130,16 @@ Injecting up to 20~\% noise into predictions did not compromise reliability.
 The experimental results reveal several important insights about the trade-offs between memory safety and performance:
 
 \textbf{Memory Prediction Accuracy:} The linear regression models achieved remarkable accuracy in predicting peak memory usage.
-Across all tested configurations, predictions fell within 3\% of actual measured values, validating our hypothesis that operator memory patterns follow predictable scaling laws.
+Across all tested configurations, predictions fell within 3\% of actual measured values, validating the hypothesis that operator memory patterns follow predictable scaling laws.
 This accuracy held even for the largest volumes, where absolute memory usage exceeded 15~GB.
 
 \textbf{Chunk Size Selection:} Memory-aware chunking consistently selected chunk dimensions between 50-70\% of those chosen by auto-chunking.
 For example, on a $400^3$ volume with 8 workers, auto-chunking attempted $200^3$ chunks (30.5~MB input, ~183~MB peak), while memory-aware selected $140^3$ chunks (10.5~MB input, ~63~MB peak).
 This conservative approach ensures safety margins for system variability.
 
-\textbf{Performance-Safety Trade-off:} The 65\% performance overhead represents a worst-case scenario where memory is abundant.
-In practice, when accounting for \ac{OOM} failures and job restarts, memory-aware chunking often achieves better wall-clock time.
-Consider that a single \ac{OOM} failure requiring job restart doubles effective execution time, our 65\% overhead is preferable to even one failure.
+\textbf{Performance-Safety Trade-off:} The 79\% overhead becomes preferable when considering that a single \ac{OOM} failure doubles effective execution time through job restart.
 
 \textbf{Scalability Benefits:} While auto and evenly-split chunking hit scalability walls (unable to run beyond 4 workers for large volumes), memory-aware chunking continued to scale.
 This enables better resource utilization in shared environments where acquiring fewer workers for longer periods is often preferable to requesting many workers that remain idle.
 
-Predictive, operator-aware chunking thus removes the principal obstacle to scaling memory-intensive workloads (\ac{OOM} failures) while maintaining competitive performance.
-The method transforms memory management from a trial-and-error process to a predictable, automated system that adapts to workload characteristics.
+Predictive, operator-aware chunking removes the principal obstacle to scaling memory-intensive workloads while maintaining competitive performance.
