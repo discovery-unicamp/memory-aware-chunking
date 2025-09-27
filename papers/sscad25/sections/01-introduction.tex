@@ -22,10 +22,10 @@ Manual tuning, a common practice today, iteratively explores this space at signi
 \begin{figure}[htb]
     \centering
     \includegraphics[width=\columnwidth]{assets/images/chunking-example}
-    \caption{Chunking strategies for a 3D seismic volume.
-    (a) Oversized chunks exceed worker memory limits, causing \ac{OOM} failures.
-    (b) Undersized chunks increase scheduling overhead and reduce cache efficiency.
-    (c) Memory-aware chunking selects the largest safe size based on predicted memory usage, balancing performance and reliability.}
+    \caption{Chunking strategies for processing seismic data, illustrated on a 2D slice of a 3D volume. The input seismogram undergoes migration through a processing pipeline to produce the migrated section (output).
+    The purple overlay shows oversized chunks that exceed worker memory limits, causing \ac{OOM} failures.
+    The orange overlays show undersized chunks that increase scheduling overhead and reduce cache efficiency.
+    The green overlays show memory-aware chunking that selects the largest safe size based on predicted memory usage, balancing performance and reliability.}
     \label{fig:chunking-example}
 \end{figure}
 
