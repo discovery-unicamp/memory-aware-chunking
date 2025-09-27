@@ -49,7 +49,6 @@ This complete elimination of memory-related failures validates the effectiveness
 
 Table~\ref{tab:overall-performance} compares performance metrics across the 525 runs where all three chunking strategies successfully completed.
 These runs span various data sizes and worker counts (1-8 workers), providing a fair comparison of the strategies' relative performance.
-For large volumes and four or more workers, only memory-aware completed, producing higher effective throughput overall (Figure~\ref{fig:performance-scaling}).
 
 \begin{table}[htb]
     \centering
@@ -74,14 +73,19 @@ Analysis of chunk dimensions reveals that memory-aware selects cubic or near-cub
 This strategy optimizes memory usage but introduces additional boundary exchanges between chunks.
 For a $100 \times 100 \times 400$ volume, memory-aware creates $50^3$ chunks requiring 64 total chunks with 240 inter-chunk boundaries, while auto-chunking's $25 \times 25 \times 400$ chunks require only 16 chunks with 60 boundaries—a 4× increase in communication overhead that accounts for the observed performance penalty.
 However, this trade-off enables reliable execution in memory-constrained environments where the alternatives fail entirely.
-Figure~\ref{fig:memory-usage} demonstrates this memory efficiency advantage, showing how memory-aware chunking maintains consistent memory consumption well below the safety threshold across all worker configurations, while auto and evenly-split strategies exhibit escalating memory usage that eventually exceeds available resources.
+
+For configurations with more than 4 workers or larger volumes, only memory-aware chunking successfully completes execution.
+Figure~\ref{fig:performance-scaling} illustrates this reliability advantage using a $200\times200\times200$ volume: while auto and evenly-split chunking achieve 35\% faster execution times with 1-4 workers (e.g., 42s vs 65s with 4 workers), they encounter \ac{OOM} failures beyond 4 workers.
+Memory-aware chunking shows consistent scaling from 1 to 8 workers, with execution time decreasing from 120s to 72s—a 40\% reduction that demonstrates effective parallelization despite conservative chunk sizing.
+The apparent ``overhead'' compared to failed methods is actually the cost of successful completion versus job failure.
+Figure~\ref{fig:memory-usage} further demonstrates this memory efficiency advantage, showing how memory-aware chunking maintains consistent memory consumption well below the safety threshold across all worker configurations, while auto and evenly-split strategies exhibit escalating memory usage that eventually exceeds available resources.
 
 \begin{figure}[htb]
     \centering
     \includegraphics[width=\columnwidth]{assets/images/200_200_200_execution_time}
     \caption{Execution time scaling with number of workers for a $200\times200\times200$ volume.
-    Auto and evenly-split chunking achieve better performance up to 4 workers but fail with \ac{OOM} errors beyond that point.
-    Memory-aware chunking continues to scale, albeit with higher overhead.}
+    Auto and evenly-split chunking (blue and orange lines) achieve 35\% faster execution with 1-4 workers but fail with \ac{OOM} errors beyond that point (indicated by line termination).
+    Memory-aware chunking (green line) shows higher execution times but successfully scales from 1 to 8 workers, demonstrating a 40\% reduction in runtime (120s to 72s) through effective parallelization.}
     \label{fig:performance-scaling}
 \end{figure}
 
