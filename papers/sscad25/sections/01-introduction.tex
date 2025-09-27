@@ -10,10 +10,12 @@ Each processing step, from noise attenuation to structural analysis, may require
 For instance, computing the \ac{GST3D} on a 400×400×300 volume allocates intermediate tensors that can consume over 10~GB of memory per chunk.
 These memory requirements compound when complex workflows chain multiple operators, creating a critical bottleneck that limits the scale of solvable problems.
 
-Dask~\cite{rocklin2015dask} mitigates compute demand by partitioning data into \emph{chunks} that are processed individually, potentially in parallel, across a cluster.
+\dask~\cite{rocklin2015dask} mitigates compute demand by partitioning data into \emph{chunks} that are processed individually, potentially in parallel, across a cluster.
 Chunk dimensions strongly influence performance.
 Oversized chunks exceed device memory and provoke \ac{OOM} failures that terminate entire jobs; excessively small chunks inflate scheduling overhead, reduce cache locality, and underutilize computational resources.
-\dask's default heuristics favour simplicity, either inherit file-block boundaries or aim for a fixed 128~MB target size, yet disregard operator complexity and intermediate allocations.
+\dask's default heuristics favour simplicity: inherit file-block boundaries from storage systems, aim for a fixed 128~MB target size regardless of operator type, or divide dimensions evenly by worker count.
+Other common heuristics include matching L2/L3 cache sizes (typically 8-32~MB), using square roots of available memory, or applying fixed ratios like memory/4 or memory/8.
+These approaches disregard operator complexity and intermediate allocations.
 
 Figure~\ref{fig:chunking-example} illustrates this challenge.
 Suitable chunk dimensions must balance four competing goals: (i) respect the memory budget of each worker, (ii) maximise computational granularity, (iii) preserve contiguous memory accesses, and (iv) divide the volume evenly.

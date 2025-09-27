@@ -42,8 +42,9 @@ Experiments demonstrate that training on these 30 samples yields $R^2>0.999$, as
 
 Algorithm~\ref{alg:memaware} computes the optimal chunk dimension $c$ through a systematic four-step process that balances memory safety with computational efficiency.
 
-First, the algorithm predicts peak memory consumption for processing the full volume using the trained linear model.
+First, the algorithm predicts peak memory consumption (\textit{peak}) for processing the full volume using the trained linear model.
 This prediction leverages the operator-specific coefficients learned from profiling data, providing an accurate estimate of total memory requirements including all intermediate allocations and system overhead.
+Note that \textit{peak} represents the memory needed if the entire volume were processed as a single chunk, while $M$ denotes the available memory limit per worker—these are distinct quantities, with \textit{peak} typically exceeding $M$ by orders of magnitude for production volumes.
 
 Second, it derives the per-voxel memory cost by dividing the predicted peak memory by the total number of voxels.
 This normalization enables the algorithm to reason about memory requirements at arbitrary granularities, crucial for determining safe chunk sizes.
@@ -63,7 +64,7 @@ The procedure runs in $\mathcal{O}(d_{\max})$ time, negligible relative to opera
 \begin{algorithmic}[1]
 \REQUIRE Volume $V=[d_1,d_2,d_3]$, memory limit $M$, safety factor $s$, predictor $\mathcal{M}$
 \ENSURE Chunk dimension $c$
-\STATE $\textit{peak}\leftarrow\mathcal{M}.\text{predict}(V)$
+\STATE $\textit{peak}\leftarrow\mathcal{M}.\text{predict}(V)$ \COMMENT{Compute $\alpha(d_1 d_2 d_3) + \beta(d_1 d_2 d_3) + \gamma$}
 \STATE $\textit{cost}\leftarrow\textit{peak}/(d_1d_2d_3)$
 \STATE $c\leftarrow\lfloor ((M\,s)/\textit{cost})^{1/3}\rfloor$
 \WHILE{$\exists i\, :\, d_i\bmod c\neq0$ \textbf{and} $c>1$}

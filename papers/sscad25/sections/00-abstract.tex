@@ -2,7 +2,7 @@ Data-parallel frameworks like Dask accelerate scientific computing by dividing d
 However, choosing suitable chunk dimensions remains challenging: oversized chunks trigger \ac{OOM} failures, while undersized chunks increase scheduling overhead and underutilize resources.
 
 This paper introduces memory-aware chunking for Dask, a widely adopted distributed computing framework.
-The approach predicts peak memory usage from input shapes and operator characteristics using lightweight linear regression, then automatically derives the largest safe chunk size.
+The approach predicts peak memory usage from input shapes and computational operator characteristics (functions that transform data, such as filters, transforms, or tensor computations) using lightweight linear regression, then automatically derives the largest safe chunk size.
 Unlike existing heuristics that apply uniform sizes, this method adapts to each operator's specific memory requirements.
 
 Evaluation focuses on memory-intensive seismic imaging operators.
