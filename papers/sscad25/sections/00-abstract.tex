@@ -6,7 +6,7 @@ The approach predicts peak memory usage from input shapes and computational oper
 Unlike existing heuristics that apply uniform sizes, this method adapts to each operator's specific memory requirements.
 
 Evaluation focuses on memory-intensive seismic imaging operators.
-Experiments with 64 synthetic volume configurations demonstrate complete elimination of OOM failures across 768 trials, compared to 31.6\% failure rate with both Dask's auto-chunking and evenly-split chunking.
+Experiments with 64 synthetic volume configurations demonstrate complete elimination of \ac{OOM} failures across 768 trials, compared to 31.6\% failure rate with both Dask's auto-chunking and evenly-split chunking.
 Memory-aware chunking reduces average peak memory by 52\% (2.44GB to 1.16GB) while enabling successful completion of large volumes that fail with baseline methods.
 
 The implementation integrates seamlessly with Dask's interface, requiring no framework modifications.

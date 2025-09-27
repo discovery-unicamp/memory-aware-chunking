@@ -61,7 +61,7 @@ The main contributions include:
     \item A lightweight linear regression model trained offline on profiling data that estimates peak memory usage from input dimensions and operator characteristics.
     \item An algorithm that derives the largest chunk size satisfying a user-specified safety margin, adapting to the specific memory requirements of each computational operator.
     \item An open-source implementation that integrates seamlessly with \dask's existing scheduling interface, requiring no modifications to user code or the core framework.
-    \item An experimental evaluation on seismic imaging workloads, focusing on the memory-intensive \ac{GST3D} computation, showing complete elimination of OOM failures across 768 trials and superior scalability in memory-constrained environments.
+    \item An experimental evaluation on seismic imaging workloads, focusing on the memory-intensive \ac{GST3D} computation, showing complete elimination of \ac{OOM} failures across 768 trials and superior scalability in memory-constrained environments.
 \end{itemize}
 
 The remainder of the paper organizes as follows: 
