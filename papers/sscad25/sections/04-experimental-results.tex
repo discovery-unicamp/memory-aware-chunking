@@ -121,23 +121,3 @@ Across 100 trials with noisy predictions, safety factor 0.8 maintained zero fail
         \bottomrule
     \end{tabular}
 \end{table}
-
-%\subsection{Analysis of Results}
-\subsection{Discussion}
-
-The experimental results reveal several important insights about the trade-offs between memory safety and performance:
-
-\textbf{Memory Prediction Accuracy:} The linear regression models achieved remarkable accuracy in predicting peak memory usage.
-Across all tested configurations, predictions fell within 3\% of actual measured values, validating the hypothesis that operator memory patterns follow predictable scaling laws.
-This accuracy held even for the largest volumes, where absolute memory usage exceeded 15~GB.
-
-\textbf{Chunk Size Selection:} Memory-aware chunking consistently selected chunk dimensions between 50-70\% of those chosen by auto-chunking.
-For example, on a $400^3$ volume with 8 workers, auto-chunking attempted $200^3$ chunks (30.5~MB input, ~183~MB peak), while memory-aware selected $140^3$ chunks (10.5~MB input, ~63~MB peak).
-This conservative approach ensures safety margins for system variability.
-
-\textbf{Performance-Safety Trade-off:} The 79\% overhead becomes preferable when considering that a single \ac{OOM} failure doubles effective execution time through job restart.
-
-\textbf{Scalability Benefits:} While auto and evenly-split chunking hit scalability walls (unable to run beyond 4 workers for large volumes), memory-aware chunking continued to scale.
-This enables better resource utilization in shared environments where acquiring fewer workers for longer periods is often preferable to requesting many workers that remain idle.
-
-Predictive, operator-aware chunking removes the principal obstacle to scaling memory-intensive workloads while maintaining competitive performance.

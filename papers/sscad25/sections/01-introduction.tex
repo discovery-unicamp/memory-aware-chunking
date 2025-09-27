@@ -47,8 +47,7 @@ Convolution operations allocate padding buffers proportional to kernel size, 3-D
 These patterns often defy intuition: a seemingly simple Gaussian filter can allocate 3-4× the input size in temporary buffers, while envelope detection might use only 1.5× despite appearing more complex.
 Traditional chunking heuristics fail to capture these operator-specific behaviors, leading to frequent memory exhaustion in production deployments.
 
-Poor chunk size selection causes cascading failures in shared \ac{HPC} environments and forces cloud providers to overprovision instances.
-The trial-and-error process wastes researcher time and computational resources, with failed jobs consuming allocation quotas without producing results.
+Poor chunk size selection causes cascading failures in shared \ac{HPC} environments, forces cloud providers to overprovision instances, and wastes computational resources on failed jobs.
 Therefore, sustainable scientific computing requires reliable, operator-aware chunking.
 
 This paper proposes a predictive, memory-aware chunking mechanism that fundamentally rethinks how distributed frameworks partition data.
@@ -65,7 +64,7 @@ The main contributions include:
 \end{itemize}
 
 The remainder of the paper organizes as follows: 
-Section~\ref{sec:related-work} surveys related work in memory prediction, adaptive scheduling, and chunking techniques.
-Section~\ref{sec:methodology} details the predictive model, the chunk-size derivation algorithm, and integration with \dask's scheduling system.
-Section~\ref{sec:experimental-results} presents comprehensive experimental evaluation including reliability analysis, performance benchmarks, and production case studies.
+Section~\ref{sec:related-work} surveys related work.
+Section~\ref{sec:methodology} details the approach and methodology used to implement the memory-aware chunking algorithm.
+Section~\ref{sec:experimental-results} presents experimental evaluation results.
 Section~\ref{sec:conclusion} concludes with a summary of findings and directions for future research.

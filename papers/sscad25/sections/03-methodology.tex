@@ -40,22 +40,11 @@ Experiments demonstrate that training on these 30 samples yields $R^2>0.999$, as
 
 \subsection{Chunk-Size Algorithm}
 
-Algorithm~\ref{alg:memaware} computes the optimal chunk dimension $c$ through a systematic four-step process that balances memory safety with computational efficiency.
-
-First, the algorithm predicts peak memory consumption (\textit{peak}) for processing the full volume using the trained linear model.
-This prediction leverages the operator-specific coefficients learned from profiling data, providing an accurate estimate of total memory requirements including all intermediate allocations and system overhead.
-Note that \textit{peak} represents the memory needed if the entire volume were processed as a single chunk, while $M$ denotes the available memory limit per worker—these are distinct quantities, with \textit{peak} typically exceeding $M$ by orders of magnitude for production volumes.
-
-Second, it derives the per-voxel memory cost by dividing the predicted peak memory by the total number of voxels.
-This normalization enables the algorithm to reason about memory requirements at arbitrary granularities, crucial for determining safe chunk sizes.
-
-Third, it computes the largest cubic chunk dimension that respects the safety factor $s$ (default 0.8).
-The cubic root operation ensures balanced dimensions that optimize cache locality and minimize surface-to-volume ratio, reducing communication overhead in distributed execution.
-The safety factor provides a configurable margin for runtime variability and measurement uncertainties.
-
-Finally, the algorithm decrements $c$ iteratively until it evenly divides all volume dimensions.
-This divisibility constraint ensures perfect tiling without remainder chunks that could create load imbalance or require special handling.
-While this adjustment may reduce chunk size below the theoretical maximum, it guarantees uniform partitioning essential for efficient parallel execution.
+Algorithm~\ref{alg:memaware} computes the optimal chunk dimension $c$ through four steps:
+(1) predicts peak memory consumption for the full volume using the trained linear model, where \textit{peak} represents memory needed if processed as a single chunk (typically exceeding worker memory $M$ by orders of magnitude);
+(2) derives per-voxel memory cost by dividing peak by total voxels;
+(3) computes the largest cubic dimension respecting safety factor $s$ (default 0.8), which provides margin for runtime variability;
+(4) decrements $c$ iteratively until it evenly divides all volume dimensions, ensuring uniform partitioning.
 The procedure runs in $\mathcal{O}(d_{\max})$ time, negligible relative to operator execution.
 
 \begin{algorithm}[tb]
@@ -91,13 +80,9 @@ def memory_aware_chunks(shape, dtype, operator_name):
     return compute_chunk_size(shape, predictor, memory_limit)
 \end{lstlisting}
 
-This design requires no modifications to \dask's core scheduler or executor, maintaining full backward compatibility with existing workflows.
-The predictor loading occurs once per session and caches results in memory, eliminating repeated disk access.
-Worker memory limits are determined automatically through system introspection or can be explicitly configured for heterogeneous clusters.
-Existing code continues to work unchanged; a simple configuration flag activates memory-aware chunking globally or selectively for specific operators.
-
-The system stores predictors as lightweight pickle files (typically \textless 1~KB each) containing only the regression coefficients and metadata.
-These files load in under 10 milliseconds even on network-attached storage, adding negligible overhead to graph construction which typically takes seconds for complex workflows.
-The modular design supports easy extension to new operators by providing profiling scripts that automatically generate the required predictor files from sample executions.
+This design requires no modifications to \dask's core scheduler or executor.
+The predictor loading occurs once per session and caches results in memory.
+Worker memory limits are determined automatically or can be configured for heterogeneous clusters.
+The system stores predictors as lightweight pickle files (<1~KB) that load in milliseconds, adding negligible overhead to graph construction.
 The open-source implementation is available at \url{https://github.com/discovery-unicamp/memory-aware-chunking}.
 

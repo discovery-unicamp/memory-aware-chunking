@@ -20,15 +20,11 @@ However, the black-box nature of these models renders them unsuitable for the tr
 \subsection{Memory-Aware Scheduling}
 
 Runtime memory adaptation focuses on dynamic response to memory pressure.
-Cleo~\cite{khandelwal2020} implements cost-aware task migration for MapReduce, achieving 40\% reduction in job completion times by balancing memory load across clusters.
-
-Mary and its variants~\cite{thamsen2017} take a learning-based approach to runtime adaptation, building online models of task memory consumption and adjusting resource allocation dynamically.
-The Hugo* variant specifically targets heterogeneous clusters, adapting its scheduling decisions based on node-specific memory characteristics.
-These systems demonstrate the value of runtime monitoring but operate at container or task granularity, too coarse for the array-level chunking decisions required in numerical computing.
-
+Cleo~\cite{khandelwal2020} implements cost-aware task migration for MapReduce.
+Mary and its variants~\cite{thamsen2017} build online models of task memory consumption and adjust resource allocation dynamically.
 Myung and Lee~\cite{myung2021} propose memory harvesting techniques that reclaim unused memory from over-provisioned VMs.
-While effective in cloud environments, this approach assumes elastic infrastructure unavailable in many \ac{HPC} settings.
-Fundamentally, these runtime systems complement rather than replace intelligent chunking: even perfect task migration cannot salvage a job where individual chunks exceed available memory.
+While effective in cloud environments, these approaches assume elastic infrastructure unavailable in many \ac{HPC} settings.
+These runtime systems complement rather than replace intelligent chunking: even perfect task migration cannot salvage a job where individual chunks exceed available memory.
 
 \subsection{Chunking Techniques}
 
@@ -44,11 +40,7 @@ However, their analysis exclusively considers \ac{I/O} throughput rather than me
 The heuristic targets a fixed 128~MB chunk size, attempting to balance scheduling overhead with memory usage.
 While simple and often effective, this approach has critical limitations: it ignores operator-specific memory expansion, assumes uniform memory availability across workers, and provides no safety guarantees against \ac{OOM} failures.
 
-\subsection{Summary and Research Gap}
-
-Table~\ref{tab:comparison} contrasts existing approaches that either operate too coarsely, react too late, or ignore memory considerations.
-The proposed method uniquely combines shape-based prediction and operator awareness for proactive, fine-grained memory management.
-By recognizing that memory patterns become predictable from input dimensions at the operator level, this approach provides memory safety guarantees without sacrificing \dask's simplicity.
+Table~\ref{tab:comparison} contrasts existing approaches with the proposed method that uniquely combines shape-based prediction and operator awareness for proactive, fine-grained memory management.
 
 \begin{table}[htb]
     \centering
