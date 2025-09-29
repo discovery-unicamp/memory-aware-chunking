@@ -12,7 +12,8 @@ Furthermore, workflows that previously failed due to memory constraints now exec
 
 While the results demonstrate significant advances, several areas warrant further investigation.
 The approach currently selects chunk sizes statically at graph construction time; future work could explore dynamic adjustment based on runtime memory monitoring.
-An important area for future research involves understanding the performance characteristics of memory-aware chunking strategies. Further experiments are needed to investigate the underlying causes of the observed execution time overhead and to develop optimization strategies that maintain memory safety while improving computational efficiency.
+An important area for future research involves understanding the performance characteristics of memory-aware chunking strategies. 
+Further experiments are needed to investigate the underlying causes of the observed execution time overhead and to develop optimization strategies that maintain memory safety while improving computational efficiency.
 Transfer learning techniques could enable rapid deployment for new operators with minimal profiling, leveraging similarities in memory consumption patterns across related algorithms.
 As systems increasingly feature heterogeneous memory hierarchies including \ac{GPU} memory and persistent storage, extending the approach to model these complex systems becomes crucial.
 Additionally, joint optimization of memory usage, execution time, and energy consumption could provide users with Pareto-optimal chunking strategies.

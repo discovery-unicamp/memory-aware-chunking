@@ -82,7 +82,7 @@ Figure~\ref{fig:memory-usage} further demonstrates this memory efficiency advant
 
 \begin{figure}[htb]
     \centering
-    \includegraphics[width=\columnwidth]{assets/images/200_200_200_execution_time}
+    \includegraphics[width=0.95\columnwidth]{assets/images/200_200_200_execution_time}
     \caption{Execution time scaling with number of workers for a $200\times200\times200$ volume.
     Auto and evenly-split chunking (blue and orange lines) achieve 35\% faster execution with 1-4 workers but fail with \ac{OOM} errors beyond that point (indicated by line termination).
     Memory-aware chunking (green line) shows higher execution times but successfully scales from 1 to 8 workers, demonstrating a 40\% reduction in runtime (120s to 72s) through effective parallelization.}
@@ -91,7 +91,7 @@ Figure~\ref{fig:memory-usage} further demonstrates this memory efficiency advant
 
 \begin{figure}[htb]
     \centering
-    \includegraphics[width=\columnwidth]{assets/images/200_200_200_memory_usage}
+    \includegraphics[width=0.95\columnwidth]{assets/images/200_200_200_memory_usage}
     \caption{Peak memory usage comparison for a $200\times200\times200$ volume.
     Memory-aware chunking maintains consistent memory usage below the safety threshold across all worker counts, while auto and evenly-split approaches show increasing memory consumption that leads to \ac{OOM} failures beyond 4 workers.}
     \label{fig:memory-usage}
