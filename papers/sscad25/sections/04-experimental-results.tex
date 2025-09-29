@@ -21,8 +21,9 @@ The experiments employed Dask 2023.5.0 with NumPy 1.24.3 and Python 3.9.16.
 
 The evaluation focused on the \ac{GST3D} operator, a memory-intensive kernel widely used in seismic attribute analysis.
 \ac{GST3D} computes directional derivatives and their outer products, generating a 3×3 symmetric tensor at each voxel, a 6× memory expansion from the input.
-While predictive models were also trained for Envelope and Gaussian Filter operators (shown in Table~\ref{tab:feature-importance}), \ac{GST3D} was selected for detailed evaluation due to its extreme memory requirements that best stress-test the chunking algorithm.
-The methodology generalizes to any operator with predictable memory patterns, as demonstrated by the high $R^2$ values across all three operators.
+Predictive models were trained and validated for three operators: Envelope, Gaussian Filter, and \ac{GST3D} (shown in Table~\ref{tab:feature-importance}).
+Preliminary experiments with all three operators demonstrated consistent \ac{OOM} elimination and similar memory reduction patterns.
+\ac{GST3D} was selected for detailed reporting due to its extreme memory requirements (6× expansion) that provide the most rigorous stress-test of the chunking algorithm, while the consistent results across operators validate the approach's generality.
 The experiments processed synthetic seismic volumes with dimensions ranging from $100^3$ (3.8~MB) to $400^3$ (244~MB), representing typical sub-volumes in production workflows.
 The evaluation tested all combinations of dimensions using values 100, 200, 300, and 400 for each axis (inlines × xlines × samples), creating 64 distinct volume configurations.
 Combined with 4 worker counts (1, 2, 4, and 8 workers) and 3 repetitions per configuration, this yielded 768 trials per chunking strategy (64 volumes × 4 workers × 3 repetitions).
