@@ -10,10 +10,12 @@ Each processing step, from noise attenuation to structural analysis, may require
 For instance, computing the \ac{GST3D} on a 400×400×300 volume allocates intermediate tensors that can consume over 10~GB of memory per chunk.
 These memory requirements compound when complex workflows chain multiple operators, creating a critical bottleneck that limits the scale of solvable problems.
 
-Dask~\cite{rocklin2015dask} mitigates compute demand by partitioning data into \emph{chunks} that are processed individually, potentially in parallel, across a cluster.
+\dask~\cite{rocklin2015dask} mitigates compute demand by partitioning data into \emph{chunks} that are processed individually, potentially in parallel, across a cluster.
 Chunk dimensions strongly influence performance.
 Oversized chunks exceed device memory and provoke \ac{OOM} failures that terminate entire jobs; excessively small chunks inflate scheduling overhead, reduce cache locality, and underutilize computational resources.
-\dask's default heuristics favour simplicity, either inherit file-block boundaries or aim for a fixed 128~MB target size, yet disregard operator complexity and intermediate allocations.
+\dask's default heuristics favour simplicity: inherit file-block boundaries from storage systems, aim for a fixed 128~MB target size regardless of operator type, or divide dimensions evenly by worker count.
+Other common heuristics include matching L2/L3 cache sizes (typically 8-32~MB), using square roots of available memory, or applying fixed ratios like memory/4 or memory/8.
+These approaches disregard operator complexity and intermediate allocations.
 
 Figure~\ref{fig:chunking-example} illustrates this challenge.
 Suitable chunk dimensions must balance four competing goals: (i) respect the memory budget of each worker, (ii) maximise computational granularity, (iii) preserve contiguous memory accesses, and (iv) divide the volume evenly.
@@ -22,10 +24,10 @@ Manual tuning, a common practice today, iteratively explores this space at signi
 \begin{figure}[htb]
     \centering
     \includegraphics[width=\columnwidth]{assets/images/chunking-example}
-    \caption{Chunking strategies for a 3D seismic volume.
-    (a) Oversized chunks exceed worker memory limits, causing \ac{OOM} failures.
-    (b) Undersized chunks increase scheduling overhead and reduce cache efficiency.
-    (c) Memory-aware chunking selects the largest safe size based on predicted memory usage, balancing performance and reliability.}
+    \caption{Chunking strategies for processing seismic data, illustrated on a 2D slice of a 3D volume. The input seismogram undergoes migration through a processing pipeline to produce the migrated section (output).
+    The purple overlay shows oversized chunks that exceed worker memory limits, causing \ac{OOM} failures.
+    The orange overlays show undersized chunks that increase scheduling overhead and reduce cache efficiency.
+    The green overlays show memory-aware chunking that selects the largest safe size based on predicted memory usage, balancing performance and reliability.}
     \label{fig:chunking-example}
 \end{figure}
 
@@ -45,8 +47,7 @@ Convolution operations allocate padding buffers proportional to kernel size, 3-D
 These patterns often defy intuition: a seemingly simple Gaussian filter can allocate 3-4× the input size in temporary buffers, while envelope detection might use only 1.5× despite appearing more complex.
 Traditional chunking heuristics fail to capture these operator-specific behaviors, leading to frequent memory exhaustion in production deployments.
 
-Poor chunk size selection causes cascading failures in shared \ac{HPC} environments and forces cloud providers to overprovision instances.
-The trial-and-error process wastes researcher time and computational resources, with failed jobs consuming allocation quotas without producing results.
+Poor chunk size selection causes cascading failures in shared \ac{HPC} environments, forces cloud providers to overprovision instances, and wastes computational resources on failed jobs.
 Therefore, sustainable scientific computing requires reliable, operator-aware chunking.
 
 This paper proposes a predictive, memory-aware chunking mechanism that fundamentally rethinks how distributed frameworks partition data.
@@ -59,11 +60,11 @@ The main contributions include:
     \item A lightweight linear regression model trained offline on profiling data that estimates peak memory usage from input dimensions and operator characteristics.
     \item An algorithm that derives the largest chunk size satisfying a user-specified safety margin, adapting to the specific memory requirements of each computational operator.
     \item An open-source implementation that integrates seamlessly with \dask's existing scheduling interface, requiring no modifications to user code or the core framework.
-    \item An experimental evaluation on seismic imaging workloads, focusing on the memory-intensive \ac{GST3D} computation, showing complete elimination of OOM failures across 768 trials and superior scalability in memory-constrained environments.
+    \item An experimental evaluation on seismic imaging workloads, focusing on the memory-intensive \ac{GST3D} computation, showing complete elimination of \ac{OOM} failures across 768 trials and superior scalability in memory-constrained environments.
 \end{itemize}
 
 The remainder of the paper organizes as follows: 
-Section~\ref{sec:related-work} surveys related work in memory prediction, adaptive scheduling, and chunking techniques.
-Section~\ref{sec:methodology} details the predictive model, the chunk-size derivation algorithm, and integration with \dask's scheduling system.
-Section~\ref{sec:experimental-results} presents comprehensive experimental evaluation including reliability analysis, performance benchmarks, and production case studies.
+Section~\ref{sec:related-work} surveys related work.
+Section~\ref{sec:methodology} details the approach and methodology used to implement the memory-aware chunking algorithm.
+Section~\ref{sec:experimental-results} presents experimental evaluation results.
 Section~\ref{sec:conclusion} concludes with a summary of findings and directions for future research.

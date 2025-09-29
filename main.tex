@@ -44,16 +44,21 @@
 \acrodef{GB}{Gigabyte}
 \acrodef{MB}{Megabyte}
 \acrodef{TB}{Terabyte}
+\acrodef{LSTM}{Long Short-Term Memory}
+\acrodef{VM}{Virtual Machine}
+\acrodef{HDFS}{Hadoop Distributed File System}
+\acrodef{PVFS}{Parallel Virtual File System}
+\acrodef{HDF5}{Hierarchical Data Format version 5}
 
 \sloppy
 
 \title{Preventing Out-Of-Memory Errors in Dask through Automated Memory-Aware Chunking}
 
-\author{Daniel De Lucca Fonseca\inst{1}, Edson Borin\inst{1}, Carlos Alberto Astudillo Trujillo\inst{1}}
+\author{Daniel De Lucca Fonseca\inst{1}, Carlos Alberto Astudillo Trujillo\inst{1}, Edson Borin\inst{1}}
 
 \address{Institute of Computing -- University of Campinas (UNICAMP)\\
   Av. Albert Einstein, 1251 -- 13083-852 -- Campinas -- SP -- Brazil
-  \email{d182873@dac.unicamp.br, borin@unicamp.br, castudillo@unicamp.br}
+  \email{d182873@dac.unicamp.br, castudillo@unicamp.br, borin@unicamp.br}
 }
 
 \input{macros}
@@ -71,6 +76,13 @@
 \input{sections/03-methodology}
 \input{sections/04-experimental-results}
 \input{sections/05-conclusion}
+
+
+%---------------------------------------------------------------------------------------
+\section*{Acknowledgments}
+\label{sec:ack}
+%---------------------------------------------------------------------------------------
+The authors would like to thank PETROBRAS for funding this study. Prof. Borin also received funding from CNPq (315399/2023-6) and Fapesp (2013/08293-7).
 
 \bibliographystyle{assets/template/sbc}
 \bibliography{bibliography}

@@ -1,13 +1,3 @@
-Data-parallel frameworks like Dask accelerate scientific computing by dividing datasets into chunks that execute concurrently across distributed clusters.
-However, choosing suitable chunk dimensions remains challenging: oversized chunks trigger \ac{OOM} failures, while undersized chunks increase scheduling overhead and underutilize resources.
-
-This paper introduces memory-aware chunking for Dask, a widely adopted distributed computing framework.
-The approach predicts peak memory usage from input shapes and operator characteristics using lightweight linear regression, then automatically derives the largest safe chunk size.
-Unlike existing heuristics that apply uniform sizes, this method adapts to each operator's specific memory requirements.
-
-Evaluation focuses on memory-intensive seismic imaging operators.
-Experiments with 64 synthetic volume configurations demonstrate complete elimination of OOM failures across 768 trials, compared to 31.6\% failure rate with both Dask's auto-chunking and evenly-split chunking.
-Memory-aware chunking reduces median peak memory by 52\% (2.44GB to 1.16GB) while enabling successful completion of large volumes that fail with baseline methods.
-
-The implementation integrates seamlessly with Dask's interface, requiring no framework modifications.
-Results show that predictive, operator-aware chunking provides a robust solution for reliable distributed processing in memory-constrained environments.
+Data-parallel frameworks like \dask partition datasets into chunks for concurrent execution, but choosing suitable chunk dimensions remains challenging: oversized chunks cause \ac{OOM} failures while undersized chunks reduce performance.
+This paper introduces memory-aware chunking that predicts peak memory from input shapes using linear regression and automatically derives optimal chunk sizes adapted to each operator's memory requirements.
+Evaluation on seismic imaging operators across 768 trials shows complete elimination of \ac{OOM} failures (versus 31.6\% failure rate for Dask's default chunking) and 52\% peak memory reduction, enabling reliable distributed processing in memory-constrained environments.
