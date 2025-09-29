@@ -32,7 +32,9 @@ Each experiment varied the number of \dask workers from 1 to 8, with 32~GB of \a
 This configuration mimics typical \ac{HPC} deployments where multiple workers share a single node's memory resources.
 The comparison included three chunking strategies:
 
-\textbf{(i) Auto (Dask default):} Targets 128~MB chunks regardless of operator characteristics.
+\textbf{(i) Auto (Dask default):} Uses \dask's default configuration with the standard 128~MB chunk size target.
+This represents the out-of-the-box behavior that users experience without manual tuning.
+While \dask allows manual chunk size adjustment, such tuning requires trial-and-error across different operators and volumes, which is precisely the problem memory-aware chunking addresses through automated prediction.
 
 \textbf{(ii) Evenly-split:} Divides each dimension by the number of workers, creating regular partitions.
 
