@@ -1,0 +1,31 @@
+%% Comparison of Chunking Approaches
+%% Contrasts traditional vs memory-aware chunking
+
+graph TB
+    subgraph Traditional["Traditional Chunking"]
+        T1[Fixed Heuristic<br/>128MB default]
+        T2[Trial and Error<br/>Manual tuning]
+        T3[No Adaptation<br/>Static rules]
+        T1 --> T4[Frequent OOM<br/>31.6% failures]
+        T2 --> T4
+        T3 --> T4
+    end
+    
+    subgraph MemAware["Memory-Aware Chunking"]
+        M1[Profile Operators<br/>Offline]
+        M2[Train Model<br/>R² > 0.999]
+        M3[Predict Memory<br/>Per shape]
+        M4[Compute Chunks<br/>Safety factor]
+        M1 --> M2
+        M2 --> M3
+        M3 --> M4
+        M4 --> M5[Zero OOM<br/>Perfect reliability]
+    end
+    
+    style T4 fill:#fcc,stroke:#c33,stroke-width:2px
+    style M5 fill:#cfc,stroke:#3c3,stroke-width:2px
+    style M1 fill:#e6f3ff,stroke:#36c,stroke-width:1px
+    style M2 fill:#e6f3ff,stroke:#36c,stroke-width:1px
+    style M3 fill:#e6f3ff,stroke:#36c,stroke-width:1px
+    style M4 fill:#e6f3ff,stroke:#36c,stroke-width:1px
+

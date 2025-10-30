@@ -1,0 +1,22 @@
+%% Diagrama de Fluxo de Particionamento Dask
+%% Mostra como dados são particionados e processados em paralelo
+
+graph LR
+    A["Grande Conjunto de Dados (Terabytes)"] --> B["Particionar em Chunks"]
+    B --> C1["Worker 1: Processar Chunk"]
+    B --> C2["Worker 2: Processar Chunk"]
+    B --> C3["Worker 3: Processar Chunk"]
+    B --> C4["Worker N: Processar Chunk"]
+    C1 --> D["Combinar Resultados"]
+    C2 --> D
+    C3 --> D
+    C4 --> D
+    
+    style A fill:#f9f,stroke:#333,stroke-width:2px
+    style B fill:#bbf,stroke:#333,stroke-width:2px
+    style D fill:#bfb,stroke:#333,stroke-width:2px
+    style C1 fill:#ffd,stroke:#333,stroke-width:1px
+    style C2 fill:#ffd,stroke:#333,stroke-width:1px
+    style C3 fill:#ffd,stroke:#333,stroke-width:1px
+    style C4 fill:#ffd,stroke:#333,stroke-width:1px
+

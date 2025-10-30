@@ -1,0 +1,20 @@
+%% Memory-Aware Algorithm Flowchart
+%% Detailed steps of the chunk size computation algorithm
+
+graph TD
+    A[Input Volume<br/>d1 × d2 × d3] --> B[Predict Peak Memory<br/>using trained model]
+    B --> C[Calculate<br/>per-voxel cost]
+    C --> D[Compute chunk size<br/>c³ ≤ M × safety]
+    D --> E{Divides<br/>evenly?}
+    E -->|No| F[c = c - 1]
+    F --> E
+    E -->|Yes| G[Return chunk size c]
+    
+    style A fill:#ffe6e6,stroke:#c33,stroke-width:2px
+    style G fill:#e6ffe6,stroke:#3c3,stroke-width:2px
+    style B fill:#e6f3ff,stroke:#36c,stroke-width:1px
+    style C fill:#e6f3ff,stroke:#36c,stroke-width:1px
+    style D fill:#e6f3ff,stroke:#36c,stroke-width:1px
+    style E fill:#fff3e6,stroke:#f90,stroke-width:2px
+    style F fill:#ffe6f3,stroke:#c3c,stroke-width:1px
+
